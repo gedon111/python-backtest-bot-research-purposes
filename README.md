@@ -1,4 +1,4 @@
-# Binance Backtest Bot (Compliance Version)
+Binance Backtest Bot (Compliance Version)
 
 This project is a Python backtest and reporting bot that:
 - Pulls BTC/USDT OHLCV candles from Binance.
@@ -13,7 +13,7 @@ The strategy in this file is the v9 variant documented in the source comments, w
 
 ---
 
-## File Scope
+File Scope
 
 Main script:
 - `Binance backtest bot.py`
@@ -24,7 +24,7 @@ Expected local structure:
 
 ---
 
-## Security and Credentials
+Security and Credentials
 
 The bot is designed to be upload-safe when used correctly:
 
@@ -54,7 +54,7 @@ Recommended for GitHub:
 
 ---
 
-## Data Pipeline Overview
+Data Pipeline Overview
 
 1. Fetch candles (`get_candles`)
    - Source: Binance `get_klines`.
@@ -93,9 +93,9 @@ Recommended for GitHub:
 
 ---
 
-## Strategy Logic (Detailed)
+Strategy Logic (Detailed)
 
-### SMC and OB quality
+SMC and OB quality
 
 Each OB can score up to 5 quality points:
 - displacement confirmation
@@ -106,11 +106,11 @@ Each OB can score up to 5 quality points:
 
 Entry OBs are filtered by `MIN_OB_QUALITY` (default `1`) unless sweep level overrides it.
 
-### Entry model
+Entry model
 
 The simulation starts from `SWING_SIZE + 5` bars to ensure indicator/structure context is established.
 
-#### LONG entry checks (all required)
+LONG entry checks (all required)
 - Price interaction with active demand zone.
 - MACD histogram negative but rising (`hist < 0` and `hist > p_hist`).
 - Histogram has risen for at least 2 bars (`p_hist > pp_hist`).
@@ -130,7 +130,7 @@ The simulation starts from `SWING_SIZE + 5` bars to ensure indicator/structure c
   - else fallback to `entry + 2R`
   - reject if reward/risk < 1.5
 
-#### SHORT entry checks (all required)
+SHORT entry checks (all required)
 - Price interaction with active supply zone.
 - MACD histogram positive but falling (`hist > 0` and `hist < p_hist`).
 - Histogram has fallen for at least 2 bars (`p_hist < pp_hist`).
@@ -152,7 +152,7 @@ The simulation starts from `SWING_SIZE + 5` bars to ensure indicator/structure c
   - else fallback to `entry - 2R`
   - reject if reward/risk < 1.5
 
-### Position management and exits
+Position management and exits
 
 For both sides, while in position:
 - Records running PnL every bar.
@@ -187,7 +187,7 @@ Stats attached to DataFrame attributes:
 
 ---
 
-## Google Sheets Export Behavior
+Google Sheets Export Behavior
 
 Per quality threshold sheet:
 - Formats core numeric columns.
@@ -209,7 +209,7 @@ Summary sheet:
 
 ---
 
-## Main Execution Defaults
+Main Execution Defaults
 
 When executed directly (`python "Binance backtest bot.py"`), it runs:
 - symbol: `BTCUSDT`
@@ -223,7 +223,7 @@ The console prints per-level stats and a final sweep summary.
 
 ---
 
-## How To Run Safely
+How To Run Safely
 
 1. Set environment variables before running:
    - `BINANCE_API_KEY`
@@ -238,7 +238,7 @@ If placeholders are still present, export will stop with a clear message.
 
 ---
 
-## Known Assumptions and Notes
+Known Assumptions and Notes
 
 - Binance data fetch uses API response loops of up to 1000 bars per call.
 - Open time is shifted by +8 hours.
@@ -247,23 +247,22 @@ If placeholders are still present, export will stop with a clear message.
 
 ---
 
-## README Logs (Append-Only)
+README Logs (Append-Only)
 
 > **Modification policy for this README**  
 > Keep the original sections above as canonical baseline documentation.  
 > If any future clarification/correction/update is needed, add it as a new dated note below instead of rewriting prior paragraphs directly.  
 > If a direct paragraph edit is unavoidable, add a matching note entry documenting exactly what changed and why.
 
-### Log Entry Template
+Log Entry Template
 
 - Date:
-- Author:
 - Section affected:
 - Change type: `clarification` | `correction` | `update`
 - Notes:
 - Reason:
 
-### Entries
+Entries
 
-- 2026-04-28 | Codex | Initial README creation | update | Added full technical documentation based on current script behavior, configuration, strategy logic, export flow, and safety guidance. | Requested comprehensive and detailed README with end logs section.
+- 2026-04-28 | Initial README creation | update | Added full technical documentation based on current script behavior, configuration, strategy logic, export flow, and safety guidance. | Established baseline project documentation and changelog structure.
 
