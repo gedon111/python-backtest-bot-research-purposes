@@ -6,6 +6,20 @@ This project is a Python backtest and reporting bot that:
 - Builds Smart Money Concepts (SMC) order blocks (internal + swing).
 - Simulates LONG/SHORT trade entries and exits using rule-based filters.
 - Exports per-quality simulation results to Google Sheets, including a summary sheet.
+- **NEW**: Interactive Web Dashboard for deep-dive analysis and visualization.
+
+---
+
+Interactive Backtest Dashboard
+
+The project includes a high-performance web dashboard built with Lightweight Charts for visual verification of backtest results.
+
+Key Features:
+- **Unified Crosshair Sync**: A single, synchronized vertical crosshair across all panes (Main, MACD, KDJ, ATR) for precise multi-indicator alignment.
+- **Dynamic Trade Labels**: Automatic rendering of entries and exits directly on the chart, with tooltips showing specific exit reasons (e.g., "KDJ RESET EXIT", "ATR MOVE EXIT").
+- **Persistent Layout**: Draggable pane resizers with state persistence via `localStorage`, ensuring your custom layout remains between sessions.
+- **Technical Analysis Overlays**: Real-time rendering of SMC Order Blocks, Fair Value Gaps, and structural pivots.
+- **Indicator Suite**: Fully synchronized sub-panes for MACD (Histogram/Signal), KDJ (K/D/J lines), and ATR (Current/Baseline).
 
 The strategy in this file is the v9 variant documented in the source comments, with two key adjustments from prior versions:
 - Minimum SL distance filter: reject entries with risk less than 1.5% of entry.
@@ -267,4 +281,5 @@ Entries
 - 2026-04-28 | Initial README creation | update | Added full technical documentation based on current script behavior, configuration, strategy logic, export flow, and safety guidance. | Established baseline project documentation and changelog structure.
 - 2026-04-30 | Local GUI artifact pipeline | update | Added `export_gui_data.py` local artifact export flow (`artifacts/*.json`, `artifacts/*.csv`, verification report) with optional Google Sheets sync via `--export-gsheet`. Updated `run_dashboard.bat` to start a local HTTP server and open `gui.html` via localhost so JSON fetch works reliably. | Replace Google Sheets-first workflow with local, auditable GUI-ready data and easier validation.
 - 2026-05-03 | Execution Optimization & GUI Crash Fix | update | Replaced `run_dashboard.bat` with a native `Run_Dashboard.py` launcher and embedded the web server launch into `export_gui_data.py`. Optimized backend by caching simulations to prevent redundant calculations during GSheet export, halving execution time. Implemented a Track Allocator in `gui.js` to fix LightweightCharts rendering crashes caused by overlapping Order Blocks. | To improve backend performance, fix critical UI crashes, and simplify the local startup process.
+- 2026-05-04 | Advanced UI Sync & Visualization | update | Implemented unified crosshair synchronization across all panes using precise price-point alignment. Added dynamic trade exit reason labels to the dashboard. Refactored pane resizing to use pixel-based calculations with `localStorage` persistence. Fixed indicator dot alignment on sub-charts. | To provide a premium, professional-grade analysis experience and resolve synchronization limitations in Lightweight Charts.
 
