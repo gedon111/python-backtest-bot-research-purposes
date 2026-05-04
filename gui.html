@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Binance Backtest Bot Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- MathJax CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="stylesheet" href="gui.css">
 </head>
 <body>
@@ -46,7 +48,8 @@
                             K: <span id="val-k" class="yellow">--</span> 
                             D: <span id="val-d" class="blue">--</span> 
                             J: <span id="val-j" class="purple">--</span>
-                            ATR: <span id="val-atr" class="gray">--</span>
+                            ATR 14: <span id="val-atr" style="color: #F0B90B">--</span>
+                            ATR 200: <span id="val-atr200" style="color: #7B68EE">--</span>
                         </div>
                     </div>
                 </div>
@@ -68,14 +71,23 @@
                             <option value="CHoCH">CHoCH</option>
                         </select>
                     </label>
-                    <label class="inline-check"><input id="toggle-trades" type="checkbox" checked> Show Trades</label>
+                    <button class="btn-toggle active" id="btn-show-lines">Show Lines: ON</button>
                     <label class="inline-check"><input id="toggle-ob-zones" type="checkbox" checked> Show OB Zones</label>
                     <label class="inline-check"><input id="toggle-ob-markers" type="checkbox" checked> Show OB Markers</label>
+                    <button class="btn-toggle active" id="btn-auto-fit">Auto Fit: ON</button>
                 </div>
 
                 <div class="chart-layout">
-                    <div class="chart-container-wrapper">
-                        <div id="tvchart"></div>
+                    <div class="charts-column" id="charts-column">
+                        <div id="pane-main" class="chart-pane" style="flex: 60; position: relative;">
+                            <div id="html-overlay-container"></div>
+                        </div>
+                        <div class="pane-resizer" data-prev="pane-main" data-next="pane-macd"></div>
+                        <div id="pane-macd" class="chart-pane" style="flex: 15;"></div>
+                        <div class="pane-resizer" data-prev="pane-macd" data-next="pane-kdj"></div>
+                        <div id="pane-kdj" class="chart-pane" style="flex: 15;"></div>
+                        <div class="pane-resizer" data-prev="pane-kdj" data-next="pane-atr"></div>
+                        <div id="pane-atr" class="chart-pane" style="flex: 10;"></div>
                     </div>
                     
                     <div class="ob-panel">
@@ -125,12 +137,45 @@
                 </div>
                 
                 <div class="sandbox-grid">
+                    <!-- EMA Calculator -->
+                    <div class="calc-card">
+                        <h3>EMA (Exponential Moving Average)</h3>
+                        <div class="formula-block">
+                            \[ \text{Multiplier} = \frac{2}{n + 1} \]
+                            \[ \text{EMA}_n = (\text{Close} - \text{EMA}_{n-1}) \times \text{Multiplier} + \text{EMA}_{n-1} \]
+                        </div>
+                        <div class="input-group">
+                            <label>Period (n): <input type="number" id="ema-n" value="200"></label>
+                            <label>Close: <input type="number" id="ema-c" value="61000"></label>
+                            <label>Prev EMA: <input type="number" id="ema-prev" value="60000"></label>
+                        </div>
+                        <button onclick="calculateEMA()">Calculate EMA</button>
+                        <div class="result" id="res-ema">Result: --</div>
+                    </div>
+
+                    <!-- MACD Calculator -->
+                    <div class="calc-card">
+                        <h3>MACD</h3>
+                        <div class="formula-block">
+                            \[ \text{MACD Line} = \text{EMA}_{12} - \text{EMA}_{26} \]
+                            \[ \text{Signal Line} = \text{EMA}_{9}(\text{MACD Line}) \]
+                            \[ \text{Histogram} = \text{MACD Line} - \text{Signal Line} \]
+                        </div>
+                        <div class="input-group">
+                            <label>EMA(12): <input type="number" id="macd-ema12" value="61500"></label>
+                            <label>EMA(26): <input type="number" id="macd-ema26" value="60000"></label>
+                            <label>Prev Signal: <input type="number" id="macd-prevsig" value="1400"></label>
+                        </div>
+                        <button onclick="calculateMACDSandbox()">Calculate MACD</button>
+                        <div class="result" id="res-macd">Result: --</div>
+                    </div>
+
                     <!-- ATR Calculator -->
                     <div class="calc-card">
                         <h3>ATR (Wilder's Smoothing)</h3>
                         <div class="formula-block">
-                            <code>TR = max(High - Low, |High - PrevClose|, |Low - PrevClose|)</code><br>
-                            <code>ATR = (PrevATR * (n - 1) + TR) / n</code>
+                            \[ \text{TR} = \max\{ (\text{High} - \text{Low}), |\text{High} - \text{Close}_{n-1}|, |\text{Low} - \text{Close}_{n-1}| \} \]
+                            \[ \text{ATR}_n = \frac{\text{ATR}_{n-1} \times (n - 1) + \text{TR}_n}{n} \]
                         </div>
                         <div class="input-group">
                             <label>Period (n): <input type="number" id="atr-n" value="14"></label>
@@ -147,10 +192,10 @@
                     <div class="calc-card">
                         <h3>KDJ (Stochastic)</h3>
                         <div class="formula-block">
-                            <code>RSV = (Close - LowestLow) / (HighestHigh - LowestLow) * 100</code><br>
-                            <code>K = PrevK * (2/3) + RSV * (1/3)</code><br>
-                            <code>D = PrevD * (2/3) + K * (1/3)</code><br>
-                            <code>J = 3 * K - 2 * D</code>
+                            \[ \text{RSV} = \left[ \frac{\text{Close}_n - \text{Lowest Low}_n}{\text{Highest High}_n - \text{Lowest Low}_n} \right] \times 100 \]
+                            \[ \text{K}_n = \text{K}_{n-1} \times \frac{2}{3} + \text{RSV} \times \frac{1}{3} \]
+                            \[ \text{D}_n = \text{D}_{n-1} \times \frac{2}{3} + \text{K}_n \times \frac{1}{3} \]
+                            \[ \text{J}_n = 3 \times \text{K}_n - 2 \times \text{D}_n \]
                         </div>
                         <div class="input-group">
                             <label>Close: <input type="number" id="kdj-c" value="60500"></label>
@@ -162,15 +207,57 @@
                         <button onclick="calculateKDJ()">Calculate KDJ</button>
                         <div class="result" id="res-kdj">Result: --</div>
                     </div>
+                    
+                    <!-- Date Range Indicator Tester -->
+                    <div class="calc-card full-width">
+                        <h3>Date Range Indicator Tester</h3>
+                        <p style="color:var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Fetch historical OHLC data from Binance and compute indicators dynamically to verify logic.</p>
+                        <div class="tester-layout">
+                            <div class="tester-controls">
+                                <div class="input-group">
+                                    <label>Start Date: <input type="date" id="test-start"></label>
+                                    <label>End Date: <input type="date" id="test-end"></label>
+                                    <label>Indicator: 
+                                        <select id="test-indicator">
+                                            <option value="all">All Indicators</option>
+                                            <option value="ema">EMA (200)</option>
+                                            <option value="macd">MACD (12, 26, 9)</option>
+                                            <option value="atr">ATR (14)</option>
+                                            <option value="kdj">KDJ (9, 3, 3)</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <button onclick="runDateRangeTester()">Run Test</button>
+                                <div id="test-error" style="color:var(--short); margin-top: 1rem; font-size: 0.85rem;"></div>
+                            </div>
+                            <div class="tester-output">
+                                <div id="test-mini-chart" style="width: 100%; height: 200px; background: var(--bg-base); border-radius: 6px; border: 1px solid var(--border); margin-bottom: 1rem;"></div>
+                                <div class="table-container" style="max-height: 250px; overflow-y: auto; background: var(--bg-base); border-radius: 6px; border: 1px solid var(--border);">
+                                    <table id="test-table" style="width: 100%; text-align: right; border-collapse: collapse; font-size: 0.8rem; font-family: monospace;">
+                                        <thead style="position: sticky; top: 0; background: var(--bg-surface); color: var(--text-muted);">
+                                            <tr>
+                                                <th style="padding: 0.5rem; text-align: left;">Date</th>
+                                                <th style="padding: 0.5rem;">C</th>
+                                                <th style="padding: 0.5rem;" id="th-ind1">--</th>
+                                                <th style="padding: 0.5rem;" id="th-ind2">--</th>
+                                                <th style="padding: 0.5rem;" id="th-ind3">--</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="test-table-body">
+                                            <tr><td colspan="5" style="text-align: center; padding: 1rem; color: var(--text-muted);">Run test to see data</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
     </div>
 
     <!-- Scripts -->
-    <!-- Lightweight Charts (TradingView) -->
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-    <!-- Main GUI Logic -->
     <script src="gui.js"></script>
 </body>
 </html>

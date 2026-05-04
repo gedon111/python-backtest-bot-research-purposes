@@ -172,8 +172,8 @@ def export_artifacts(bot, args):
         "J",
         "ATR",
         "ATR_200",
+        "Trade_Status"
     ]
-    candles = normalize_records(base_df[candle_cols].to_dict(orient="records"))
 
     runs_by_threshold = {}
     threshold_runs = []
@@ -202,6 +202,16 @@ def export_artifacts(bot, args):
                 "orderblock_count": len(obs),
             }
         )
+
+    # Add Trade_Status to base_df for candles.json
+    default_level = args.default_view_quality
+    if default_level in sim_dfs:
+        base_df["Trade_Status"] = sim_dfs[default_level]["Trade_Status"]
+    else:
+        base_df["Trade_Status"] = ""
+    base_df["Trade_Status"] = base_df["Trade_Status"].fillna("")
+
+    candles = normalize_records(base_df[candle_cols].to_dict(orient="records"))
 
     manifest = build_manifest(args, candles)
     verification_report = build_verification_report(manifest, candles, runs_by_threshold)
