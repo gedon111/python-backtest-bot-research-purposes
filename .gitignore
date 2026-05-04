@@ -1,1 +1,4 @@
 SERVICE KEY/
+scratch/
+__pycache__/
+artifacts/

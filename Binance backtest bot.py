@@ -57,6 +57,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 from gspread_formatting import CellFormat, Color, TextFormat, format_cell_ranges
 import os
+import glob
 
 # ─── SAFE CONFIG (GITHUB-FRIENDLY) ───────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -70,7 +71,24 @@ GOOGLE_SERVICE_KEY_PATH = os.getenv(
     "GOOGLE_SERVICE_KEY_PATH",
     os.path.join(BASE_DIR, "SERVICE KEY", "your-service-account-key.json"),
 )
-GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "your_google_sheet_id_here")
+GOOGLE_SHEET_ID = "1UXw_eTEVjV7lfwmVpLq9z2BWC8WShUFclD3xVkT4MdA"
+
+
+def resolve_google_service_key_path():
+    configured = GOOGLE_SERVICE_KEY_PATH
+    placeholder = configured.endswith("your-service-account-key.json")
+    if not placeholder and os.path.isfile(configured):
+        return configured
+
+    # Auto-discover any json key under SERVICE KEY for local workflows.
+    candidates = sorted(glob.glob(os.path.join(BASE_DIR, "SERVICE KEY", "*.json")))
+    if candidates:
+        # Prioritize the known working 'new-strat' key if multiple exist
+        for c in candidates:
+            if "new-strat" in os.path.basename(c):
+                return c
+        return candidates[0]
+    return configured
 
 # ─── API ─────────────────────────────────────────────────────────────────────
 API_KEY    = os.getenv(BINANCE_API_KEY_ENV)
@@ -1017,25 +1035,23 @@ def _write_summary_sheet(workbook, sweep_results):
 
 
 # ─── MAIN EXPORT: ALL QUALITY THRESHOLDS ─────────────────────────────────────
-def push_all_thresholds_to_gsheet(raw_df, levels=None):
+def push_all_thresholds_to_gsheet(raw_df, levels=None, precomputed_dfs=None):
     if levels is None:
         levels = [0, 1, 2, 3]
 
     scope = ["https://spreadsheets.google.com/feeds",
              "https://www.googleapis.com/auth/drive"]
-    if GOOGLE_SERVICE_KEY_PATH.endswith("your-service-account-key.json"):
+    key_path = resolve_google_service_key_path()
+    if key_path.endswith("your-service-account-key.json") or not os.path.isfile(key_path):
         raise ValueError(
-            "Set GOOGLE_SERVICE_KEY_PATH (env var) or update GOOGLE_SERVICE_KEY_PATH "
-            "placeholder at the top of this script."
+            "Set GOOGLE_SERVICE_KEY_PATH (env var) or place a valid *.json key file in "
+            "SERVICE KEY/."
         )
-    if GOOGLE_SHEET_ID == "your_google_sheet_id_here":
-        raise ValueError(
-            "Set GOOGLE_SHEET_ID (env var) or update GOOGLE_SHEET_ID placeholder "
-            "at the top of this script."
-        )
+    if not GOOGLE_SHEET_ID:
+        raise ValueError("GOOGLE_SHEET_ID is missing.")
 
     creds = ServiceAccountCredentials.from_json_keyfile_name(
-        GOOGLE_SERVICE_KEY_PATH,
+        key_path,
         scope)
     gc       = gspread.authorize(creds)
     workbook = gc.open_by_key(GOOGLE_SHEET_ID)
@@ -1044,9 +1060,13 @@ def push_all_thresholds_to_gsheet(raw_df, levels=None):
 
     for q in levels:
         sheet_title = f"Quality {q}"
-        print(f"\n[{sheet_title}] Running simulation...")
-
-        sim_df = simulate_trades(raw_df.copy(), min_ob_quality=q)
+        if precomputed_dfs and q in precomputed_dfs:
+            print(f"\n[{sheet_title}] Using precomputed simulation...")
+            sim_df = precomputed_dfs[q]
+        else:
+            print(f"\n[{sheet_title}] Running simulation...")
+            sim_df = simulate_trades(raw_df.copy(), min_ob_quality=q)
+            
         stats  = sim_df.attrs.get("trade_stats", {})
 
         print(f"  Trades: {stats.get('Total Trades', 0)}  |  "
@@ -1089,11 +1109,14 @@ if __name__ == "__main__":
         end_time   = "2026-01-01 00:00:00",
     )
 
-    sweep = push_all_thresholds_to_gsheet(btc, levels=[0, 1, 2, 3])
-
-    print("\n=== Quality Sweep Summary ===")
-    for r in sweep:
-        print(f"  Quality {r['quality']}: "
-              f"{r['total_trades']} trades | "
-              f"Return {r['total_return']:.4f}% | "
-              f"Win Rate {r['win_rate']:.4f}%")
+    try:
+        sweep = push_all_thresholds_to_gsheet(btc, levels=[0, 1, 2, 3])
+        print("\n=== Quality Sweep Summary ===")
+        for r in sweep:
+            print(f"  Quality {r['quality']}: "
+                  f"{r['total_trades']} trades | "
+                  f"Return {r['total_return']:.4f}% | "
+                  f"Win Rate {r['win_rate']:.4f}%")
+    except Exception as e:
+        print(f"\nFailed to export to Google Sheets: {e}")
+        print("Please ensure your Google Service Account has Editor permissions for the target Google Sheet.")

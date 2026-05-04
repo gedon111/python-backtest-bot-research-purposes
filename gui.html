@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binance Backtest Bot Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="gui.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="brand">
+                <div class="logo"></div>
+                <h2>Backtest Bot</h2>
+            </div>
+            <div class="nav-items">
+                <button class="nav-item active" data-tab="chart-tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    Chart View
+                </button>
+                <button class="nav-item" data-tab="sandbox-tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                    Formula Sandbox
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Chart Tab -->
+            <section id="chart-tab" class="tab-pane active">
+                <div class="top-bar">
+                    <div class="status-legend" id="status-legend">
+                        <span class="symbol">BTCUSDT 4H</span>
+                        <span class="verify-pill" id="verification-pill">Verification: --</span>
+                        <div class="readouts" id="price-readout">
+                            O: <span id="val-o">--</span> 
+                            H: <span id="val-h">--</span> 
+                            L: <span id="val-l">--</span> 
+                            C: <span id="val-c">--</span>
+                        </div>
+                        <div class="readouts indicator-readouts">
+                            MACD: <span id="val-macd" class="blue">--</span>
+                            K: <span id="val-k" class="yellow">--</span> 
+                            D: <span id="val-d" class="blue">--</span> 
+                            J: <span id="val-j" class="purple">--</span>
+                            ATR: <span id="val-atr" class="gray">--</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="control-bar">
+                    <label>Min OB Quality
+                        <select id="quality-select"></select>
+                    </label>
+                    <label>OB Level
+                        <select id="ob-level">
+                            <option value="all">All</option>
+                            <option value="internal">Internal</option>
+                            <option value="swing">Swing</option>
+                        </select>
+                    </label>
+                    <label>OB Structure
+                        <select id="ob-structure">
+                            <option value="all">All</option>
+                            <option value="BOS">BOS</option>
+                            <option value="CHoCH">CHoCH</option>
+                        </select>
+                    </label>
+                    <label class="inline-check"><input id="toggle-trades" type="checkbox" checked> Show Trades</label>
+                    <label class="inline-check"><input id="toggle-ob-zones" type="checkbox" checked> Show OB Zones</label>
+                    <label class="inline-check"><input id="toggle-ob-markers" type="checkbox" checked> Show OB Markers</label>
+                </div>
+
+                <div class="chart-layout">
+                    <div class="chart-container-wrapper">
+                        <div id="tvchart"></div>
+                    </div>
+                    
+                    <div class="ob-panel">
+                        <h3>Order Block Inspection</h3>
+                        <p class="subtitle">Hover over a marker on the chart to inspect the order block.</p>
+                        
+                        <div id="ob-details" class="hidden">
+                            <div class="ob-header">
+                                <span id="ob-type" class="badge">--</span>
+                                <span id="ob-date">--</span>
+                            </div>
+                            
+                            <div class="ob-price-levels">
+                                <div><label>Top:</label> <span id="ob-top">--</span></div>
+                                <div><label>Bottom:</label> <span id="ob-bottom">--</span></div>
+                            </div>
+
+                            <div class="ob-rules">
+                                <h4>Validation Rules</h4>
+                                <ul class="rule-list">
+                                    <li id="rule-disp"><span class="icon"></span> Displacement</li>
+                                    <li id="rule-large"><span class="icon"></span> Large Bar (> 2x ATR200)</li>
+                                    <li id="rule-fvg"><span class="icon"></span> Fair Value Gap</li>
+                                    <li id="rule-liq"><span class="icon"></span> Liquidity Sweep</li>
+                                    <li id="rule-vol"><span class="icon"></span> Volume Expansion</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="ob-score">
+                                Quality Score: <strong id="ob-quality">--</strong> / 5
+                            </div>
+                        </div>
+                        
+                        <div id="ob-empty-state">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4" style="opacity:0.3; margin-bottom:1rem;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+                            <p>No Order Block Selected</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Formula Sandbox Tab -->
+            <section id="sandbox-tab" class="tab-pane">
+                <div class="sandbox-header">
+                    <h2>Formula Sandbox</h2>
+                    <p>Input values to test the math behind the bot's indicators manually.</p>
+                </div>
+                
+                <div class="sandbox-grid">
+                    <!-- ATR Calculator -->
+                    <div class="calc-card">
+                        <h3>ATR (Wilder's Smoothing)</h3>
+                        <div class="formula-block">
+                            <code>TR = max(High - Low, |High - PrevClose|, |Low - PrevClose|)</code><br>
+                            <code>ATR = (PrevATR * (n - 1) + TR) / n</code>
+                        </div>
+                        <div class="input-group">
+                            <label>Period (n): <input type="number" id="atr-n" value="14"></label>
+                            <label>Prev ATR: <input type="number" id="atr-prev" value="500"></label>
+                            <label>High: <input type="number" id="atr-h" value="61000"></label>
+                            <label>Low: <input type="number" id="atr-l" value="60000"></label>
+                            <label>Prev Close: <input type="number" id="atr-pc" value="60500"></label>
+                        </div>
+                        <button onclick="calculateATR()">Calculate ATR</button>
+                        <div class="result" id="res-atr">Result: --</div>
+                    </div>
+
+                    <!-- KDJ Calculator -->
+                    <div class="calc-card">
+                        <h3>KDJ (Stochastic)</h3>
+                        <div class="formula-block">
+                            <code>RSV = (Close - LowestLow) / (HighestHigh - LowestLow) * 100</code><br>
+                            <code>K = PrevK * (2/3) + RSV * (1/3)</code><br>
+                            <code>D = PrevD * (2/3) + K * (1/3)</code><br>
+                            <code>J = 3 * K - 2 * D</code>
+                        </div>
+                        <div class="input-group">
+                            <label>Close: <input type="number" id="kdj-c" value="60500"></label>
+                            <label>Lowest Low (n periods): <input type="number" id="kdj-ll" value="59000"></label>
+                            <label>Highest High (n periods): <input type="number" id="kdj-hh" value="62000"></label>
+                            <label>Prev K: <input type="number" id="kdj-pk" value="50"></label>
+                            <label>Prev D: <input type="number" id="kdj-pd" value="50"></label>
+                        </div>
+                        <button onclick="calculateKDJ()">Calculate KDJ</button>
+                        <div class="result" id="res-kdj">Result: --</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Lightweight Charts (TradingView) -->
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <!-- Main GUI Logic -->
+    <script src="gui.js"></script>
+</body>
+</html>
