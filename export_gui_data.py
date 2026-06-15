@@ -33,10 +33,30 @@ def fallback_json(obj):
 
 
 def load_bot_module():
-    spec = importlib.util.spec_from_file_location("bot", "Binance backtest bot.py")
-    bot = importlib.util.module_from_spec(spec)
-    sys.modules["bot"] = bot
-    spec.loader.exec_module(bot)
+    try:
+        spec = importlib.util.spec_from_file_location("bot", "Binance backtest bot.py")
+        bot = importlib.util.module_from_spec(spec)
+        sys.modules["bot"] = bot
+        spec.loader.exec_module(bot)
+    except Exception as e:
+        print(f"Warning: Failed to import bot normally ({e}). Attempting offline mock...")
+        import types
+        binance_mod = types.ModuleType('binance')
+        binance_client_mod = types.ModuleType('binance.client')
+        class DummyClient:
+            KLINE_INTERVAL_4HOUR = '4h'
+            def __init__(self, *args, **kwargs): pass
+            def ping(self): pass
+            def get_klines(self, *args, **kwargs): return []
+        binance_client_mod.Client = DummyClient
+        binance_mod.client = binance_client_mod
+        sys.modules['binance'] = binance_mod
+        sys.modules['binance.client'] = binance_client_mod
+        
+        spec = importlib.util.spec_from_file_location("bot", "Binance backtest bot.py")
+        bot = importlib.util.module_from_spec(spec)
+        sys.modules["bot"] = bot
+        spec.loader.exec_module(bot)
     return bot
 
 
@@ -145,12 +165,21 @@ def export_artifacts(bot, args):
         raise ValueError(f"Unsupported timeframe: {args.timeframe}")
 
     print("Fetching candles...")
-    base_df = bot.get_candles(
-        symbol=args.symbol,
-        interval=interval_map[args.timeframe],
-        start_time=args.start,
-        end_time=args.end,
-    )
+    try:
+        base_df = bot.get_candles(
+            symbol=args.symbol,
+            interval=interval_map[args.timeframe],
+            start_time=args.start,
+            end_time=args.end,
+        )
+    except Exception as e:
+        print(f"Warning: Failed to fetch candles from API ({e}). Attempting to load from local cache...")
+        cache_path = os.path.join(args.output_dir, "candles.csv")
+        if os.path.isfile(cache_path):
+            base_df = pd.read_csv(cache_path)
+            base_df["open_time"] = pd.to_datetime(base_df["open_time"])
+        else:
+            raise FileNotFoundError(f"No local candles cache found at {cache_path} and API connection failed.")
 
     print("Computing indicators...")
     base_df = bot.compute_indicators(base_df)

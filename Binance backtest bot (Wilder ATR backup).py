@@ -173,8 +173,8 @@ def compute_indicators(df, kdj_period=9, atr_period=14):
         (df['high'] - prev_close).abs(),
         (df['low']  - prev_close).abs()
     ], axis=1).max(axis=1)
-    df['ATR']     = tr.rolling(atr_period, min_periods=1).mean()
-    df['ATR_200'] = tr.rolling(200,         min_periods=1).mean()
+    df['ATR']     = tr.ewm(alpha=1.0 / atr_period, adjust=False).mean()
+    df['ATR_200'] = tr.ewm(alpha=1.0 / 200,         adjust=False).mean()
 
     return df
 

@@ -647,14 +647,17 @@ window.calculateMACDSandbox = function() {
     document.getElementById('res-macd').innerText = `MACD: ${macdLine.toFixed(2)} | Signal: ${signalLine.toFixed(2)} | Hist: ${hist.toFixed(2)}`;
 };
 window.calculateATR = function() {
-    const n = parseFloat(document.getElementById('atr-n').value);
-    const prevAtr = parseFloat(document.getElementById('atr-prev').value);
-    const h = parseFloat(document.getElementById('atr-h').value);
-    const l = parseFloat(document.getElementById('atr-l').value);
-    const pc = parseFloat(document.getElementById('atr-pc').value);
-    const tr = Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
-    const atr = (prevAtr * (n - 1) + tr) / n;
-    document.getElementById('res-atr').innerText = `TR = ${tr.toFixed(2)} | ATR = ${atr.toFixed(4)}`;
+    const n = parseInt(document.getElementById('atr-n').value);
+    const valStr = document.getElementById('atr-values').value;
+    const vals = valStr.split(',').map(x => parseFloat(x.trim())).filter(x => !isNaN(x));
+    if (vals.length === 0) {
+        document.getElementById('res-atr').innerText = "Please enter valid TR values.";
+        return;
+    }
+    const windowVals = vals.slice(-n);
+    const sum = windowVals.reduce((a, b) => a + b, 0);
+    const atr = sum / windowVals.length;
+    document.getElementById('res-atr').innerText = `Used ${windowVals.length} values | ATR = ${atr.toFixed(4)}`;
 };
 window.calculateKDJ = function() {
     const c = parseFloat(document.getElementById('kdj-c').value);
@@ -704,12 +707,19 @@ window.runDateRangeTester = async function() {
         
         errEl.innerText = 'Calculating indicators...';
         
+        // Pre-calculate True Range for all rows for SMA ATR
+        const trs = data.map((row, i) => {
+            const h = row.high, l = row.low;
+            if (i === 0) return h - l;
+            const pc = data[i-1].close;
+            return Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
+        });
+        
         // Indicator states
         let ema200 = data[0].close;
         let ema12 = data[0].close;
         let ema26 = data[0].close;
         let macdSignal = 0;
-        let atr14 = data[0].high - data[0].low;
         let kdjK = 50, kdjD = 50;
         
         data.forEach((row, i) => {
@@ -727,13 +737,13 @@ window.runDateRangeTester = async function() {
             row.signal = macdSignal;
             row.hist = macd - macdSignal;
             
-            // ATR
-            if (i > 0) {
-                const pc = data[i-1].close;
-                const tr = Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
-                atr14 = (atr14 * 13 + tr) / 14;
+            // ATR (SMA)
+            const start = Math.max(0, i - 13);
+            let sum = 0;
+            for (let j = start; j <= i; j++) {
+                sum += trs[j];
             }
-            row.atr = atr14;
+            row.atr = sum / (i - start + 1);
             
             // KDJ
             let ll = l, hh = h;

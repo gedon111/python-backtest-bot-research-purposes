@@ -172,17 +172,14 @@
 
                     <!-- ATR Calculator -->
                     <div class="calc-card">
-                        <h3>ATR (Wilder's Smoothing)</h3>
+                        <h3>ATR (Simple Moving Average)</h3>
                         <div class="formula-block">
                             \[ \text{TR} = \max\{ (\text{High} - \text{Low}), |\text{High} - \text{Close}_{n-1}|, |\text{Low} - \text{Close}_{n-1}| \} \]
-                            \[ \text{ATR}_n = \frac{\text{ATR}_{n-1} \times (n - 1) + \text{TR}_n}{n} \]
+                            \[ \text{ATR}_n = \frac{1}{n} \sum_{i=1}^{n} \text{TR}_i \]
                         </div>
                         <div class="input-group">
                             <label>Period (n): <input type="number" id="atr-n" value="14"></label>
-                            <label>Prev ATR: <input type="number" id="atr-prev" value="500"></label>
-                            <label>High: <input type="number" id="atr-h" value="61000"></label>
-                            <label>Low: <input type="number" id="atr-l" value="60000"></label>
-                            <label>Prev Close: <input type="number" id="atr-pc" value="60500"></label>
+                            <label style="grid-column: span 2;">TR Values (comma-separated): <input type="text" id="atr-values" value="500,520,480,510,490,500,530,470,460,520,510,490,500,550"></label>
                         </div>
                         <button onclick="calculateATR()">Calculate ATR</button>
                         <div class="result" id="res-atr">Result: --</div>
