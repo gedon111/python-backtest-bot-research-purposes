@@ -1,16 +1,39 @@
 Binance Backtest Bot (Compliance Version)
 
-This project is a Python backtest and reporting bot that:
-- Pulls BTC/USDT OHLCV candles from Binance.
-- Computes indicators (MACD, KDJ, ATR, ATR_200).
-- Builds Smart Money Concepts (SMC) order blocks (internal + swing).
-- Simulates LONG/SHORT trade entries and exits using rule-based filters.
-- Exports per-quality simulation results to Google Sheets, including a summary sheet.
-- **NEW**: Interactive Web Dashboard for deep-dive analysis and visualization.
+This project is a Python backtest and reporting bot that pulls BTC/USDT market data, computes indicators, simulates SMC trades, and hosts an interactive visual dashboard.
 
 ---
 
-Interactive Backtest Dashboard
+## 🚀 Quick Start: How to Run the Dashboard
+
+The easiest way to run the entire project is using the automated dashboard launcher. This will run the backtests, compile the trade data, start a local server, and open the visual interface in your browser.
+
+### 1. Install Dependencies
+Make sure you have the required libraries installed:
+```bash
+pip install pandas numpy python-binance oauth2client gspread gspread-formatting
+```
+
+### 2. Run the Dashboard Launcher
+Simply run the runner script:
+```bash
+python Run_Dashboard.py
+```
+* **Offline Mode (Default)**: The script will load from the local candles cache and immediately launch the web UI at `http://127.0.0.1:8765/gui.html`.
+* **Online Mode (Binance API & Google Sheets Export)**: To pull live data and upload results to Google Sheets, set the following environment variables first:
+  ```bash
+  # Optional: Binance Keys
+  set BINANCE_API_KEY=your_key
+  set BINANCE_API_SECRET=your_secret
+
+  # Optional: Google Sheets Credentials
+  set GOOGLE_SERVICE_KEY_PATH=path/to/service-key.json
+  set GOOGLE_SHEET_ID=your_sheet_id
+  ```
+
+---
+
+## Interactive Backtest Dashboard
 
 The project includes a high-performance web dashboard built with Lightweight Charts for visual verification of backtest results.
 
@@ -282,4 +305,5 @@ Entries
 - 2026-04-30 | Local GUI artifact pipeline | update | Added `export_gui_data.py` local artifact export flow (`artifacts/*.json`, `artifacts/*.csv`, verification report) with optional Google Sheets sync via `--export-gsheet`. Updated `run_dashboard.bat` to start a local HTTP server and open `gui.html` via localhost so JSON fetch works reliably. | Replace Google Sheets-first workflow with local, auditable GUI-ready data and easier validation.
 - 2026-05-03 | Execution Optimization & GUI Crash Fix | update | Replaced `run_dashboard.bat` with a native `Run_Dashboard.py` launcher and embedded the web server launch into `export_gui_data.py`. Optimized backend by caching simulations to prevent redundant calculations during GSheet export, halving execution time. Implemented a Track Allocator in `gui.js` to fix LightweightCharts rendering crashes caused by overlapping Order Blocks. | To improve backend performance, fix critical UI crashes, and simplify the local startup process.
 - 2026-05-04 | Advanced UI Sync & Visualization | update | Implemented unified crosshair synchronization across all panes using precise price-point alignment. Added dynamic trade exit reason labels to the dashboard. Refactored pane resizing to use pixel-based calculations with `localStorage` persistence. Fixed indicator dot alignment on sub-charts. | To provide a premium, professional-grade analysis experience and resolve synchronization limitations in Lightweight Charts.
+- 2026-06-15 | Quick Start Documentation | update | Added a simplified "Quick Start" execution guide explaining the single-command startup via `Run_Dashboard.py`. | To improve user boarding and simplify pipeline run instructions.
 
