@@ -515,6 +515,7 @@ MIN_OB_QUALITY = 1
 
 def simulate_trades(df, min_ob_quality=None):
     current_entry_ob = None
+    current_tp_ob = None
     entry_tp_is_structural = False
     entry_tp_ob_bar = None
     entry_tp_ob_quality = None
@@ -535,7 +536,9 @@ def simulate_trades(df, min_ob_quality=None):
     entry_idx        = 0
     kdj_state        = None
     trades = []
+    touches = []
     current_entry_ob = None
+    current_tp_ob = None
     entry_tp_is_structural = False
     entry_tp_ob_bar = None
     entry_tp_ob_quality = None
@@ -574,6 +577,36 @@ def simulate_trades(df, min_ob_quality=None):
         ]
         demand_obs = [z for z in valid_obs_entries if z['type'] == 'DEMAND']
         supply_obs = [z for z in valid_obs_entries if z['type'] == 'SUPPLY']
+
+        # Capture OB Touch Events
+        active_obs_for_touch = [
+            ob for ob in obs
+            if ob['created_at'] < i < ob['mitigated_at']
+            and i - ob['created_at'] <= MAX_OB_AGE
+        ]
+        for ob in active_obs_for_touch:
+            if max(low, ob['bottom']) <= min(high, ob['top']):
+                time_val = df.at[i, 'time'] if 'time' in df.columns else int(pd.to_datetime(df.at[i, 'open_time']).timestamp())
+                touches.append({
+                    'ob_created_at': ob['created_at'],
+                    'ob_bar': ob['ob_bar'],
+                    'ob_type': ob['type'],
+                    'ob_level': ob['level'],
+                    'ob_structure': ob['structure'],
+                    'ob_top': ob['top'],
+                    'ob_bottom': ob['bottom'],
+                    'time': int(time_val),
+                    'touch_price': close,
+                    'macd': float(df.at[i, 'MACD']),
+                    'macd_signal': float(df.at[i, 'MACD_signal']),
+                    'macd_hist': hist,
+                    'k': K,
+                    'd': D,
+                    'j': J,
+                    'k_accel': k_accel,
+                    'atr_14': ATR,
+                    'atr_200': ATR_200
+                })
 
         def nearest(zones):
             if not zones: return None
@@ -654,6 +687,7 @@ def simulate_trades(df, min_ob_quality=None):
                 entry_tp_is_structural = True if stp_ob else False
                 entry_tp_ob_bar = stp_ob.get('ob_bar') if stp_ob else None
                 entry_tp_ob_quality = stp_ob.get('quality') if stp_ob else None
+                current_tp_ob = stp_ob
 
                 df.at[i, 'Trade_Status'] = 'OPEN LONG'
                 df.at[i, 'Entry_Price']  = entry_price
@@ -723,6 +757,7 @@ def simulate_trades(df, min_ob_quality=None):
                     entry_tp_is_structural = True if stp_ob else False
                     entry_tp_ob_bar = stp_ob.get('ob_bar') if stp_ob else None
                     entry_tp_ob_quality = stp_ob.get('quality') if stp_ob else None
+                    current_tp_ob = stp_ob
 
                     df.at[i, 'Trade_Status'] = 'OPEN SHORT'
                     df.at[i, 'Entry_Price']  = entry_price
@@ -741,20 +776,35 @@ def simulate_trades(df, min_ob_quality=None):
             df.at[i, 'Take_Profit']   = take_profit_price
 
             def close_trade(tag, pnl):
-                nonlocal position, current_entry_ob, entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality
+                nonlocal position, current_entry_ob, current_tp_ob, entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality
                 df.at[i, 'Trade_Status']  = tag
                 df.at[i, 'Exit_Price']    = close
                 df.at[i, 'Running_PnL_%'] = pnl
-                trades.append({'side': 'LONG', 'entry_idx': entry_idx,
-                                'exit_idx': i, 'entry': entry_price,
-                                'exit': close, 'pnl_pct': pnl,
-                                'entry_ob_bar': (current_entry_ob.get('ob_bar') if current_entry_ob else None),
-                                'entry_ob_quality': (current_entry_ob.get('quality') if current_entry_ob else None),
-                                'tp_is_structural': entry_tp_is_structural,
-                                'tp_ob_bar': entry_tp_ob_bar,
-                                'tp_ob_quality': entry_tp_ob_quality,
-                                'hold_bars': i - entry_idx})
+                trades.append({
+                    'side': 'LONG',
+                    'entry_idx': entry_idx,
+                    'exit_idx': i,
+                    'entry': entry_price,
+                    'exit': close,
+                    'stop_loss': stop_loss_price,
+                    'take_profit': take_profit_price,
+                    'pnl_pct': pnl,
+                    'entry_ob_bar': (current_entry_ob.get('ob_bar') if current_entry_ob else None),
+                    'entry_ob_quality': (current_entry_ob.get('quality') if current_entry_ob else None),
+                    'entry_ob_created_at': (current_entry_ob.get('created_at') if current_entry_ob else None),
+                    'entry_ob_level': (current_entry_ob.get('level') if current_entry_ob else None),
+                    'entry_ob_type': (current_entry_ob.get('type') if current_entry_ob else None),
+                    'tp_is_structural': entry_tp_is_structural,
+                    'tp_ob_bar': entry_tp_ob_bar,
+                    'tp_ob_quality': entry_tp_ob_quality,
+                    'tp_ob_created_at': (current_tp_ob.get('created_at') if (entry_tp_is_structural and current_tp_ob) else None),
+                    'tp_ob_level': (current_tp_ob.get('level') if (entry_tp_is_structural and current_tp_ob) else None),
+                    'tp_ob_type': (current_tp_ob.get('type') if (entry_tp_is_structural and current_tp_ob) else None),
+                    'hold_bars': i - entry_idx,
+                    'exit_reason': tag
+                })
                 current_entry_ob = None
+                current_tp_ob = None
                 entry_tp_is_structural = False
                 entry_tp_ob_bar = None
                 entry_tp_ob_quality = None
@@ -802,20 +852,35 @@ def simulate_trades(df, min_ob_quality=None):
             df.at[i, 'Take_Profit']   = take_profit_price
 
             def close_trade(tag, pnl):
-                nonlocal position, current_entry_ob, entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality
+                nonlocal position, current_entry_ob, current_tp_ob, entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality
                 df.at[i, 'Trade_Status']  = tag
                 df.at[i, 'Exit_Price']    = close
                 df.at[i, 'Running_PnL_%'] = pnl
-                trades.append({'side': 'SHORT', 'entry_idx': entry_idx,
-                                'exit_idx': i, 'entry': entry_price,
-                                'exit': close, 'pnl_pct': pnl,
-                                'entry_ob_bar': (current_entry_ob.get('ob_bar') if current_entry_ob else None),
-                                'entry_ob_quality': (current_entry_ob.get('quality') if current_entry_ob else None),
-                                'tp_is_structural': entry_tp_is_structural,
-                                'tp_ob_bar': entry_tp_ob_bar,
-                                'tp_ob_quality': entry_tp_ob_quality,
-                                'hold_bars': i - entry_idx})
+                trades.append({
+                    'side': 'SHORT',
+                    'entry_idx': entry_idx,
+                    'exit_idx': i,
+                    'entry': entry_price,
+                    'exit': close,
+                    'stop_loss': stop_loss_price,
+                    'take_profit': take_profit_price,
+                    'pnl_pct': pnl,
+                    'entry_ob_bar': (current_entry_ob.get('ob_bar') if current_entry_ob else None),
+                    'entry_ob_quality': (current_entry_ob.get('quality') if current_entry_ob else None),
+                    'entry_ob_created_at': (current_entry_ob.get('created_at') if current_entry_ob else None),
+                    'entry_ob_level': (current_entry_ob.get('level') if current_entry_ob else None),
+                    'entry_ob_type': (current_entry_ob.get('type') if current_entry_ob else None),
+                    'tp_is_structural': entry_tp_is_structural,
+                    'tp_ob_bar': entry_tp_ob_bar,
+                    'tp_ob_quality': entry_tp_ob_quality,
+                    'tp_ob_created_at': (current_tp_ob.get('created_at') if (entry_tp_is_structural and current_tp_ob) else None),
+                    'tp_ob_level': (current_tp_ob.get('level') if (entry_tp_is_structural and current_tp_ob) else None),
+                    'tp_ob_type': (current_tp_ob.get('type') if (entry_tp_is_structural and current_tp_ob) else None),
+                    'hold_bars': i - entry_idx,
+                    'exit_reason': tag
+                })
                 current_entry_ob = None
+                current_tp_ob = None
                 entry_tp_is_structural = False
                 entry_tp_ob_bar = None
                 entry_tp_ob_quality = None
@@ -868,6 +933,7 @@ def simulate_trades(df, min_ob_quality=None):
 
     df.attrs['trade_stats'] = stats
     df.attrs['trades_df']   = trades_df
+    df.attrs['touches_df']  = pd.DataFrame(touches)
     return df
 
 

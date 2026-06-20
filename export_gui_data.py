@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
+import db_manager
 
 
 DEFAULT_LEVELS = [0, 1, 2, 3]
@@ -265,6 +266,142 @@ def export_artifacts(bot, args):
     pd.DataFrame(default_run["trades"]).to_csv(os.path.join(args.output_dir, "trades_default_view.csv"), index=False)
     pd.DataFrame(default_run["obs"]).to_csv(os.path.join(args.output_dir, "orderblocks_default_view.csv"), index=False)
 
+    # ─── DATABASE EXPORT ─────────────────────────────────────────────────────
+    print("Connecting to SQL database...")
+    db_url = args.db_url if args.db_url else db_manager.get_db_url()
+    try:
+        engine = db_manager.init_db(db_url)
+        db_manager.clear_db(engine)  # Fresh run, clear old values
+        session = db_manager.get_session(engine)
+        
+        print("Saving candles to database...")
+        candles_to_save = []
+        for _, row in base_df.iterrows():
+            candle_model = db_manager.Candle(
+                time=int(row['time']),
+                symbol=args.symbol,
+                interval=args.timeframe,
+                open=float(row['open']),
+                high=float(row['high']),
+                low=float(row['low']),
+                close=float(row['close']),
+                volume=float(row['volume']),
+                macd=float(row['MACD']) if pd.notnull(row['MACD']) else None,
+                macd_signal=float(row['MACD_signal']) if pd.notnull(row['MACD_signal']) else None,
+                macd_hist=float(row['MACD_hist']) if pd.notnull(row['MACD_hist']) else None,
+                k=float(row['K']) if pd.notnull(row['K']) else None,
+                d=float(row['D']) if pd.notnull(row['D']) else None,
+                j=float(row['J']) if pd.notnull(row['J']) else None,
+                atr_14=float(row['ATR']) if pd.notnull(row['ATR']) else None,
+                atr_200=float(row['ATR_200']) if pd.notnull(row['ATR_200']) else None
+            )
+            candles_to_save.append(candle_model)
+        session.bulk_save_objects(candles_to_save)
+        session.commit()
+
+        print("Saving order blocks to database...")
+        first_level = args.levels[0]
+        obs_raw = bot.compute_smc(sim_dfs[first_level])
+        
+        ob_lookup = {}
+        for ob in obs_raw:
+            ob_model = db_manager.OrderBlock(
+                symbol=args.symbol,
+                interval=args.timeframe,
+                type=ob['type'],
+                top=float(ob['top']),
+                bottom=float(ob['bottom']),
+                created_at=int(ob['created_at']),
+                ob_bar=int(ob['ob_bar']),
+                level=ob['level'],
+                structure=ob['structure'],
+                mitigated_at=int(ob['mitigated_at']) if (pd.notnull(ob.get('mitigated_at')) and ob['mitigated_at'] < len(base_df)) else None,
+                quality=int(ob['quality']),
+                quality_displacement=bool(ob.get('quality_displacement', False)),
+                quality_large_bar=bool(ob.get('quality_large_bar', False)),
+                quality_fvg=bool(ob.get('quality_fvg', False)),
+                quality_liquidity_sweep=bool(ob.get('quality_liquidity_sweep', False)),
+                quality_volume_expansion=bool(ob.get('quality_volume_expansion', False))
+            )
+            session.add(ob_model)
+            session.flush()  # Flush to generate ob_id
+            
+            key = (ob['created_at'], ob['ob_bar'], ob['type'], ob['level'])
+            ob_lookup[key] = ob_model.ob_id
+        session.commit()
+
+        print("Saving OB touch events to database...")
+        touches_df = sim_dfs[first_level].attrs.get('touches_df', pd.DataFrame())
+        if not touches_df.empty:
+            touches_to_save = []
+            for _, touch in touches_df.iterrows():
+                ob_key = (int(touch['ob_created_at']), int(touch['ob_bar']), touch['ob_type'], touch['ob_level'])
+                ob_id = ob_lookup.get(ob_key)
+                if ob_id is None:
+                    continue
+                touch_model = db_manager.OBTouch(
+                    ob_id=ob_id,
+                    time=int(touch['time']),
+                    touch_price=float(touch['touch_price']),
+                    macd=float(touch['macd']) if pd.notnull(touch['macd']) else None,
+                    macd_signal=float(touch['macd_signal']) if pd.notnull(touch['macd_signal']) else None,
+                    macd_hist=float(touch['macd_hist']) if pd.notnull(touch['macd_hist']) else None,
+                    k=float(touch['k']) if pd.notnull(touch['k']) else None,
+                    d=float(touch['d']) if pd.notnull(touch['d']) else None,
+                    j=float(touch['j']) if pd.notnull(touch['j']) else None,
+                    k_accel=float(touch['k_accel']) if pd.notnull(touch['k_accel']) else None,
+                    atr_14=float(touch['atr_14']) if pd.notnull(touch['atr_14']) else None,
+                    atr_200=float(touch['atr_200']) if pd.notnull(touch['atr_200']) else None
+                )
+                touches_to_save.append(touch_model)
+            session.bulk_save_objects(touches_to_save)
+            session.commit()
+
+        print("Saving trades to database...")
+        trades_to_save = []
+        for level in args.levels:
+            trades_df = sim_dfs[level].attrs.get("trades_df", pd.DataFrame())
+            if trades_df.empty:
+                continue
+            for _, tr in trades_df.iterrows():
+                entry_key = (int(tr['entry_ob_created_at']), int(tr['entry_ob_bar']), tr['entry_ob_type'], tr['entry_ob_level'])
+                entry_ob_id = ob_lookup.get(entry_key)
+                if entry_ob_id is None:
+                    continue
+                
+                tp_ob_id = None
+                if tr.get('tp_is_structural') and pd.notnull(tr.get('tp_ob_created_at')):
+                    tp_key = (int(tr['tp_ob_created_at']), int(tr['tp_ob_bar']), tr['tp_ob_type'], tr['tp_ob_level'])
+                    tp_ob_id = ob_lookup.get(tp_key)
+                
+                trade_model = db_manager.Trade(
+                    symbol=args.symbol,
+                    interval=args.timeframe,
+                    side=tr['side'],
+                    min_ob_quality=int(level),
+                    entry_time=int(base_df.loc[int(tr['entry_idx']), 'time']),
+                    exit_time=int(base_df.loc[int(tr['exit_idx']), 'time']),
+                    entry_price=float(tr['entry']),
+                    exit_price=float(tr['exit']),
+                    stop_loss=float(tr['stop_loss']),
+                    take_profit=float(tr['take_profit']),
+                    pnl_pct=float(tr['pnl_pct']),
+                    hold_bars=int(tr['hold_bars']),
+                    exit_reason=tr['exit_reason'],
+                    entry_ob_id=entry_ob_id,
+                    tp_ob_id=tp_ob_id
+                )
+                trades_to_save.append(trade_model)
+        if trades_to_save:
+            session.bulk_save_objects(trades_to_save)
+            session.commit()
+            
+        print("Database save completed successfully.")
+    except Exception as e:
+        import traceback
+        print(f"Warning: Failed to save results to database ({e})")
+        traceback.print_exc()
+
     if args.export_gsheet:
         print("Exporting to Google Sheets (optional mode)...")
         try:
@@ -286,6 +423,8 @@ def parse_args():
     parser.add_argument("--default-view-quality", type=int, default=1)
     parser.add_argument("--output-dir", default="artifacts")
     parser.add_argument("--export-gsheet", action="store_true")
+    parser.add_argument("--db-url", default=None, help="SQLAlchemy database URL connection string.")
+    parser.add_argument("--no-server", action="store_true", help="Skip launching the local dashboard web server.")
     args = parser.parse_args()
     args.levels = [int(x.strip()) for x in args.levels.split(",") if x.strip()]
     if not args.levels:
@@ -306,6 +445,10 @@ def main():
     print(f"Thresholds: {', '.join([str(x['min_quality']) for x in threshold_runs])}")
     print(f"Verification: {verification_report['status']}")
     print(f"Artifacts directory: {args.output_dir}")
+
+    if getattr(args, 'no_server', False):
+        print("\nSkipping local dashboard web server (--no-server was set).")
+        return
 
     # Start local web server and open browser
     PORT = 8765
