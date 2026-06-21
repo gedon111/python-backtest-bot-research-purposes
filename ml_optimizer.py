@@ -202,17 +202,30 @@ def main():
     # Save the model to a local pickle file
     timestamp = int(time.time())
     
-    # Create iteration record
-    # We query the database to get the next iteration ID (or let database autoincrement do it, then update)
-    # To do it cleanly, we commit a blank record first or use raw connection
-    metrics = {
-        "original_trades": len(trades_df),
-        "original_pnl_pct": float(trades_df['pnl_pct'].sum()) if not trades_df.empty else 0.0,
-        "original_win_rate": float((trades_df['pnl_pct'] > 0).mean() * 100) if not trades_df.empty else 0.0,
-        "optimized_trades": len(filtered_trades) if classifier_model else len(trades_df),
-        "optimized_pnl_pct": float(filtered_trades['pnl_pct'].sum()) if classifier_model else float(trades_df['pnl_pct'].sum()) if not trades_df.empty else 0.0,
-        "optimized_win_rate": float((filtered_trades['pnl_pct'] > 0).mean() * 100) if classifier_model else float((trades_df['pnl_pct'] > 0).mean() * 100) if not trades_df.empty else 0.0
-    }
+    # Calculate metrics for all quality levels (0, 1, 2, 3)
+    metrics = {}
+    for q in [0, 1, 2, 3]:
+        # 1. Base simulation (tuned params, no classifier)
+        base_sim_df = bot.simulate_trades(df.copy(), min_ob_quality=q, iteration_parameters=best_params)
+        base_trades_df = base_sim_df.attrs.get("trades_df", pd.DataFrame())
+        
+        # 2. Optimized simulation (tuned params + classifier)
+        opt_params = best_params.copy()
+        if classifier_model is not None:
+            opt_params["classifier_model"] = classifier_model
+            opt_params["classifier_threshold"] = classifier_threshold
+        
+        opt_sim_df = bot.simulate_trades(df.copy(), min_ob_quality=q, iteration_parameters=opt_params)
+        opt_trades_df = opt_sim_df.attrs.get("trades_df", pd.DataFrame())
+        
+        metrics[f"q{q}"] = {
+            "base_trades": len(base_trades_df),
+            "base_pnl": float(base_trades_df['pnl_pct'].sum()) if not base_trades_df.empty else 0.0,
+            "base_wr": float((base_trades_df['pnl_pct'] > 0).mean() * 100) if not base_trades_df.empty else 0.0,
+            "tuned_trades": len(opt_trades_df),
+            "tuned_pnl": float(opt_trades_df['pnl_pct'].sum()) if not opt_trades_df.empty else 0.0,
+            "tuned_wr": float((opt_trades_df['pnl_pct'] > 0).mean() * 100) if not opt_trades_df.empty else 0.0
+        }
     
     pattern_diff = {
         "tuned_parameters": best_params,

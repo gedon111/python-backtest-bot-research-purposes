@@ -487,6 +487,8 @@ def main():
                 self.handle_select_iteration()
             elif self.path == "/api/push_gsheet":
                 self.handle_push_gsheet()
+            elif self.path == "/api/iterations/delete":
+                self.handle_delete_iteration()
             else:
                 self.send_error(404, "Endpoint not found")
 
@@ -494,8 +496,67 @@ def main():
             try:
                 engine = db_manager.init_db()
                 session = db_manager.get_session(engine)
+                
+                # Fetch baseline metrics by querying trades table
+                # We need stats for min_ob_quality levels 0, 1, 2, 3
+                trades = []
+                try:
+                    trades = session.query(db_manager.Trade).all()
+                except Exception as e:
+                    print(f"Warning: failed to query trades table: {e}")
+                
+                base_metrics = {}
+                for q in [0, 1, 2, 3]:
+                    q_trades = [t for t in trades if t.min_ob_quality == q]
+                    count = len(q_trades)
+                    pnl = sum(t.pnl_pct for t in q_trades)
+                    win_count = sum(1 for t in q_trades if t.pnl_pct > 0)
+                    wr = (win_count / count * 100) if count > 0 else 0.0
+                    base_metrics[f"q{q}"] = {
+                        "base_trades": count,
+                        "base_pnl": pnl,
+                        "base_wr": wr,
+                        "tuned_trades": count,
+                        "tuned_pnl": pnl,
+                        "tuned_wr": wr
+                    }
+                
+                # Prepend the Heuristic Base ID 0 iteration
+                base_iter = {
+                    "iteration_id": 0,
+                    "label": "Heuristic Base (No ML)",
+                    "created_at": 1782016399,
+                    "model_type": "Heuristic Base",
+                    "parameters": {
+                        "sl_ratio_min": 0.015,
+                        "kdj_j_long_cap": 60.0,
+                        "kdj_k_long_cap": 50.0,
+                        "kdj_k_short_floor": 70.0,
+                        "kdj_j_short_cap": 100.0,
+                        "atr_mult_exit": 1.8,
+                        "atr_mult_be": 2.0,
+                        "rr_min": 1.5,
+                        "classifier_threshold": 0.5
+                    },
+                    "metrics": base_metrics,
+                    "pattern_diff": {
+                        "tuned_parameters": {
+                            "sl_ratio_min": 0.015,
+                            "kdj_j_long_cap": 60.0,
+                            "kdj_k_long_cap": 50.0,
+                            "kdj_k_short_floor": 70.0,
+                            "kdj_j_short_cap": 100.0,
+                            "atr_mult_exit": 1.8,
+                            "atr_mult_be": 2.0,
+                            "rr_min": 1.5
+                        },
+                        "pnl_improvement_pct": 0.0,
+                        "reweighted_failures_count": 0
+                    }
+                }
+                
                 iterations = session.query(db_manager.MLIteration).order_by(db_manager.MLIteration.iteration_id.asc()).all()
-                data = []
+                data = [base_iter]
                 for it in iterations:
                     data.append({
                         "iteration_id": it.iteration_id,
@@ -512,7 +573,51 @@ def main():
                 self.end_headers()
                 self.wfile.write(json.dumps(data).encode("utf-8"))
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 self.send_error(500, f"Database error: {e}")
+
+        def handle_delete_iteration(self):
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                body = self.rfile.read(content_length).decode('utf-8')
+                params = json.loads(body)
+                it_id = int(params["iteration_id"])
+                
+                if it_id == 0:
+                    self.send_error(400, "Cannot delete Heuristic Base iteration")
+                    return
+                
+                engine = db_manager.init_db()
+                session = db_manager.get_session(engine)
+                iteration = session.query(db_manager.MLIteration).filter(db_manager.MLIteration.iteration_id == it_id).first()
+                if iteration:
+                    try:
+                        it_params = json.loads(iteration.parameters)
+                        model_path = it_params.get("classifier_model_path")
+                        if model_path and os.path.isfile(model_path):
+                            os.remove(model_path)
+                            print(f"Deleted model file: {model_path}")
+                    except Exception as e:
+                        print(f"Warning: Failed to delete model file: {e}")
+                    
+                    session.delete(iteration)
+                    session.commit()
+                    session.close()
+                    
+                    global SELECTED_ITERATION_ID
+                    if SELECTED_ITERATION_ID == it_id:
+                        SELECTED_ITERATION_ID = 0
+                    
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"status": "Success"}).encode("utf-8"))
+                else:
+                    session.close()
+                    self.send_error(404, "Iteration not found")
+            except Exception as e:
+                self.send_error(500, f"Error deleting iteration: {e}")
 
         def handle_get_ml_status(self):
             status_path = "artifacts/ml_status.json"

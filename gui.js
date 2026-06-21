@@ -613,12 +613,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const btnSyncGsheet = document.getElementById('btn-sync-gsheet');
         
         const compCard = document.getElementById('ml-comparison-card');
-        const compParamsList = document.getElementById('comp-params-list');
-        const compMetricsList = document.getElementById('comp-metrics-list');
-        const compPatternsList = document.getElementById('comp-patterns-list');
+        const compParamsContainer = document.getElementById('comp-params-container');
+        const compMetricsContainer = document.getElementById('comp-metrics-container');
+        const compPatternsContainer = document.getElementById('comp-patterns-container');
 
         let isTraining = false;
         let pollInterval = null;
+        let heuristicBaseIteration = null;
 
         // Fetch and render iterations
         async function loadIterations() {
@@ -627,20 +628,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!res.ok) throw new Error("Failed to fetch iterations");
                 const iterations = await res.json();
                 
+                // Store reference to heuristic baseline (ID 0)
+                heuristicBaseIteration = iterations.find(it => it.iteration_id === 0);
+                
                 // Clear and populate dropdowns
-                strategySelect.innerHTML = '<option value="0">Heuristic Base (No ML)</option>';
+                strategySelect.innerHTML = '';
                 mlPrevSelect.innerHTML = '<option value="none">None (Fresh Start)</option>';
                 
                 iterations.forEach(it => {
                     const opt1 = document.createElement('option');
                     opt1.value = it.iteration_id;
-                    opt1.textContent = `[ID ${it.iteration_id}] ${it.label}`;
+                    opt1.textContent = it.iteration_id === 0 ? "Heuristic Base (No ML)" : `[ID ${it.iteration_id}] ${it.label}`;
                     strategySelect.appendChild(opt1);
 
-                    const opt2 = document.createElement('option');
-                    opt2.value = it.iteration_id;
-                    opt2.textContent = `[ID ${it.iteration_id}] ${it.label}`;
-                    mlPrevSelect.appendChild(opt2);
+                    if (it.iteration_id !== 0) {
+                        const opt2 = document.createElement('option');
+                        opt2.value = it.iteration_id;
+                        opt2.textContent = `[ID ${it.iteration_id}] ${it.label}`;
+                        mlPrevSelect.appendChild(opt2);
+                    }
                 });
 
                 // Render Iterations Table
@@ -652,17 +658,43 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const tr = document.createElement('tr');
                         tr.style.borderBottom = '1px solid var(--border)';
                         
-                        const pnl = it.metrics.optimized_pnl_pct != null ? it.metrics.optimized_pnl_pct.toFixed(2) : '0.00';
-                        const wr = it.metrics.optimized_win_rate != null ? it.metrics.optimized_win_rate.toFixed(2) : '0.00';
+                        let pnlVal = 0;
+                        let wrVal = 0;
+                        if (it.iteration_id === 0) {
+                            pnlVal = (it.metrics && it.metrics.q1) ? it.metrics.q1.base_pnl : 0;
+                            wrVal = (it.metrics && it.metrics.q1) ? it.metrics.q1.base_wr : 0;
+                        } else if (it.metrics && it.metrics.q1) {
+                            pnlVal = it.metrics.q1.tuned_pnl;
+                            wrVal = it.metrics.q1.tuned_wr;
+                        } else if (it.metrics && it.metrics.optimized_pnl_pct != null) {
+                            pnlVal = it.metrics.optimized_pnl_pct;
+                            wrVal = it.metrics.optimized_win_rate;
+                        }
+                        const pnl = pnlVal.toFixed(2);
+                        const wr = wrVal.toFixed(2);
+                        
+                        let actionButtonsHtml = '';
+                        if (it.iteration_id === 0) {
+                            actionButtonsHtml = `
+                                <button class="btn-action-small activate" onclick="window.selectMLIteration(0)">Activate</button>
+                                <button class="btn-action-small rename" disabled>Rename</button>
+                                <button class="btn-action-small delete" disabled>Delete</button>
+                            `;
+                        } else {
+                            actionButtonsHtml = `
+                                <button class="btn-action-small activate" onclick="window.selectMLIteration(${it.iteration_id})">Activate</button>
+                                <button class="btn-action-small rename" onclick="window.renameMLIteration(${it.iteration_id}, '${it.label.replace(/'/g, "\\'")}')">Rename</button>
+                                <button class="btn-action-small delete" onclick="window.deleteMLIteration(${it.iteration_id})">Delete</button>
+                            `;
+                        }
                         
                         tr.innerHTML = `
                             <td style="padding: 10px;">${it.iteration_id}</td>
                             <td style="padding: 10px; font-weight: 500;" id="label-cell-${it.iteration_id}">${it.label}</td>
-                            <td style="padding: 10px; color: ${pnl >= 0 ? '#10b981' : '#ef4444'}">${pnl}%</td>
+                            <td style="padding: 10px; color: ${pnlVal >= 0 ? '#10b981' : '#ef4444'}">${pnl}%</td>
                             <td style="padding: 10px;">${wr}%</td>
-                            <td style="padding: 10px;">
-                                <button class="btn-toggle" onclick="window.selectMLIteration(${it.iteration_id})" style="padding: 3px 8px; font-size: 0.8rem; background: #3b82f6; color: white; border: none; cursor: pointer; border-radius: 3px; font-family: inherit;">Activate</button>
-                                <button class="btn-toggle" onclick="window.renameMLIteration(${it.iteration_id}, '${it.label.replace(/'/g, "\\'")}')" style="padding: 3px 8px; font-size: 0.8rem; background: #475569; color: white; border: none; cursor: pointer; border-radius: 3px; font-family: inherit; margin-left: 5px;">Rename</button>
+                            <td style="padding: 10px; white-space: nowrap;">
+                                ${actionButtonsHtml}
                             </td>
                         `;
                         tr.style.cursor = 'pointer';
@@ -690,6 +722,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         window.renameMLIteration = async function(id, currentLabel) {
+            if (id === 0) return;
             const newLabel = prompt("Enter new label for this iteration:", currentLabel);
             if (newLabel === null || newLabel.trim() === "") return;
             
@@ -706,52 +739,194 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
 
+        window.deleteMLIteration = async function(id) {
+            if (id === 0) {
+                alert("Cannot delete Heuristic Base.");
+                return;
+            }
+            if (!confirm(`Are you sure you want to delete ML Iteration ID ${id}? This will permanently remove its database record and the trained classifier model file.`)) {
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/iterations/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ iteration_id: id })
+                });
+                if (!res.ok) throw new Error("Deletion failed on server");
+                
+                if (strategySelect.value == id) {
+                    strategySelect.value = "0";
+                    await handleStrategyChange(0);
+                }
+                
+                alert(`Iteration ID ${id} deleted successfully.`);
+                await loadIterations();
+                compCard.style.display = 'none';
+            } catch (err) {
+                alert("Error deleting iteration: " + err.message);
+            }
+        };
+
         // Render iteration comparison card details
         function showComparison(it) {
             compCard.style.display = 'block';
             
-            // 1. Tuned parameters
-            compParamsList.innerHTML = '';
-            const p = it.parameters;
+            // 1. Tuned parameters comparison table
+            compParamsContainer.innerHTML = '';
             const paramLabels = {
                 sl_ratio_min: 'Min SL Distance',
                 kdj_j_long_cap: 'KDJ J Long Cap',
                 kdj_k_long_cap: 'KDJ K Long Cap',
                 kdj_k_short_floor: 'KDJ K Short Floor',
                 kdj_j_short_cap: 'KDJ J Short Cap',
-                atr_mult_exit: 'ATR Move Exit Mult',
+                atr_mult_exit: 'ATR Exit Mult',
                 atr_mult_be: 'ATR BE SL Mult',
-                rr_min: 'Min Reward/Risk Ratio'
+                rr_min: 'Min RR Ratio'
             };
-            Object.keys(paramLabels).forEach(key => {
-                if (p[key] !== undefined) {
-                    const li = document.createElement('li');
-                    li.innerHTML = `<strong>${paramLabels[key]}:</strong> ${p[key]}`;
-                    compParamsList.appendChild(li);
-                }
-            });
-
-            // 2. Metrics (Heuristic vs Optimized side-by-side)
-            compMetricsList.innerHTML = `
-                <li><strong>Net PnL (Base):</strong> ${it.metrics.original_pnl_pct.toFixed(2)}%</li>
-                <li><strong>Net PnL (ML Filtered):</strong> <span style="color:#10b981; font-weight:bold;">${it.metrics.optimized_pnl_pct.toFixed(2)}%</span></li>
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 8px 0;">
-                <li><strong>Win Rate (Base):</strong> ${it.metrics.original_win_rate.toFixed(2)}%</li>
-                <li><strong>Win Rate (ML Filtered):</strong> <span style="color:#10b981; font-weight:bold;">${it.metrics.optimized_win_rate.toFixed(2)}%</span></li>
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 8px 0;">
-                <li><strong>Total Trades (Base):</strong> ${it.metrics.original_trades}</li>
-                <li><strong>Total Trades (ML Filtered):</strong> ${it.metrics.optimized_trades}</li>
+            
+            const baseParams = (heuristicBaseIteration && heuristicBaseIteration.parameters) ? heuristicBaseIteration.parameters : {};
+            const tunedParams = it.parameters || {};
+            
+            let paramsTableHtml = `
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">Parameter</th>
+                            <th>Base</th>
+                            <th>Tuned</th>
+                            <th>Diff</th>
+                        </tr>
+                    </thead>
+                    <tbody>
             `;
+            
+            Object.keys(paramLabels).forEach(key => {
+                const baseVal = baseParams[key] !== undefined ? baseParams[key] : 0;
+                const tunedVal = tunedParams[key] !== undefined ? tunedParams[key] : baseVal;
+                const diff = tunedVal - baseVal;
+                
+                let diffStr = diff.toFixed(3);
+                if (diff > 0) diffStr = `+${diffStr}`;
+                else if (diff === 0) diffStr = `0.000`;
+                
+                let diffClass = '';
+                if (diff > 0) diffClass = 'diff-pos';
+                else if (diff < 0) diffClass = 'diff-neg';
+                
+                paramsTableHtml += `
+                    <tr>
+                        <td class="param-label" style="text-align:left;">${paramLabels[key]}</td>
+                        <td>${baseVal.toFixed(3)}</td>
+                        <td>${tunedVal.toFixed(3)}</td>
+                        <td class="${diffClass}">${diffStr}</td>
+                    </tr>
+                `;
+            });
+            
+            paramsTableHtml += `
+                    </tbody>
+                </table>
+            `;
+            compParamsContainer.innerHTML = paramsTableHtml;
+
+            // 2. Metrics comparison table (Base vs Tuned across all Quality levels)
+            compMetricsContainer.innerHTML = '';
+            let metricsTableHtml = `
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">Quality</th>
+                            <th>Base PnL</th>
+                            <th>Tuned PnL</th>
+                            <th>Base WR</th>
+                            <th>Tuned WR</th>
+                            <th>Trades (B/T)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            [0, 1, 2, 3].forEach(q => {
+                const key = `q${q}`;
+                
+                let baseM = { pnl: 0, wr: 0, trades: 0 };
+                if (heuristicBaseIteration && heuristicBaseIteration.metrics && heuristicBaseIteration.metrics[key]) {
+                    baseM = {
+                        pnl: heuristicBaseIteration.metrics[key].base_pnl,
+                        wr: heuristicBaseIteration.metrics[key].base_wr,
+                        trades: heuristicBaseIteration.metrics[key].base_trades
+                    };
+                }
+                
+                let tunedM = { pnl: 0, wr: 0, trades: 0 };
+                if (it.metrics && it.metrics[key]) {
+                    tunedM = {
+                        pnl: it.metrics[key].tuned_pnl,
+                        wr: it.metrics[key].tuned_wr,
+                        trades: it.metrics[key].tuned_trades
+                    };
+                } else if (it.metrics && it.metrics.optimized_pnl_pct != null && q === 1) {
+                    tunedM = {
+                        pnl: it.metrics.optimized_pnl_pct,
+                        wr: it.metrics.optimized_win_rate,
+                        trades: it.metrics.optimized_trades
+                    };
+                }
+                
+                const pnlDiff = tunedM.pnl - baseM.pnl;
+                const wrDiff = tunedM.wr - baseM.wr;
+                
+                let pnlClass = pnlDiff > 0 ? 'diff-pos' : (pnlDiff < 0 ? 'diff-neg' : '');
+                let wrClass = wrDiff > 0 ? 'diff-pos' : (wrDiff < 0 ? 'diff-neg' : '');
+                
+                metricsTableHtml += `
+                    <tr>
+                        <td class="param-label" style="text-align:left;">Quality ${q}</td>
+                        <td style="color: ${baseM.pnl >= 0 ? '#10b981' : '#ef4444'}">${baseM.pnl.toFixed(1)}%</td>
+                        <td class="${pnlClass}" style="border-right: 1px solid var(--border);">${tunedM.pnl.toFixed(1)}%</td>
+                        <td>${baseM.wr.toFixed(1)}%</td>
+                        <td class="${wrClass}" style="border-right: 1px solid var(--border);">${tunedM.wr.toFixed(1)}%</td>
+                        <td>${baseM.trades} / ${tunedM.trades}</td>
+                    </tr>
+                `;
+            });
+            
+            metricsTableHtml += `
+                    </tbody>
+                </table>
+            `;
+            compMetricsContainer.innerHTML = metricsTableHtml;
 
             // 3. Pattern Recognition Analysis
-            compPatternsList.innerHTML = `
-                <li><strong>Classifier Model:</strong> RandomForest</li>
-                <li><strong>Pattern Improvement:</strong> ${it.pattern_diff.pnl_improvement_pct >= 0 ? '+' : ''}${it.pattern_diff.pnl_improvement_pct.toFixed(2)}% net</li>
-                <li><strong>Feedback Reweights:</strong> Loaded ${it.pattern_diff.reweighted_failures_count} error patterns</li>
-                <li style="margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); font-style: italic;">
-                    * The classifier scores indicators & OB touches at setup entry, automatically screening out negative expectancy patterns.
-                </li>
-            `;
+            compPatternsContainer.innerHTML = '';
+            let patternsHtml = '';
+            if (it.iteration_id === 0) {
+                patternsHtml = `
+                    <div style="font-size: 0.82rem; line-height: 1.6; color: var(--text-muted);">
+                        <p>This is the <strong>Heuristic Base Strategy</strong> settings without any Machine Learning optimizations.</p>
+                        <p style="margin-top: 10px;">Select another iteration from the list to see parameter changes and classifier performance.</p>
+                    </div>
+                `;
+            } else {
+                const diff = it.pattern_diff || {};
+                const pnlImp = diff.pnl_improvement_pct !== undefined ? diff.pnl_improvement_pct : 0;
+                const rewCount = diff.reweighted_failures_count !== undefined ? diff.reweighted_failures_count : 0;
+                
+                patternsHtml = `
+                    <ul style="list-style: none; padding: 0; font-size: 0.82rem; font-family: monospace; line-height: 1.8; margin:0;">
+                        <li><strong>Classifier Model:</strong> ${it.model_type || 'RandomForest'}</li>
+                        <li><strong>ML Threshold:</strong> ${it.parameters.classifier_threshold || '0.50'}</li>
+                        <li><strong>PnL Improvement:</strong> <span class="${pnlImp >= 0 ? 'diff-pos' : 'diff-neg'}">${pnlImp >= 0 ? '+' : ''}${pnlImp.toFixed(2)}%</span></li>
+                        <li><strong>Error Reweights:</strong> ${rewCount} failed trades re-weighted</li>
+                        <li style="margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); font-style: italic; font-family: var(--font-family); line-height: 1.4;">
+                            * The RandomForest Classifier scores indicators & OB touches at setup entry, automatically screening out negative expectancy patterns.
+                        </li>
+                    </ul>
+                `;
+            }
+            compPatternsContainer.innerHTML = patternsHtml;
         }
 
         // Handle strategy active changes

@@ -604,3 +604,85 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Small Action Buttons in ML Iterations Table */
+.btn-action-small {
+    width: 72px;
+    padding: 6px 0;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    text-align: center;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    font-weight: 600;
+    display: inline-block;
+    color: white;
+    transition: background-color 0.2s, opacity 0.2s;
+    margin-right: 4px;
+}
+
+.btn-action-small.activate {
+    background-color: #3b82f6;
+}
+.btn-action-small.activate:hover {
+    background-color: #2563eb;
+}
+
+.btn-action-small.rename {
+    background-color: #475569;
+}
+.btn-action-small.rename:hover {
+    background-color: #334155;
+}
+
+.btn-action-small.delete {
+    background-color: #ef4444;
+}
+.btn-action-small.delete:hover {
+    background-color: #dc2626;
+}
+
+.btn-action-small:disabled,
+.btn-action-small.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: #475569 !important;
+}
+
+/* Comparison Tables in ML Comparison Card */
+.comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    color: var(--text-main);
+    font-family: monospace;
+}
+.comp-table th, .comp-table td {
+    padding: 6px 6px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+}
+.comp-table th:first-child, .comp-table td:first-child {
+    text-align: left;
+}
+.comp-table th {
+    color: var(--text-muted);
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+}
+.comp-table td.diff-pos {
+    color: #10b981;
+    font-weight: bold;
+}
+.comp-table td.diff-neg {
+    color: #ef4444;
+    font-weight: bold;
+}
+.comp-table td.param-label {
+    font-weight: bold;
+    color: var(--text-muted);
+}
+
+
