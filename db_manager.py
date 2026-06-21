@@ -32,10 +32,28 @@ class Candle(Base):
     j = Column(Float)
     atr_14 = Column(Float)
     atr_200 = Column(Float)
+    volume_ma_ratio = Column(Float)
+    taker_buy_ratio = Column(Float)
+    body_wick_ratio = Column(Float)
+    time_hour = Column(Integer)
+    time_day_of_week = Column(Integer)
 
     __table_args__ = (
         Index('idx_candles_sym_int_time', 'symbol', 'interval', 'time'),
     )
+
+
+class MLIteration(Base):
+    __tablename__ = 'ml_iterations'
+    
+    iteration_id = Column(Integer, primary_key=True, autoincrement=True)
+    label = Column(String(100), nullable=False)
+    created_at = Column(Integer, nullable=False) # unix timestamp
+    model_type = Column(String(50), nullable=False) # 'RandomForest'
+    parameters = Column(String, nullable=False) # JSON string ofOverrides (MACD, KDJ, ATR gates)
+    metrics = Column(String, nullable=False)    # JSON string of training performance (Win Rate, Net PnL, Drawdown)
+    pattern_diff = Column(String, nullable=False) # JSON of what changed from base or what patterns were targeted
+
 
 
 class OrderBlock(Base):

@@ -125,10 +125,10 @@ def get_candles(symbol="BTCUSDT", interval=Client.KLINE_INTERVAL_4HOUR,
         "open_time", "open", "high", "low", "close", "volume",
         "close_time", "quote_asset_volume", "num_trades",
         "taker_buy_base", "taker_buy_quote", "ignore"])
-    df = df.iloc[:, :6]
+    df = df[["open_time", "open", "high", "low", "close", "volume", "num_trades", "taker_buy_base"]].copy()
     df["open_time"] = (pd.to_datetime(df["open_time"], unit='ms')
                        + pd.Timedelta(hours=8))
-    for col in ["open", "high", "low", "close", "volume"]:
+    for col in ["open", "high", "low", "close", "volume", "num_trades", "taker_buy_base"]:
         df[col] = df[col].astype(float)
     return df.reset_index(drop=True)
 
@@ -175,6 +175,25 @@ def compute_indicators(df, kdj_period=9, atr_period=14):
     ], axis=1).max(axis=1)
     df['ATR']     = tr.rolling(atr_period, min_periods=1).mean()
     df['ATR_200'] = tr.rolling(200,         min_periods=1).mean()
+
+    # Safeguard for missing columns in cached files
+    if 'num_trades' not in df.columns:
+        df['num_trades'] = 0.0
+    if 'taker_buy_base' not in df.columns:
+        df['taker_buy_base'] = df['volume'] * 0.5
+
+    # ML Feature calculations
+    vol_ma = df['volume'].rolling(20, min_periods=1).mean()
+    df['volume_ma_ratio'] = np.where(vol_ma > 0, df['volume'] / vol_ma, 1.0)
+    df['taker_buy_ratio'] = np.where(df['volume'] > 0, df['taker_buy_base'] / df['volume'], 0.5)
+    
+    body = (df['close'] - df['open']).abs()
+    rng = df['high'] - df['low']
+    df['body_wick_ratio'] = np.where(rng > 0, body / rng, 0.0)
+    
+    open_time_dt = pd.to_datetime(df['open_time'])
+    df['time_hour'] = open_time_dt.dt.hour
+    df['time_day_of_week'] = open_time_dt.dt.dayofweek
 
     return df
 
@@ -513,14 +532,38 @@ def kdj_reset_exit(state, side):
 MIN_OB_QUALITY = 1
 
 
-def simulate_trades(df, min_ob_quality=None):
+_smc_cache = {}
+
+
+def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
+    if iteration_parameters is None:
+        iteration_parameters = {}
+    
+    sl_ratio_min = iteration_parameters.get('sl_ratio_min', 0.015)
+    kdj_j_long_cap = iteration_parameters.get('kdj_j_long_cap', 60.0)
+    kdj_k_long_cap = iteration_parameters.get('kdj_k_long_cap', 50.0)
+    kdj_k_short_floor = iteration_parameters.get('kdj_k_short_floor', 70.0)
+    kdj_j_short_cap = iteration_parameters.get('kdj_j_short_cap', 100.0)
+    atr_mult_exit = iteration_parameters.get('atr_mult_exit', 1.8)
+    atr_mult_be = iteration_parameters.get('atr_mult_be', 2.0)
+    rr_min = iteration_parameters.get('rr_min', 1.5)
+
     current_entry_ob = None
     current_tp_ob = None
     entry_tp_is_structural = False
     entry_tp_ob_bar = None
     entry_tp_ob_quality = None
-    df  = compute_indicators(df)
-    obs = compute_smc(df)
+    
+    if 'MACD' not in df.columns:
+        df = compute_indicators(df)
+        
+    global _smc_cache
+    df_key = (len(df), float(df['close'].iloc[-1]) if not df.empty else 0.0)
+    if df_key in _smc_cache:
+        obs = _smc_cache[df_key]
+    else:
+        obs = compute_smc(df)
+        _smc_cache[df_key] = obs
 
     for col in ['Trade_Status', 'Active_Supply', 'Active_Demand']:
         df[col] = ''
@@ -562,7 +605,7 @@ def simulate_trades(df, min_ob_quality=None):
         k_accel = (K - K_prev) - (K_prev - K2)            # [v7] K acceleration
         atr_r   = ATR / ATR_200 if ATR_200 > 0 else 1.0  # [v7] volatility regime
 
-        local_min_quality = MIN_OB_QUALITY if min_ob_quality is None else int(min_ob_quality)
+        local_min_quality = iteration_parameters.get('min_ob_quality', MIN_OB_QUALITY if min_ob_quality is None else int(min_ob_quality))
 
         valid_obs_entries = [
             ob for ob in obs
@@ -645,7 +688,7 @@ def simulate_trades(df, min_ob_quality=None):
                 if not (p_hist > pp_hist):
                     continue
                 # ── [v5→v6] J < 60 cap retained, Displacement gate removed ──
-                if not (K < 50 and K > K_prev and J < 60):
+                if not (K < kdj_k_long_cap and K > K_prev and J < kdj_j_long_cap):
                     continue
                 # ── [v7→v8] K acceleration window [1, 6] ─────────────────
                 # v7: k_accel >= 1  (floor only)
@@ -663,11 +706,27 @@ def simulate_trades(df, min_ob_quality=None):
                 # ── [v9 FILTER 1] SL must be >= 1.5% from entry ──────────
                 # Thin OBs sit inside normal 4H noise → stopped before move.
                 # 10 trades < 1.5% SL had 23% WR. Blocked 7 losers, 3 small winners.
-                if risk / close < 0.015: continue
+                if risk / close < sl_ratio_min: continue
 
                 stp = get_structural_tp(close, 'LONG', valid_obs_tp)
                 tp  = stp if stp else close + risk * 2.0
-                if (tp - close) / risk < 1.5: continue
+                if (tp - close) / risk < rr_min: continue
+
+                # ML Classifier filter
+                classifier = iteration_parameters.get('classifier_model')
+                if classifier is not None:
+                    features = [
+                        float(df.at[i, 'MACD']), float(df.at[i, 'MACD_signal']), float(df.at[i, 'MACD_hist']),
+                        float(df.at[i, 'K']), float(df.at[i, 'D']), float(df.at[i, 'J']),
+                        float(df.at[i, 'ATR']), float(df.at[i, 'ATR_200']),
+                        float(df.at[i, 'volume_ma_ratio']), float(df.at[i, 'taker_buy_ratio']),
+                        float(df.at[i, 'body_wick_ratio']), float(df.at[i, 'time_hour']),
+                        float(df.at[i, 'time_day_of_week']), float(ob['quality'])
+                    ]
+                    prob = classifier.predict_proba([features])[0][1]
+                    threshold = iteration_parameters.get('classifier_threshold', 0.5)
+                    if prob < threshold:
+                        continue
 
                 position          = 'LONG'
                 entry_price       = close
@@ -719,12 +778,12 @@ def simulate_trades(df, min_ob_quality=None):
                     # ── [v8 FILTER 4] SHORT K floor: must be overbought ────
                     # K=63.7 SHORT lost −2.68%. All winners had K >= 77.
                     # K >= 70 = genuinely overbought zone for a SHORT entry.
-                    if K < 70:
+                    if K < kdj_k_short_floor:
                         continue
                     # ── [v8 FILTER 5] SHORT J cap: exhaustion already done ─
                     # J > 100 means overbought move is already in extreme.
                     # Both J>100 entries lost (−1.58%, −0.31%). Cap at 100.
-                    if J > 100:
+                    if J > kdj_j_short_cap:
                         continue
                     # ── [v5→v6] Displacement gate removed ────────────────
                     # Quality score already includes displacement as a component.
@@ -733,11 +792,27 @@ def simulate_trades(df, min_ob_quality=None):
                     risk = sl - close
                     if risk <= 0: continue
                     # ── [v9 FILTER 1] SL must be >= 1.5% from entry ──────
-                    if risk / close < 0.015: continue
+                    if risk / close < sl_ratio_min: continue
 
                     stp = get_structural_tp(close, 'SHORT', valid_obs_tp)
                     tp  = stp if stp else close - risk * 2.0
-                    if (close - tp) / risk < 1.5: continue
+                    if (close - tp) / risk < rr_min: continue
+
+                    # ML Classifier filter
+                    classifier = iteration_parameters.get('classifier_model')
+                    if classifier is not None:
+                        features = [
+                            float(df.at[i, 'MACD']), float(df.at[i, 'MACD_signal']), float(df.at[i, 'MACD_hist']),
+                            float(df.at[i, 'K']), float(df.at[i, 'D']), float(df.at[i, 'J']),
+                            float(df.at[i, 'ATR']), float(df.at[i, 'ATR_200']),
+                            float(df.at[i, 'volume_ma_ratio']), float(df.at[i, 'taker_buy_ratio']),
+                            float(df.at[i, 'body_wick_ratio']), float(df.at[i, 'time_hour']),
+                            float(df.at[i, 'time_day_of_week']), float(ob['quality'])
+                        ]
+                        prob = classifier.predict_proba([features])[0][1]
+                        threshold = iteration_parameters.get('classifier_threshold', 0.5)
+                        if prob < threshold:
+                            continue
 
                     position          = 'SHORT'
                     entry_price       = close
@@ -826,11 +901,11 @@ def simulate_trades(df, min_ob_quality=None):
                 close_trade('KDJ RESET EXIT', pnl_pct)
                 continue
 
-            if entry_atr > 0 and close >= entry_price + entry_atr * 1.8:
+            if entry_atr > 0 and close >= entry_price + entry_atr * atr_mult_exit:
                 close_trade('ATR MOVE EXIT', pnl_pct)
                 continue
 
-            if close >= entry_price + entry_atr * 2:
+            if close >= entry_price + entry_atr * atr_mult_be:
                 stop_loss_price = max(stop_loss_price, entry_price)
                 df.at[i, 'Stop_Loss'] = stop_loss_price
 
@@ -900,11 +975,11 @@ def simulate_trades(df, min_ob_quality=None):
                 close_trade('KDJ RESET EXIT', pnl_pct)
                 continue
 
-            if entry_atr > 0 and close <= entry_price - entry_atr * 1.8:
+            if entry_atr > 0 and close <= entry_price - entry_atr * atr_mult_exit:
                 close_trade('ATR MOVE EXIT', pnl_pct)
                 continue
 
-            if close <= entry_price - entry_atr * 2:
+            if close <= entry_price - entry_atr * atr_mult_be:
                 stop_loss_price = min(stop_loss_price, entry_price)
                 df.at[i, 'Stop_Loss'] = stop_loss_price
 
