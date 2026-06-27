@@ -155,6 +155,12 @@ def get_session(engine):
 
 
 def clear_db(engine):
-    """Drop and recreate all tables."""
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
+    """Clear candles, order_blocks, ob_touches, and trades tables but keep ml_iterations."""
+    from sqlalchemy import text
+    tables = ['ob_touches', 'trades', 'order_blocks', 'candles']
+    with engine.begin() as conn:
+        for table in tables:
+            try:
+                conn.execute(text(f"DELETE FROM {table}"))
+            except Exception as e:
+                print(f"Warning: Failed to clear table {table}: {e}")
