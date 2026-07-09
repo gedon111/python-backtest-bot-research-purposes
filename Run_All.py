@@ -8,9 +8,7 @@ def main():
     parser.add_argument("--ml", action="store_true", help="Run the ML Optimizer (slow randomized search & classifier training) before starting the server")
     args = parser.parse_args()
 
-    print("==================================================")
     print("  Binance Backtest Bot - Unified Pipeline Runner  ")
-    print("==================================================")
     
     total_steps = 4 if args.ml else 3
     current_step = 1

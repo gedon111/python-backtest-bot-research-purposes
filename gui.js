@@ -6,9 +6,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     let charts = [];
     let mainChart, macdChart, kdjChart, atrChart;
     let candleSeries;
+    let macdHist, macdLine, signalLine;
+    let kLine, dLine, jLine;
+    let atrLine, atr200Line;
     let isSyncing = false;
     let timeToIndex = new Map();
     let currentData = [];
+    let activeIterationId = 0;
+    let loadedIterations = [];
     
     let processedObs = [];
     let processedTrades = [];
@@ -88,16 +93,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             wickDownColor: '#ef4444', wickUpColor: '#10b981',
         });
         
-        const macdHist = addHistogramSeriesCompat(macdChart, { color: '#26a69a', priceFormat: { type: 'volume' } });
-        const macdLine = addLineSeriesCompat(macdChart, { color: '#3b82f6', lineWidth: 2 });
-        const signalLine = addLineSeriesCompat(macdChart, { color: '#fbbf24', lineWidth: 1 });
+        macdHist = addHistogramSeriesCompat(macdChart, { color: '#26a69a', priceFormat: { type: 'volume' } });
+        macdLine = addLineSeriesCompat(macdChart, { color: '#3b82f6', lineWidth: 2 });
+        signalLine = addLineSeriesCompat(macdChart, { color: '#fbbf24', lineWidth: 1 });
         
-        const kLine = addLineSeriesCompat(kdjChart, { color: '#fbbf24', lineWidth: 1.5 });
-        const dLine = addLineSeriesCompat(kdjChart, { color: '#3b82f6', lineWidth: 1.5 });
-        const jLine = addLineSeriesCompat(kdjChart, { color: '#c084fc', lineWidth: 1.5 });
+        kLine = addLineSeriesCompat(kdjChart, { color: '#fbbf24', lineWidth: 1.5 });
+        dLine = addLineSeriesCompat(kdjChart, { color: '#3b82f6', lineWidth: 1.5 });
+        jLine = addLineSeriesCompat(kdjChart, { color: '#c084fc', lineWidth: 1.5 });
         
-        const atrLine = addLineSeriesCompat(atrChart, { color: '#F0B90B', lineWidth: 1.5 });
-        const atr200Line = addLineSeriesCompat(atrChart, { color: '#7B68EE', lineWidth: 1.5 });
+        atrLine = addLineSeriesCompat(atrChart, { color: '#F0B90B', lineWidth: 1.5 });
+        atr200Line = addLineSeriesCompat(atrChart, { color: '#7B68EE', lineWidth: 1.5 });
 
         // Set indicator data
         macdHist.setData(data.map(d => ({ time: d.time, value: d.MACD_hist, color: d.MACD_hist > 0 ? '#10b981' : '#ef4444' })));
@@ -628,6 +633,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!res.ok) throw new Error("Failed to fetch iterations");
                 const iterations = await res.json();
                 
+                loadedIterations = iterations;
+                
                 // Store reference to heuristic baseline (ID 0)
                 heuristicBaseIteration = iterations.find(it => it.iteration_id === 0);
                 
@@ -648,6 +655,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         mlPrevSelect.appendChild(opt2);
                     }
                 });
+                
+                // Set the value of strategySelect in case it got reset/overwritten
+                strategySelect.value = activeIterationId;
 
                 // Render Iterations Table
                 mlIterationsBody.innerHTML = '';
@@ -657,6 +667,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     iterations.forEach(it => {
                         const tr = document.createElement('tr');
                         tr.style.borderBottom = '1px solid var(--border)';
+                        
+                        const isActive = (it.iteration_id === activeIterationId);
+                        if (isActive) {
+                            tr.style.background = 'rgba(16, 185, 129, 0.08)';
+                            tr.style.borderLeft = '3px solid #10b981';
+                        }
                         
                         let pnlVal = 0;
                         let wrVal = 0;
@@ -674,23 +690,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const wr = wrVal.toFixed(2);
                         
                         let actionButtonsHtml = '';
-                        if (it.iteration_id === 0) {
-                            actionButtonsHtml = `
-                                <button class="btn-action-small activate" onclick="window.selectMLIteration(0)">Activate</button>
-                                <button class="btn-action-small rename" disabled>Rename</button>
-                                <button class="btn-action-small delete" disabled>Delete</button>
-                            `;
+                        if (isActive) {
+                            if (it.iteration_id === 0) {
+                                actionButtonsHtml = `
+                                    <button class="btn-action-small activate" style="background:#10b981; color:white;" disabled>Active</button>
+                                    <button class="btn-action-small rename" disabled>Rename</button>
+                                    <button class="btn-action-small delete" disabled>Delete</button>
+                                `;
+                            } else {
+                                actionButtonsHtml = `
+                                    <button class="btn-action-small activate" style="background:#10b981; color:white;" disabled>Active</button>
+                                    <button class="btn-action-small rename" onclick="window.renameMLIteration(${it.iteration_id}, '${it.label.replace(/'/g, "\\'")}')">Rename</button>
+                                    <button class="btn-action-small delete" onclick="window.deleteMLIteration(${it.iteration_id})">Delete</button>
+                                `;
+                            }
                         } else {
-                            actionButtonsHtml = `
-                                <button class="btn-action-small activate" onclick="window.selectMLIteration(${it.iteration_id})">Activate</button>
-                                <button class="btn-action-small rename" onclick="window.renameMLIteration(${it.iteration_id}, '${it.label.replace(/'/g, "\\'")}')">Rename</button>
-                                <button class="btn-action-small delete" onclick="window.deleteMLIteration(${it.iteration_id})">Delete</button>
-                            `;
+                            if (it.iteration_id === 0) {
+                                actionButtonsHtml = `
+                                    <button class="btn-action-small activate" onclick="window.selectMLIteration(0)">Activate</button>
+                                    <button class="btn-action-small rename" disabled>Rename</button>
+                                    <button class="btn-action-small delete" disabled>Delete</button>
+                                `;
+                            } else {
+                                actionButtonsHtml = `
+                                    <button class="btn-action-small activate" onclick="window.selectMLIteration(${it.iteration_id})">Activate</button>
+                                    <button class="btn-action-small rename" onclick="window.renameMLIteration(${it.iteration_id}, '${it.label.replace(/'/g, "\\'")}')">Rename</button>
+                                    <button class="btn-action-small delete" onclick="window.deleteMLIteration(${it.iteration_id})">Delete</button>
+                                `;
+                            }
                         }
+                        
+                        const labelText = isActive ? `${it.label} <span class="badge" style="background:#10b981; color:white; margin-left:8px; font-size:0.7rem; padding: 2px 6px; font-family: inherit;">Active</span>` : it.label;
                         
                         tr.innerHTML = `
                             <td style="padding: 10px;">${it.iteration_id}</td>
-                            <td style="padding: 10px; font-weight: 500;" id="label-cell-${it.iteration_id}">${it.label}</td>
+                            <td style="padding: 10px; font-weight: 500;" id="label-cell-${it.iteration_id}">${labelText}</td>
                             <td style="padding: 10px; color: ${pnlVal >= 0 ? '#10b981' : '#ef4444'}">${pnl}%</td>
                             <td style="padding: 10px;">${wr}%</td>
                             <td style="padding: 10px; white-space: nowrap;">
@@ -706,6 +740,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         mlIterationsBody.appendChild(tr);
                     });
                 }
+                
+                // Update active strategy panel
+                updateActiveStrategyVariablesPanel(activeIterationId);
             } catch (err) {
                 console.error("Error loading iterations:", err);
             }
@@ -929,6 +966,71 @@ document.addEventListener('DOMContentLoaded', async () => {
             compPatternsContainer.innerHTML = patternsHtml;
         }
 
+        function updateActiveStrategyVariablesPanel(id) {
+            const activeNameEl = document.getElementById('active-strategy-name');
+            const activeVarsContainer = document.getElementById('active-vars-container');
+            if (!activeNameEl || !activeVarsContainer) return;
+            
+            const currentIt = loadedIterations.find(it => it.iteration_id === id);
+            if (!currentIt) return;
+            
+            activeNameEl.innerText = id === 0 ? "Heuristic Base (No ML)" : `[ID ${id}] ${currentIt.label}`;
+            
+            const paramLabels = {
+                sl_ratio_min: 'Min SL Distance',
+                kdj_j_long_cap: 'KDJ J Long Cap',
+                kdj_k_long_cap: 'KDJ K Long Cap',
+                kdj_k_short_floor: 'KDJ K Short Floor',
+                kdj_j_short_cap: 'KDJ J Short Cap',
+                atr_mult_exit: 'ATR Exit Mult',
+                atr_mult_be: 'ATR BE SL Mult',
+                rr_min: 'Min RR Ratio'
+            };
+            
+            const baseParams = (heuristicBaseIteration && heuristicBaseIteration.parameters) ? heuristicBaseIteration.parameters : {};
+            const activeParams = currentIt.parameters || {};
+            
+            let html = `
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left; padding: 4px;">Var</th>
+                            <th style="padding: 4px;">Val</th>
+                            <th style="padding: 4px;">Diff</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            Object.keys(paramLabels).forEach(key => {
+                const baseVal = baseParams[key] !== undefined ? baseParams[key] : 0;
+                const activeVal = activeParams[key] !== undefined ? activeParams[key] : baseVal;
+                const diff = activeVal - baseVal;
+                
+                let diffStr = diff.toFixed(3);
+                if (diff > 0) diffStr = `+${diffStr}`;
+                else if (diff === 0) diffStr = `0.000`;
+                
+                let diffClass = '';
+                if (diff > 0) diffClass = 'diff-pos';
+                else if (diff < 0) diffClass = 'diff-neg';
+                
+                html += `
+                    <tr>
+                        <td class="param-label" style="text-align:left; padding: 4px;">${paramLabels[key]}</td>
+                        <td style="padding: 4px;">${activeVal.toFixed(3)}</td>
+                        <td class="${diffClass}" style="padding: 4px;">${diffStr}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            activeVarsContainer.innerHTML = html;
+        }
+
         // Handle strategy active changes
         async function handleStrategyChange(id) {
             strategySelect.disabled = true;
@@ -971,6 +1073,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const structureSelect = document.getElementById('ob-structure');
                 processData(runsByThreshold[qualitySelect.value] || { obs: [], trades: [] }, levelSelect.value, structureSelect.value);
                 updateOverlays();
+                
+                // Update active state
+                activeIterationId = parseInt(id);
+                await loadIterations();
                 
             } catch (err) {
                 alert("Failed to load strategy details: " + err.message);
