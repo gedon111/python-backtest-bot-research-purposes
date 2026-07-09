@@ -1,4 +1,3 @@
-SERVICE KEY/
 scratch/
 __pycache__/
-artifacts/
+artifacts/ml_status.json

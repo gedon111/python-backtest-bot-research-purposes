@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "python-trading-bot-research-10",
+  "private_key_id": "cd204fc2c5376506d3e1be4dac0b4ce483f3dc76",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC+ttJuVGfMoUWF\ntKmzRcf6JiQ4ARkIU2OKxaJVunKgPqcqZKWkOucCamPTiidBr1IrmDHl7O9N7Ks5\nZw9B37uAmyYFErsllOmp0Sr/pQoxG4AWpMTYfXj4VoF2xGuRFb/nEBj4BVynm+uD\nYAPneCvi34nFOTuIF18Ohd6v+BjUilp7Ssk/bf9vXaVtaR2yQS6/7wcKj6rAGviC\n6zNohUPQp4tPdP+1IDPsnHVK8j3VQvp2Rguh5WygyiV/7qPp+D5QiWsdy9bQZOfK\n9/tl6JxDcabWyREycxhJnTd1x48olh9IYwHTE++1fhP/Gm2CmE5lGXimvAepiN/Q\n2z0LKZV/AgMBAAECggEAXw/MBlimQLama8YozIZc7tByP0Q00RSXyoVGrIq6Nivk\nsVnnwtvlaCvVxIzZkoEsaTR8ssoOYn40vvEjBsfZs3oiUmcKx+nZKt9rGnCOivnV\nN/Q7dlncoZSlBalUoMYBmNBKUd6CV719gEesyoT5AyY/iwJDLUvRAvExle8JmW7b\nSNDvvQnlouXYxW19oH9/tDdVnrDmcTmayVkv4V32JgaVynPJOXaBMmiCTMEf0cEg\nNzEyOL3Nd3QZcjdlaX/GsXVF5ifDwOaqJAbkJaEHq6vtcppvH7/LycwA0ZI9f2aB\njBFHxvXQPevV5MBBvykm8ZoQJPhbK7BZCrY49DmWGQKBgQD5zwVigWD0M2lUYQEx\n5CTL/Q1S1IWM4/L83zMjRh4xxVdKznS88kwEXEpIOu93vsDMALP28WvxwH6bfKOK\nTzhV9hmZCkmDwLsyMdr4oGSE962fFdAz7eQL274v7bm99G47FWrIm/ElcXB7bwIp\nNhdXf1gt3xe4+3QuXpOWBXHfhQKBgQDDcNwUhzqDw3hH1pbuyn1Gz2WAiTa0xv0v\n2QIqJdIVdAdpZTEp/soKPQsNhpl/31jD1s37IG3FOHH2iEpbwylrOTuwOfFS1CXp\nhLLWpaiZgRrsFBKsLXT6yMMqUFm++n5ijYYFaceR4hglQfBLw48b2WeIdj8Uhhoc\nQnFgnUQ2MwKBgAhKXZRiVNRl7GX3fjGor6vxbwLDuNbvLb5Erg7Koe/m67m41lj6\n9ZjjczeodRAVTZK3p0FXy8xPJiSE42yQqn731uukUsJDoDLPQsQjlpJvIdz4vVsr\n1vipx0sR6asrNIlTcaLMwhkLBb+i9IBnoiiuOj/zencSKU3sp5s//QJ9AoGBALUb\n0aXoRm4x5jVUAtvXos3KhPnerWZKe/cp9tqN36dntTKSxkNvS1S/io2HLJmVpBEe\n7hQH0hEPpHPbimSMbsZg7BH7L8kctOE3ye4k5x8Qx5z7YO5S1XNMNabxfKkAQbwb\n/5TmmDx0swFboEzlNKmPBmUrhnsDZhDH9X6dXceHAoGBAPj9WwawgocoA8HlBR6l\n/tSPjQCeFBv9+iCJzuh1ZconqlgCxi7eucOUnRea6CgTcofZ5HqbOkfbbwuDRHT+\nZOzj/s9r0+bS5ZO0BIcObLvFDPCbpK8AkkfYAnLWCUf5mEV8urP6vmGqPRfg/YqTJnWWSN4NXPM/uYSsUP446E0S\n-----END PRIVATE KEY-----\n",
+  "client_email": "backtestbotresearch10@python-trading-bot-research-10.iam.gserviceaccount.com",
+  "client_id": "104854091515235161583",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/backtestbotresearch10%40python-trading-bot-research-10.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
