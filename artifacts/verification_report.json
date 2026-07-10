@@ -17,24 +17,24 @@
   },
   "recalculation_hashes_by_threshold": {
     "0": {
-      "orderblocks_hash": "72a6938170bb41807c52da4766557a1dafb9b5265a79af84fa9edda3c87e2ead",
-      "trades_hash": "d0f4e109f33697d5116fc00bd3808ad5a996defa002db7625ed27c8adc3b3297",
-      "stats_hash": "6a1008ce370a7ee921da2d09b8b03b08ab08862ee5e724246d40f57209376625"
+      "orderblocks_hash": "4ec084dced5a45f744d950c0161149409341e163d2f8053d9a385ca1768fb116",
+      "trades_hash": "1856a38882a0b4716352823dbb80de39c3775289412b6340214832ce4ae56286",
+      "stats_hash": "79ef6146ee39630385ec14afd5e41c063ef44996eff9d98a3e2f8390403d5fce"
     },
     "1": {
-      "orderblocks_hash": "72a6938170bb41807c52da4766557a1dafb9b5265a79af84fa9edda3c87e2ead",
-      "trades_hash": "f05f6e87d1d7992f848380ab25af9f4a94b4e9350287044ad5067942a0c1a71d",
-      "stats_hash": "eb91473a45e1c2bd68b7f132efd19343ef6dc4d275a0c5e60ffcdd44d70b823e"
+      "orderblocks_hash": "4ec084dced5a45f744d950c0161149409341e163d2f8053d9a385ca1768fb116",
+      "trades_hash": "6927566d91c332d019b9176eb461da37ecd56382aba47ab3a2dfcb41aa0fea29",
+      "stats_hash": "1c00343526ddcd7766ad184587aca03a2b07bcb3c36fc53a68d76c58521842b9"
     },
     "2": {
-      "orderblocks_hash": "72a6938170bb41807c52da4766557a1dafb9b5265a79af84fa9edda3c87e2ead",
-      "trades_hash": "c0ce885ccf789f3a68d2c9cec7e78b06dde7ae2bf4cdb7130ccab2af886d2226",
-      "stats_hash": "3142ce2e42a87200e751ef1abbc3f9062b366a6456567c2ee98d2ee6af29e27c"
+      "orderblocks_hash": "4ec084dced5a45f744d950c0161149409341e163d2f8053d9a385ca1768fb116",
+      "trades_hash": "925bfe6d4358b2d72be82f9976585be51c70e0513968af3cbe208a837f24e98e",
+      "stats_hash": "f840a9c7b38926540860046aaf81ce834cb713544f7cb5c589122ea0b1edb1c0"
     },
     "3": {
-      "orderblocks_hash": "72a6938170bb41807c52da4766557a1dafb9b5265a79af84fa9edda3c87e2ead",
-      "trades_hash": "0dab34fc2e41fca6508f99fadbd31519e1fdcb530d5c5a4168421854e9716676",
-      "stats_hash": "34be22fea4ad7ace844099974ecfc62b1935f698d9833736a2ce7515fb5460d7"
+      "orderblocks_hash": "4ec084dced5a45f744d950c0161149409341e163d2f8053d9a385ca1768fb116",
+      "trades_hash": "3763697e9d0983db75f75b6f9bba425a3e8a6133b8adfd979bbe85edc5391eef",
+      "stats_hash": "39647b48424bc3d045c021229c93e94af68e1c398b3ce69662d2cb347d3ec49c"
     }
   }
 }

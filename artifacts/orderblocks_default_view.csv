@@ -28,7 +28,7 @@ SUPPLY,44751.4,43941.28,279,275,internal,CHoCH,False,False,False,True,True,2,513
 SUPPLY,40444.32,40060.88,301,295,internal,BOS,False,False,False,False,False,0,351
 SUPPLY,39494.35,38909.26,308,307,internal,BOS,True,False,False,False,True,2,351
 DEMAND,37468.35,36350.0,320,312,internal,CHoCH,False,True,False,True,True,3,324
-SUPPLY,39249.93,38450.0,323,321,internal,CHoCH,True,False,False,True,False,2,333
+SUPPLY,39249.93,38450.0,323,321,internal,CHoCH,False,False,False,True,False,1,333
 DEMAND,35515.83,34322.28,329,325,internal,CHoCH,True,True,False,True,True,4,767
 SUPPLY,40348.45,39076.14,346,336,internal,CHoCH,False,True,False,True,False,2,351
 DEMAND,38299.39,37000.0,351,347,internal,CHoCH,False,True,False,True,True,3,747
@@ -367,7 +367,7 @@ SUPPLY,71366.0,70639.93,4927,4925,internal,CHoCH,False,False,False,True,False,1,
 DEMAND,66290.32,65064.52,4947,4945,internal,CHoCH,False,False,False,False,False,0,5002
 DEMAND,68380.0,67316.0,4961,4954,internal,BOS,False,False,False,False,True,1,4996
 SUPPLY,72797.99,71245.17,4977,4971,internal,CHoCH,False,True,False,True,True,3,6240
-SUPPLY,71227.46,70566.02,4995,4993,internal,BOS,True,False,False,False,False,1,5225
+SUPPLY,71227.46,70566.02,4995,4993,internal,BOS,False,False,False,False,False,0,5225
 SUPPLY,67929.0,67012.67,5002,4999,internal,BOS,True,False,False,False,False,1,5224
 DEMAND,64303.87,62134.0,5009,5004,internal,CHoCH,False,True,False,False,True,2,5019
 SUPPLY,66867.07,65807.25,5019,5012,internal,CHoCH,False,False,False,False,False,0,5205
@@ -471,7 +471,7 @@ DEMAND,67050.2,66439.9,6183,6174,internal,CHoCH,False,False,False,False,False,0,
 SUPPLY,72961.0,71644.19,6207,6203,internal,CHoCH,False,True,False,False,False,1,6240
 SUPPLY,69914.37,69479.91,6222,6216,internal,BOS,False,False,False,False,False,0,6240
 DEMAND,68106.07,66835.0,6237,6233,internal,CHoCH,False,True,False,True,True,3,8767
-DEMAND,76700.0,75714.66,6264,6262,internal,BOS,True,True,False,False,False,2,7153
+DEMAND,76700.0,75714.66,6264,6262,internal,BOS,False,True,False,False,False,1,7153
 DEMAND,87692.69,86127.99,6285,6283,internal,BOS,True,True,False,False,False,2,6916
 SUPPLY,91657.77,90329.8,6293,6290,internal,CHoCH,True,True,False,False,False,2,6313
 DEMAND,90212.13,88722.0,6313,6311,internal,CHoCH,False,True,False,True,False,2,6909
@@ -496,7 +496,7 @@ DEMAND,94277.23,91530.45,6573,6567,internal,CHoCH,False,True,False,True,True,3,6
 DEMAND,93756.02,92888.0,6583,6578,internal,BOS,False,False,False,False,False,0,6628
 DEMAND,98281.89,97276.79,6606,6603,internal,BOS,False,False,False,True,False,1,6616
 SUPPLY,102724.38,101512.91,6615,6612,internal,CHoCH,True,False,False,True,False,2,6675
-SUPPLY,95940.0,93899.99,6649,6648,internal,BOS,True,True,False,True,False,3,6656
+SUPPLY,95940.0,93899.99,6649,6648,internal,BOS,False,True,False,True,False,2,6656
 DEMAND,93661.55,90833.12,6656,6650,internal,CHoCH,True,True,False,True,True,4,6907
 DEMAND,99517.93,97335.13,6672,6669,internal,BOS,False,True,False,False,True,2,6774
 DEMAND,103883.01,102277.55,6688,6680,internal,BOS,False,True,False,False,False,1,6689
@@ -643,7 +643,7 @@ DEMAND,84586.62,83500.0,8532,8528,internal,CHoCH,False,False,False,False,False,0
 DEMAND,87792.2,86116.0,8554,8547,internal,BOS,False,True,False,False,True,2,8583
 DEMAND,91457.36,90438.43,8565,8559,internal,BOS,False,False,False,False,False,0,8579
 DEMAND,91165.65,90155.47,8577,8572,internal,BOS,False,False,False,True,False,1,8580
-SUPPLY,92000.01,91009.0,8579,8577,internal,CHoCH,True,False,False,True,True,3,8592
+SUPPLY,92000.01,91009.0,8579,8577,internal,CHoCH,False,False,False,True,True,2,8592
 DEMAND,86674.0,83822.76,8589,8583,internal,CHoCH,False,True,False,True,True,3,8767
 SUPPLY,94150.0,92825.56,8606,8597,internal,CHoCH,False,False,False,True,False,1,8767
 DEMAND,89707.54,87719.28,8620,8619,internal,CHoCH,False,True,False,True,True,3,8667
