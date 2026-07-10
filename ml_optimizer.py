@@ -9,12 +9,7 @@ from datetime import datetime
 from sqlalchemy import create_engine
 import db_manager
 
-# Ensure dependencies are available
-try:
-    from sklearn.ensemble import RandomForestClassifier
-except ImportError:
-    print("[ERROR] scikit-learn is not installed. Please run: pip install scikit-learn")
-    sys.exit(1)
+# ML Classifier disabled for this iteration
 
 # Import our bot module
 sys.path.append(os.path.abspath("."))
@@ -34,44 +29,7 @@ def update_status(phase, progress, log=""):
     with open("artifacts/ml_status.json", "w", encoding="utf-8") as f:
         json.dump(status, f, indent=2)
 
-def extract_features(trades_subset, df, error_weights):
-    features_list = []
-    labels_list = []
-    sample_weights = []
-    
-    for _, trade in trades_subset.iterrows():
-        entry_idx = int(trade['entry_idx'])
-        if entry_idx >= len(df):
-            continue
-            
-        entry_time = int(df.at[entry_idx, 'time'])
-        
-        # Extract features at entry
-        feats = [
-            float(df.at[entry_idx, 'MACD']),
-            float(df.at[entry_idx, 'MACD_signal']),
-            float(df.at[entry_idx, 'MACD_hist']),
-            float(df.at[entry_idx, 'K']),
-            float(df.at[entry_idx, 'D']),
-            float(df.at[entry_idx, 'J']),
-            float(df.at[entry_idx, 'ATR']),
-            float(df.at[entry_idx, 'ATR_200']),
-            float(df.at[entry_idx, 'volume_ma_ratio']),
-            float(df.at[entry_idx, 'taker_buy_ratio']),
-            float(df.at[entry_idx, 'body_wick_ratio']),
-            float(df.at[entry_idx, 'time_hour']),
-            float(df.at[entry_idx, 'time_day_of_week']),
-            float(trade.get('entry_ob_quality', 1.0))
-        ]
-        
-        label_val = 1 if trade['pnl_pct'] > 0 else 0
-        weight = error_weights.get(entry_time, 1.0)
-        
-        features_list.append(feats)
-        labels_list.append(label_val)
-        sample_weights.append(weight)
-        
-    return np.array(features_list), np.array(labels_list), np.array(sample_weights)
+# Feature extraction removed
 
 def main():
     label = sys.argv[1] if len(sys.argv) > 1 else f"ML Run {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
@@ -165,37 +123,11 @@ def main():
         score = -999999.0
         trial_clf = None
         
-        # If we have enough training trades, evaluate in-loop Random Forest classifier
-        if len(train_trades) >= 5:
-            X_train, y_train, w_train = extract_features(train_trades, df, error_weights)
-            
-            # Fit RF model on training set
-            if len(np.unique(y_train)) > 1:
-                clf = RandomForestClassifier(n_estimators=30, max_depth=4, random_state=42)
-                clf.fit(X_train, y_train, sample_weight=w_train)
-                trial_clf = clf
-                
-                # Test on out-of-sample trades
-                if len(test_trades) > 0:
-                    X_test, y_test, _ = extract_features(test_trades, df, error_weights)
-                    probs = clf.predict_proba(X_test)[:, 1]
-                    test_taken = probs >= 0.5
-                    
-                    filtered_test_trades = test_trades[test_taken]
-                    net_return = filtered_test_trades['pnl_pct'].sum() if not filtered_test_trades.empty else 0.0
-                    total_trades = len(filtered_test_trades)
-                    
-                    score = net_return
-                    # Penalize runs with very few out-of-sample trades
-                    if total_trades < 3:
-                        score -= (3 - total_trades) * 5.0
-                else:
-                    # No test trades, penalize to avoid overfit parameters
-                    score = -50.0
-            else:
-                score = -100.0
+        # Evaluate parameter search on out-of-sample trades directly without ML classifier
+        if len(test_trades) > 0:
+            score = test_trades['pnl_pct'].sum()
         else:
-            score = -200.0
+            score = -50.0
             
         if score > best_score:
             best_score = score
@@ -205,41 +137,13 @@ def main():
         progress = 30 + int((trial / n_trials) * 35)
         update_status("Parameter Tuning", progress, f"Trial {trial+1}/{n_trials} - Best Test Return: {best_score:.2f}%")
 
-    update_status("Classifier Training", 65, "Tuned parameters found. Retraining final classifier...")
-    
-    # 4. Generate final trades using best parameters to train final classifier on full dataset
-    sim_df = bot.simulate_trades(df.copy(), min_ob_quality=1, iteration_parameters=best_params)
-    trades_df = sim_df.attrs.get("trades_df", pd.DataFrame())
+    update_status("Classifier Training", 65, "Skipping classifier training (insufficient trades)...")
+    print("\n[ML Classifier Layer Disclaimer]")
+    print("The ML classifier layer was attempted but not evaluated in this iteration due to insufficient trade count (21 total trades) for reliable train/test partitioning. This is left for future work with a larger dataset.")
     
     classifier_model = None
     classifier_threshold = 0.5
     filtered_pnl_change = 0.0
-    
-    if not trades_df.empty:
-        # Build features dataset for full RandomForest training
-        X, y, weights = extract_features(trades_df, df, error_weights)
-        
-        if len(np.unique(y)) > 1:
-            update_status("Classifier Training", 75, "Training Random Forest classifier on entry setups...")
-            classifier_model = RandomForestClassifier(n_estimators=50, max_depth=5, random_state=42)
-            classifier_model.fit(X, y, sample_weight=weights)
-            
-            # Score trades probability
-            probs = classifier_model.predict_proba(X)[:, 1]
-            
-            # Calculate what would happen if we filter out trades with win prob < 50%
-            in_sample_taken = probs >= 0.5
-            filtered_trades = trades_df[in_sample_taken]
-            
-            original_net = trades_df['pnl_pct'].sum()
-            filtered_net = filtered_trades['pnl_pct'].sum()
-            filtered_pnl_change = filtered_net - original_net
-            
-            print(f"ML Classifier entry filter improved Net Return by {filtered_pnl_change:.2f}% in-sample.")
-        else:
-            print("Warning: Only one class present in full trades dataset. Skipping final classifier training.")
-    else:
-        print("No trades generated during optimized sweep to train classifier.")
  
     # 5. Save results to SQL Iterations Database
     update_status("Saving Results", 90, "Writing optimized parameters and serialization model to DB...")
@@ -285,7 +189,7 @@ def main():
     new_iteration = db_manager.MLIteration(
         label=label,
         created_at=timestamp,
-        model_type="RandomForestClassifier",
+        model_type="Swept Heuristic",
         parameters=json.dumps(parameters_dict),
         metrics=json.dumps(metrics),
         pattern_diff=json.dumps(pattern_diff)

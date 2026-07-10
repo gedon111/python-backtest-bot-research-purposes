@@ -289,7 +289,7 @@ def compute_smc(df):
 
                     displacement = False
                     try:
-                        for j in range(ob_idx + 1, min(n, ob_idx + 4)):
+                        for j in range(ob_idx + 1, min(i + 1, ob_idx + 4)):
                             body = float(df.at[j, 'close']) - float(df.at[j, 'open'])
                             thresh = 1.5 * float(atr200[ob_idx]) if not np.isnan(atr200[ob_idx]) else 0
                             if ob['type'] == 'DEMAND' and body > 0 and abs(body) >= thresh:
@@ -309,7 +309,7 @@ def compute_smc(df):
 
                     fvg = False
                     try:
-                        for j in range(ob_idx + 1, min(n - 1, ob_idx + 4)):
+                        for j in range(ob_idx + 1, min(i, ob_idx + 4)):
                             if float(lows[j + 1]) > float(highs[j]) and ob['type'] == 'DEMAND':
                                 fvg = True
                                 break
@@ -379,7 +379,7 @@ def compute_smc(df):
 
                     displacement = False
                     try:
-                        for j in range(ob_idx + 1, min(n, ob_idx + 4)):
+                        for j in range(ob_idx + 1, min(i + 1, ob_idx + 4)):
                             body = float(df.at[j, 'close']) - float(df.at[j, 'open'])
                             thresh = 1.5 * float(atr200[ob_idx]) if not np.isnan(atr200[ob_idx]) else 0
                             if ob['type'] == 'DEMAND' and body > 0 and abs(body) >= thresh:
@@ -399,13 +399,13 @@ def compute_smc(df):
 
                     fvg = False
                     try:
-                        for j in range(ob_idx + 1, min(n - 1, ob_idx + 4)):
+                        for j in range(ob_idx + 1, min(i, ob_idx + 4)):
                             if float(lows[j + 1]) > float(highs[j]) and ob['type'] == 'DEMAND':
-                                fvg = True
-                                break
+                                  fvg = True
+                                  break
                             if float(highs[j + 1]) < float(lows[j]) and ob['type'] == 'SUPPLY':
-                                fvg = True
-                                break
+                                  fvg = True
+                                  break
                     except Exception:
                         fvg = False
 
@@ -712,21 +712,7 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
                 tp  = stp if stp else close + risk * 2.0
                 if (tp - close) / risk < rr_min: continue
 
-                # ML Classifier filter
-                classifier = iteration_parameters.get('classifier_model')
-                if classifier is not None:
-                    features = [
-                        float(df.at[i, 'MACD']), float(df.at[i, 'MACD_signal']), float(df.at[i, 'MACD_hist']),
-                        float(df.at[i, 'K']), float(df.at[i, 'D']), float(df.at[i, 'J']),
-                        float(df.at[i, 'ATR']), float(df.at[i, 'ATR_200']),
-                        float(df.at[i, 'volume_ma_ratio']), float(df.at[i, 'taker_buy_ratio']),
-                        float(df.at[i, 'body_wick_ratio']), float(df.at[i, 'time_hour']),
-                        float(df.at[i, 'time_day_of_week']), float(ob['quality'])
-                    ]
-                    prob = classifier.predict_proba([features])[0][1]
-                    threshold = iteration_parameters.get('classifier_threshold', 0.5)
-                    if prob < threshold:
-                        continue
+
 
                 position          = 'LONG'
                 entry_price       = close
@@ -798,21 +784,7 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
                     tp  = stp if stp else close - risk * 2.0
                     if (close - tp) / risk < rr_min: continue
 
-                    # ML Classifier filter
-                    classifier = iteration_parameters.get('classifier_model')
-                    if classifier is not None:
-                        features = [
-                            float(df.at[i, 'MACD']), float(df.at[i, 'MACD_signal']), float(df.at[i, 'MACD_hist']),
-                            float(df.at[i, 'K']), float(df.at[i, 'D']), float(df.at[i, 'J']),
-                            float(df.at[i, 'ATR']), float(df.at[i, 'ATR_200']),
-                            float(df.at[i, 'volume_ma_ratio']), float(df.at[i, 'taker_buy_ratio']),
-                            float(df.at[i, 'body_wick_ratio']), float(df.at[i, 'time_hour']),
-                            float(df.at[i, 'time_day_of_week']), float(ob['quality'])
-                        ]
-                        prob = classifier.predict_proba([features])[0][1]
-                        threshold = iteration_parameters.get('classifier_threshold', 0.5)
-                        if prob < threshold:
-                            continue
+
 
                     position          = 'SHORT'
                     entry_price       = close
@@ -850,17 +822,18 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
             df.at[i, 'Stop_Loss']     = stop_loss_price
             df.at[i, 'Take_Profit']   = take_profit_price
 
-            def close_trade(tag, pnl):
+            def close_trade(tag, pnl, exit_pr=None):
                 nonlocal position, current_entry_ob, current_tp_ob, entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality
+                exit_val = exit_pr if exit_pr is not None else close
                 df.at[i, 'Trade_Status']  = tag
-                df.at[i, 'Exit_Price']    = close
+                df.at[i, 'Exit_Price']    = exit_val
                 df.at[i, 'Running_PnL_%'] = pnl
                 trades.append({
                     'side': 'LONG',
                     'entry_idx': entry_idx,
                     'exit_idx': i,
                     'entry': entry_price,
-                    'exit': close,
+                    'exit': exit_val,
                     'stop_loss': stop_loss_price,
                     'take_profit': take_profit_price,
                     'pnl_pct': pnl,
@@ -909,12 +882,14 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
                 stop_loss_price = max(stop_loss_price, entry_price)
                 df.at[i, 'Stop_Loss'] = stop_loss_price
 
-            if close <= stop_loss_price:
+            if low <= stop_loss_price:
                 close_trade('HIT STOP LOSS',
-                            (close - entry_price) / entry_price * 100)
-            elif close >= take_profit_price:
+                            (stop_loss_price - entry_price) / entry_price * 100,
+                            exit_pr=stop_loss_price)
+            elif high >= take_profit_price:
                 close_trade('HIT TAKE PROFIT',
-                            (close - entry_price) / entry_price * 100)
+                            (take_profit_price - entry_price) / entry_price * 100,
+                            exit_pr=take_profit_price)
 
         elif position == 'SHORT':
             pnl_pct      = (entry_price - close) / entry_price * 100
@@ -926,17 +901,18 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
             df.at[i, 'Stop_Loss']     = stop_loss_price
             df.at[i, 'Take_Profit']   = take_profit_price
 
-            def close_trade(tag, pnl):
+            def close_trade(tag, pnl, exit_pr=None):
                 nonlocal position, current_entry_ob, current_tp_ob, entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality
+                exit_val = exit_pr if exit_pr is not None else close
                 df.at[i, 'Trade_Status']  = tag
-                df.at[i, 'Exit_Price']    = close
+                df.at[i, 'Exit_Price']    = exit_val
                 df.at[i, 'Running_PnL_%'] = pnl
                 trades.append({
                     'side': 'SHORT',
                     'entry_idx': entry_idx,
                     'exit_idx': i,
                     'entry': entry_price,
-                    'exit': close,
+                    'exit': exit_val,
                     'stop_loss': stop_loss_price,
                     'take_profit': take_profit_price,
                     'pnl_pct': pnl,
@@ -983,12 +959,14 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
                 stop_loss_price = min(stop_loss_price, entry_price)
                 df.at[i, 'Stop_Loss'] = stop_loss_price
 
-            if close >= stop_loss_price:
+            if high >= stop_loss_price:
                 close_trade('HIT STOP LOSS',
-                            (entry_price - close) / entry_price * 100)
-            elif close <= take_profit_price:
+                            (entry_price - stop_loss_price) / entry_price * 100,
+                            exit_pr=stop_loss_price)
+            elif low <= take_profit_price:
                 close_trade('HIT TAKE PROFIT',
-                            (entry_price - close) / entry_price * 100)
+                            (entry_price - take_profit_price) / entry_price * 100,
+                            exit_pr=take_profit_price)
 
     trades_df = pd.DataFrame(trades)
     if not trades_df.empty:
