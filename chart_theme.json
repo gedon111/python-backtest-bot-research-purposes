@@ -1,0 +1,18 @@
+{
+  "pageTheme": "dark",
+  "dataColors": {
+    "candleUp": "#10b981",
+    "candleDown": "#ef4444",
+    "candleWick": "#475569",
+    "demand": "#0d9488",
+    "supply": "#ea580c",
+    "macd": "#1d4ed8",
+    "macdSignal": "#f97316",
+    "macdHist": "#10b981",
+    "kdjK": "#0d9488",
+    "kdjD": "#3b82f6",
+    "kdjJ": "#ec4899",
+    "atr14": "#8b5cf6",
+    "atr200": "#6b7280"
+  }
+}

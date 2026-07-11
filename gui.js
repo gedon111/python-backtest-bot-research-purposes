@@ -1,4 +1,46 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    // === Chart Theme and Custom Colors Settings (Option B) ===
+    const LIGHT_PRESET = {
+        candleUp: "#10b981",
+        candleDown: "#ef4444",
+        candleWick: "#475569",
+        demand: "#0d9488",
+        supply: "#ea580c",
+        macd: "#1d4ed8",
+        macdSignal: "#f97316",
+        macdHist: "#10b981",
+        kdjK: "#0d9488",
+        kdjD: "#3b82f6",
+        kdjJ: "#ec4899",
+        atr14: "#8b5cf6",
+        atr200: "#6b7280"
+    };
+
+    const DARK_PRESET = {
+        candleUp: "#22c55e",
+        candleDown: "#ef4444",
+        candleWick: "#94a3b8",
+        demand: "#00f0ff",
+        supply: "#f97316",
+        macd: "#3b82f6",
+        macdSignal: "#f97316",
+        macdHist: "#22c55e",
+        kdjK: "#00f0ff",
+        kdjD: "#3b82f6",
+        kdjJ: "#f43f5e",
+        atr14: "#a78bfa",
+        atr200: "#94a3b8"
+    };
+
+    let activePageTheme = 'light';
+    let activeDataColors = { ...LIGHT_PRESET };
+
+    function hexToRgb(hex) {
+        const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+        const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+        return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '128, 128, 128';
+    }
     const navItems = document.querySelectorAll('.nav-item');
     const tabPanes = document.querySelectorAll('.tab-pane');
     
@@ -17,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activeHoveredTime = null;
     let processedObs = [];
     let processedTrades = [];
+    let runsByThreshold = null;
 
     const els = {
         o: document.getElementById('val-o'), h: document.getElementById('val-h'),
@@ -42,12 +85,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     try {
-        const [manifest, candles, runsByThreshold, verification] = await Promise.all([
+        await loadThemeSettings();
+        const [manifest, candles, loadedRuns, verification] = await Promise.all([
             fetchJson('artifacts/manifest.json'),
             fetchJson('artifacts/candles.json'),
             fetchJson('artifacts/runs_by_threshold.json'),
             fetchJson('artifacts/verification_report.json'),
         ]);
+        runsByThreshold = loadedRuns;
         setVerificationPill(verification);
         bootCharts(manifest, candles, runsByThreshold);
         setupDragHandles();
@@ -122,8 +167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         atrLine = addLineSeriesCompat(atrChart, { color: '#475569', lineWidth: 1.5 });
         atr200Line = addLineSeriesCompat(atrChart, { color: '#cbd5e1', lineWidth: 1.5 });
 
-        // Set indicator data
-        macdHist.setData(data.map(d => ({ time: d.time, value: d.MACD_hist, color: d.MACD_hist > 0 ? '#bbf7d0' : '#fecaca' }))); // soft red/green for hist
+        macdHist.setData(data.map(d => ({ time: d.time, value: d.MACD_hist })));
         macdLine.setData(data.map(d => ({ time: d.time, value: d.MACD })));
         signalLine.setData(data.map(d => ({ time: d.time, value: d.MACD_signal })));
         
@@ -239,6 +283,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Controls setup
         setupControls(runsByThreshold);
+        applyPageTheme(activePageTheme);
+        applyDataColors(activeDataColors);
         verifyPlotAreaAlignment();
     }
     
@@ -307,7 +353,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (exactIdx == null || exactIdx < 0 || exactIdx >= currentData.length) return;
             
             // Custom highlight
-            const color = ob.type === 'DEMAND' ? '#0d9488' : '#ea580c';
+            const color = ob.type === 'DEMAND' ? activeDataColors.demand : activeDataColors.supply;
             newCandleData[exactIdx] = {
                 ...newCandleData[exactIdx],
                 color: color,
@@ -337,7 +383,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 markers.push({
                     time: currentData[exactIdx].time,
                     position: isDemand ? 'belowBar' : 'aboveBar',
-                    color: isDemand ? '#0d9488' : '#ea580c',
+                    color: isDemand ? activeDataColors.demand : activeDataColors.supply,
                     shape: isDemand ? 'arrowUp' : 'arrowDown',
                     text: `${ob.type} q${ob.quality}`,
                 });
@@ -424,11 +470,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     rect.style.backgroundColor = 'transparent';
                     rect.style.zIndex = '20';
                 } else {
-                    const borderCol = ob.type === 'DEMAND' ? 'rgba(13, 148, 136, 0.60)' : 'rgba(234, 88, 12, 0.60)';
+                    const obColor = ob.type === 'DEMAND' ? activeDataColors.demand : activeDataColors.supply;
+                    const rgb = hexToRgb(obColor);
                     const bgOp = [0.06, 0.08, 0.10, 0.12][ob.quality] || 0.06;
-                    const bgRGB = ob.type === 'DEMAND' ? '13, 148, 136' : '234, 88, 12';
-                    rect.style.border = `1px dashed ${borderCol}`;
-                    rect.style.backgroundColor = `rgba(${bgRGB}, ${bgOp})`;
+                    rect.style.border = `1px dashed rgba(${rgb}, 0.60)`;
+                    rect.style.backgroundColor = `rgba(${rgb}, ${bgOp})`;
                 }
                 
                 container.appendChild(rect);
@@ -464,7 +510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     label.style.position = 'absolute';
                     label.style.left = drawLeft + 'px';
                     label.style.top = (y + currentOffset + 2) + 'px';
-                    label.style.color = ob.type === 'DEMAND' ? '#0d9488' : '#ea580c';
+                    label.style.color = ob.type === 'DEMAND' ? activeDataColors.demand : activeDataColors.supply;
                     label.style.zIndex = isActive ? '25' : '15';
                     label.innerText = `${ob.type} q${ob.quality}`;
                     container.appendChild(label);
@@ -704,6 +750,245 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     setupMLControlCenter();
+
+
+
+    function applyPageTheme(theme) {
+        activePageTheme = theme;
+        const isDark = (theme === 'dark');
+        
+        if (isDark) {
+            document.body.classList.add('dark-theme');
+        } else {
+            document.body.classList.remove('dark-theme');
+        }
+        
+        const toggleEl = document.getElementById('theme-toggle');
+        if (toggleEl) toggleEl.checked = isDark;
+        
+        // Update charts canvas backgrounds and grid lines
+        const chartBg = isDark ? '#1e293b' : '#ffffff';
+        const chartText = isDark ? '#94a3b8' : '#475569';
+        const gridColor = isDark ? '#334155' : '#f1f5f9';
+        
+        if (charts && charts.length > 0) {
+            charts.forEach(c => {
+                c.applyOptions({
+                    layout: {
+                        background: { type: 'solid', color: chartBg },
+                        textColor: chartText
+                    },
+                    grid: {
+                        vertLines: { color: gridColor },
+                        horzLines: { color: gridColor }
+                    }
+                });
+            });
+        }
+    }
+
+    function applyDataColors(colors) {
+        activeDataColors = { ...colors };
+        
+        // Update inputs
+        const mappings = {
+            'picker-candle-up': colors.candleUp,
+            'picker-candle-down': colors.candleDown,
+            'picker-candle-wick': colors.candleWick,
+            'picker-demand': colors.demand,
+            'picker-supply': colors.supply,
+            'picker-macd': colors.macd,
+            'picker-macd-signal': colors.macdSignal,
+            'picker-macd-hist': colors.macdHist,
+            'picker-kdj-k': colors.kdjK,
+            'picker-kdj-d': colors.kdjD,
+            'picker-kdj-j': colors.kdjJ,
+            'picker-atr-14': colors.atr14,
+            'picker-atr-200': colors.atr200
+        };
+        
+        for (const [id, val] of Object.entries(mappings)) {
+            const el = document.getElementById(id);
+            if (el) el.value = val;
+        }
+        
+        // 1. Candles (Bull/Bear/Wick)
+        if (candleSeries) {
+            candleSeries.applyOptions({
+                upColor: colors.candleUp,
+                downColor: colors.candleDown,
+                borderUpColor: colors.candleUp,
+                borderDownColor: colors.candleDown,
+                wickUpColor: colors.candleWick,
+                wickDownColor: colors.candleWick
+            });
+        }
+        
+        // 2. MACD
+        if (macdHist) {
+            macdHist.applyOptions({
+                color: colors.macdHist
+            });
+        }
+        if (macdLine) {
+            macdLine.applyOptions({
+                color: colors.macd
+            });
+        }
+        if (signalLine) {
+            signalLine.applyOptions({
+                color: colors.macdSignal
+            });
+        }
+        
+        // 3. KDJ
+        if (kLine) {
+            kLine.applyOptions({ color: colors.kdjK });
+        }
+        if (dLine) {
+            dLine.applyOptions({ color: colors.kdjD });
+        }
+        if (jLine) {
+            jLine.applyOptions({ color: colors.kdjJ });
+        }
+        
+        // 4. ATR
+        if (atrLine) {
+            atrLine.applyOptions({ color: colors.atr14 });
+        }
+        if (atr200Line) {
+            atr200Line.applyOptions({ color: colors.atr200 });
+        }
+        
+        // 5. Repaint Overlays and Highlights
+        if (mainChart) {
+            const qualitySelect = document.getElementById('quality-select');
+            const levelSelect = document.getElementById('ob-level');
+            const structureSelect = document.getElementById('ob-structure');
+            if (qualitySelect && runsByThreshold) {
+                processData(runsByThreshold[qualitySelect.value] || { obs: [], trades: [] }, levelSelect.value, structureSelect.value);
+            }
+            updateOverlays();
+        }
+    }
+
+    async function loadThemeSettings() {
+        try {
+            const response = await fetch('/api/get_theme');
+            if (response.ok) {
+                const config = await response.json();
+                activePageTheme = config.pageTheme || 'light';
+                activeDataColors = { ...LIGHT_PRESET, ...(config.dataColors || {}) };
+            }
+        } catch (e) {
+            console.log("Failed to fetch server theme:", e);
+        }
+        
+        const localTheme = localStorage.getItem('pageTheme');
+        if (localTheme) activePageTheme = localTheme;
+        
+        const localColors = localStorage.getItem('dataColors');
+        if (localColors) {
+            try {
+                activeDataColors = { ...activeDataColors, ...JSON.parse(localColors) };
+            } catch(e) {}
+        }
+        
+        applyPageTheme(activePageTheme);
+        applyDataColors(activeDataColors);
+    }
+
+    async function saveThemeSettings() {
+        localStorage.setItem('pageTheme', activePageTheme);
+        localStorage.setItem('dataColors', JSON.stringify(activeDataColors));
+        
+        try {
+            await fetch('/api/save_theme', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pageTheme: activePageTheme,
+                    dataColors: activeDataColors
+                })
+            });
+        } catch (e) {
+            console.log("Failed to save server theme:", e);
+        }
+    }
+
+    function setupThemeDrawerListeners() {
+        const drawer = document.getElementById('settings-drawer');
+        const overlay = document.getElementById('settings-drawer-overlay');
+        const openBtn = document.getElementById('btn-open-settings');
+        const closeBtn = document.getElementById('btn-close-settings');
+        const themeToggle = document.getElementById('theme-toggle');
+        
+        if (openBtn) {
+            openBtn.addEventListener('click', () => {
+                drawer.classList.add('active');
+                overlay.classList.add('active');
+            });
+        }
+        const closeDrawer = () => {
+            drawer.classList.remove('active');
+            overlay.classList.remove('active');
+        };
+        if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+        if (overlay) overlay.addEventListener('click', closeDrawer);
+        
+        if (themeToggle) {
+            themeToggle.addEventListener('change', (e) => {
+                const nextTheme = e.target.checked ? 'dark' : 'light';
+                applyPageTheme(nextTheme);
+                saveThemeSettings();
+            });
+        }
+        
+        document.getElementById('btn-preset-light').addEventListener('click', () => {
+            applyDataColors(LIGHT_PRESET);
+            saveThemeSettings();
+        });
+        document.getElementById('btn-preset-dark').addEventListener('click', () => {
+            applyDataColors(DARK_PRESET);
+            saveThemeSettings();
+        });
+        document.getElementById('btn-preset-reset').addEventListener('click', () => {
+            applyDataColors(LIGHT_PRESET);
+            saveThemeSettings();
+        });
+        
+        const pickers = [
+            { id: 'picker-candle-up', key: 'candleUp' },
+            { id: 'picker-candle-down', key: 'candleDown' },
+            { id: 'picker-candle-wick', key: 'candleWick' },
+            { id: 'picker-demand', key: 'demand' },
+            { id: 'picker-supply', key: 'supply' },
+            { id: 'picker-macd', key: 'macd' },
+            { id: 'picker-macd-signal', key: 'macdSignal' },
+            { id: 'picker-macd-hist', key: 'macdHist' },
+            { id: 'picker-kdj-k', key: 'kdjK' },
+            { id: 'picker-kdj-d', key: 'kdjD' },
+            { id: 'picker-kdj-j', key: 'kdjJ' },
+            { id: 'picker-atr-14', key: 'atr14' },
+            { id: 'picker-atr-200', key: 'atr200' }
+        ];
+        
+        pickers.forEach(p => {
+            const el = document.getElementById(p.id);
+            if (el) {
+                el.addEventListener('input', (e) => {
+                    activeDataColors[p.key] = e.target.value;
+                    applyDataColors(activeDataColors);
+                });
+                el.addEventListener('change', () => {
+                    saveThemeSettings();
+                });
+            }
+        });
+    }
+
+    loadThemeSettings();
+    setupThemeDrawerListeners();
 });
 
 // Polyfills for chart series

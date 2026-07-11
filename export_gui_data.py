@@ -473,12 +473,16 @@ def main():
         def do_GET(self):
             if self.path == "/api/iterations":
                 self.handle_get_iterations()
+            elif self.path == "/api/get_theme":
+                self.handle_get_theme()
             else:
                 super().do_GET()
 
         def do_POST(self):
             if self.path == "/api/push_gsheet":
                 self.handle_push_gsheet()
+            elif self.path == "/api/save_theme":
+                self.handle_save_theme()
             else:
                 self.send_error(404, "Endpoint not found")
 
@@ -550,6 +554,55 @@ def main():
                 self.wfile.write(json.dumps(data).encode("utf-8"))
             except Exception as e:
                 self.send_error(500, f"Database error: {e}")
+
+        def handle_get_theme(self):
+            try:
+                theme_path = "chart_theme.json"
+                if os.path.isfile(theme_path):
+                    with open(theme_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                else:
+                    data = {
+                        "pageTheme": "light",
+                        "dataColors": {
+                            "candleUp": "#10b981",
+                            "candleDown": "#ef4444",
+                            "candleWick": "#475569",
+                            "demand": "#0d9488",
+                            "supply": "#ea580c",
+                            "macd": "#1d4ed8",
+                            "macdSignal": "#f97316",
+                            "macdHist": "#10b981",
+                            "kdjK": "#0d9488",
+                            "kdjD": "#3b82f6",
+                            "kdjJ": "#ec4899",
+                            "atr14": "#8b5cf6",
+                            "atr200": "#6b7280"
+                        }
+                    }
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(data).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Error getting theme: {e}")
+
+        def handle_save_theme(self):
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(content_length)
+                data = json.loads(body.decode("utf-8"))
+                
+                theme_path = "chart_theme.json"
+                with open(theme_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+                
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
+            except Exception as e:
+                self.send_error(500, f"Error saving theme: {e}")
 
         def handle_push_gsheet(self):
             try:

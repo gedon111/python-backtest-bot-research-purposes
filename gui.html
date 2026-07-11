@@ -101,8 +101,14 @@
                         <button class="btn-toggle active" id="btn-auto-fit">Auto Fit: ON</button>
                     </div>
                     
-                    <div class="control-group actions">
+                    <div class="control-group actions" style="display: flex; align-items: center;">
                         <button id="btn-sync-gsheet" class="btn-primary">Sync GSheets</button>
+                        <button id="btn-open-settings" class="btn-secondary" style="margin-left: 0.5rem; display: flex; align-items: center; justify-content: center; padding: 0.5rem; border-radius: 8px; cursor: pointer; height: 38px; width: 38px; border: 1px solid var(--border); background: var(--bg-surface);">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
@@ -284,6 +290,113 @@
     </div>
 
     <!-- Scripts -->
+     <!-- Settings Drawer -->
+    <div id="settings-drawer-overlay" class="drawer-overlay"></div>
+    <div id="settings-drawer" class="drawer">
+        <div class="drawer-header">
+            <h3>Chart Settings</h3>
+            <button id="btn-close-settings" class="drawer-close-btn">&times;</button>
+        </div>
+        <div class="drawer-body">
+            <!-- Section 1: Page Theme -->
+            <div class="drawer-section">
+                <h4>Page Theme</h4>
+                <div class="theme-toggle-container" style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem; font-size: 0.9rem;">
+                    <span>Dark Mode (Page Chrome)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Section 2: Presets -->
+            <div class="drawer-section">
+                <h4>Presets</h4>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button id="btn-preset-light" class="btn-preset" style="flex: 1;">Load Light Preset</button>
+                    <button id="btn-preset-dark" class="btn-preset" style="flex: 1;">Load Dark Preset</button>
+                </div>
+                <div style="margin-top: 0.5rem;">
+                    <button id="btn-preset-reset" class="btn-preset" style="width: 100%; text-align: center;">Reset to Defaults</button>
+                </div>
+            </div>
+
+            <!-- Section 3: Color Pickers -->
+            <div class="drawer-section">
+                <h4>Candles</h4>
+                <div class="picker-item">
+                    <label for="picker-candle-up">Bullish Candle</label>
+                    <input type="color" id="picker-candle-up">
+                </div>
+                <div class="picker-item">
+                    <label for="picker-candle-down">Bearish Candle</label>
+                    <input type="color" id="picker-candle-down">
+                </div>
+                <div class="picker-item">
+                    <label for="picker-candle-wick">Wicks</label>
+                    <input type="color" id="picker-candle-wick">
+                </div>
+            </div>
+
+            <div class="drawer-section">
+                <h4>Order Blocks</h4>
+                <div class="picker-item">
+                    <label for="picker-demand">Demand Zone</label>
+                    <input type="color" id="picker-demand">
+                </div>
+                <div class="picker-item">
+                    <label for="picker-supply">Supply Zone</label>
+                    <input type="color" id="picker-supply">
+                </div>
+            </div>
+
+            <div class="drawer-section">
+                <h4>MACD Pane</h4>
+                <div class="picker-item">
+                    <label for="picker-macd">MACD Line</label>
+                    <input type="color" id="picker-macd">
+                </div>
+                <div class="picker-item">
+                    <label for="picker-macd-signal">Signal Line</label>
+                    <input type="color" id="picker-macd-signal">
+                </div>
+                <div class="picker-item">
+                    <label for="picker-macd-hist">Histogram</label>
+                    <input type="color" id="picker-macd-hist">
+                </div>
+            </div>
+
+            <div class="drawer-section">
+                <h4>KDJ Pane</h4>
+                <div class="picker-item">
+                    <label for="picker-kdj-k">K Line</label>
+                    <input type="color" id="picker-kdj-k">
+                </div>
+                <div class="picker-item">
+                    <label for="picker-kdj-d">D Line</label>
+                    <input type="color" id="picker-kdj-d">
+                </div>
+                <div class="picker-item">
+                    <label for="picker-kdj-j">J Line</label>
+                    <input type="color" id="picker-kdj-j">
+                </div>
+            </div>
+
+            <div class="drawer-section">
+                <h4>ATR Pane</h4>
+                <div class="picker-item">
+                    <label for="picker-atr-14">ATR(14)</label>
+                    <input type="color" id="picker-atr-14">
+                </div>
+                <div class="picker-item">
+                    <label for="picker-atr-200">ATR(200)</label>
+                    <input type="color" id="picker-atr-200">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <script src="gui.js?v=12"></script>
 </body>
