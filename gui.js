@@ -74,10 +74,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             crosshair: { 
                 mode: LightweightCharts.CrosshairMode.Normal,
                 vertLine: { color: '#cbd5e1', style: 1 },
-                horzLine: { color: '#cbd5e1', style: 1 }
             },
-            rightPriceScale: { borderColor: '#e2e8f0' },
-            timeScale: { borderColor: '#e2e8f0', timeVisible: true },
+            rightPriceScale: { 
+                borderColor: '#e2e8f0',
+                minimumWidth: 100
+            },
+            timeScale: { borderColor: '#e2e8f0', timeVisible: true }
         };
 
         const subChartOptions = {
@@ -207,7 +209,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         macdChart.subscribeCrosshairMove(p => syncCrosshairs(p, macdChart));
         kdjChart.subscribeCrosshairMove(p => syncCrosshairs(p, kdjChart));
         atrChart.subscribeCrosshairMove(p => syncCrosshairs(p, atrChart));
-
+        function verifyPlotAreaAlignment() {
+            setTimeout(() => {
+                charts.forEach((c, idx) => {
+                    const chartWidth = c.chartElement().clientWidth;
+                    const priceScaleWidth = c.priceScale('right').width();
+                    const plotAreaWidth = chartWidth - priceScaleWidth;
+                    const names = ['main', 'macd', 'kdj', 'atr'];
+                    console.log(`[Alignment Audit] ${names[idx]} Plot Area: ${plotAreaWidth}px (Total: ${chartWidth}px, Scale: ${priceScaleWidth}px)`);
+                });
+            }, 300);
+        }
 
         // Window Resize
         new ResizeObserver(() => {
@@ -216,6 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 c.applyOptions({ width: parent.clientWidth, height: parent.clientHeight });
             });
             updateOverlays();
+            verifyPlotAreaAlignment();
         }).observe(document.getElementById('charts-column'));
 
         // Listen for pointer events on the main pane to catch Y-axis drags/zooms for overlay syncing
@@ -226,6 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Controls setup
         setupControls(runsByThreshold);
+        verifyPlotAreaAlignment();
     }
     
     function setupControls(runsByThreshold) {
@@ -380,6 +394,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!visibleRange) return;
         
         if (toggleObZones) {
+            const renderedLabelBounds = [];
+            
             processedObs.forEach(ob => {
                 if (ob.endIdx < visibleRange.from || ob.exactIdx > visibleRange.to) return;
                 
@@ -415,18 +431,47 @@ document.addEventListener('DOMContentLoaded', async () => {
                     rect.style.backgroundColor = `rgba(${bgRGB}, ${bgOp})`;
                 }
                 
+                container.appendChild(rect);
+                
                 const barsVisible = visibleRange.to - visibleRange.from;
-                const showLabels = barsVisible <= 120;
-
+                const showLabels = barsVisible <= 60;
+                
                 if (showLabels || isActive) {
+                    let currentOffset = 0;
+                    while (true) {
+                        let collision = false;
+                        const labelY = y + currentOffset;
+                        for (const bound of renderedLabelBounds) {
+                            const horizOverlap = !(endX < bound.startX || startX > bound.endX);
+                            const vertOverlap = Math.abs(labelY - bound.y) < 14;
+                            if (horizOverlap && vertOverlap) {
+                                collision = true;
+                                break;
+                            }
+                        }
+                        if (collision) {
+                            currentOffset += 14;
+                        } else {
+                            break;
+                        }
+                    }
+                    
                     const label = document.createElement('div');
                     label.className = 'ob-label';
+                    label.style.position = 'absolute';
+                    label.style.left = (startX + 4) + 'px';
+                    label.style.top = (y + currentOffset + 2) + 'px';
                     label.style.color = ob.type === 'DEMAND' ? '#0d9488' : '#ea580c';
+                    label.style.zIndex = isActive ? '25' : '15';
                     label.innerText = `${ob.type} q${ob.quality}`;
-                    rect.appendChild(label);
+                    container.appendChild(label);
+                    
+                    renderedLabelBounds.push({
+                        startX: startX,
+                        endX: endX,
+                        y: y + currentOffset
+                    });
                 }
-                
-                container.appendChild(rect);
             });
         }
         
