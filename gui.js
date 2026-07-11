@@ -437,20 +437,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const showLabels = barsVisible <= 60;
                 
                 if (showLabels || isActive) {
+                    const drawLeft = Math.max(8, startX + 4);
+                    const drawRight = drawLeft + 80;
+                    
                     let currentOffset = 0;
                     while (true) {
                         let collision = false;
                         const labelY = y + currentOffset;
                         for (const bound of renderedLabelBounds) {
-                            const horizOverlap = !(endX < bound.startX || startX > bound.endX);
-                            const vertOverlap = Math.abs(labelY - bound.y) < 14;
+                            const horizOverlap = !(drawRight < bound.startX || drawLeft > bound.endX);
+                            const vertOverlap = Math.abs(labelY - bound.y) < 15;
                             if (horizOverlap && vertOverlap) {
                                 collision = true;
                                 break;
                             }
                         }
                         if (collision) {
-                            currentOffset += 14;
+                            currentOffset += 15;
                         } else {
                             break;
                         }
@@ -459,7 +462,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const label = document.createElement('div');
                     label.className = 'ob-label';
                     label.style.position = 'absolute';
-                    label.style.left = (startX + 4) + 'px';
+                    label.style.left = drawLeft + 'px';
                     label.style.top = (y + currentOffset + 2) + 'px';
                     label.style.color = ob.type === 'DEMAND' ? '#0d9488' : '#ea580c';
                     label.style.zIndex = isActive ? '25' : '15';
@@ -467,8 +470,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     container.appendChild(label);
                     
                     renderedLabelBounds.push({
-                        startX: startX,
-                        endX: endX,
+                        startX: drawLeft,
+                        endX: drawRight,
                         y: y + currentOffset
                     });
                 }
