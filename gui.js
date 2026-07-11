@@ -14,10 +14,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentData = [];
     let activeIterationId = 0;
     let loadedIterations = [];
-    
+    let activeHoveredTime = null;
     let processedObs = [];
     let processedTrades = [];
-    
+
     const els = {
         o: document.getElementById('val-o'), h: document.getElementById('val-h'),
         l: document.getElementById('val-l'), c: document.getElementById('val-c'),
@@ -61,18 +61,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         timeToIndex = new Map(data.map((row, idx) => [row.time, idx]));
         
         const commonOptions = {
-            layout: { background: { type: 'solid', color: '#0f172a' }, textColor: '#94a3b8' },
-            grid: { vertLines: { color: '#334155', style: 1 }, horzLines: { color: '#334155', style: 1 } },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-            rightPriceScale: { borderColor: '#334155' },
-            timeScale: { borderColor: '#334155', timeVisible: true },
+            layout: { 
+                background: { type: 'solid', color: '#ffffff' }, 
+                textColor: '#475569',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 11
+            },
+            grid: { 
+                vertLines: { color: '#f1f5f9', style: 1 }, 
+                horzLines: { color: '#f1f5f9', style: 1 } 
+            },
+            crosshair: { 
+                mode: LightweightCharts.CrosshairMode.Normal,
+                vertLine: { color: '#cbd5e1', style: 1 },
+                horzLine: { color: '#cbd5e1', style: 1 }
+            },
+            rightPriceScale: { borderColor: '#e2e8f0' },
+            timeScale: { borderColor: '#e2e8f0', timeVisible: true },
         };
 
         const subChartOptions = {
             ...commonOptions,
             crosshair: {
                 mode: LightweightCharts.CrosshairMode.Normal,
-                vertLine: { visible: true, style: 1 },
+                vertLine: { color: '#cbd5e1', style: 1, visible: true },
+                horzLine: { color: '#cbd5e1', style: 1, visible: true }
             },
         };
 
@@ -88,24 +101,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         kdjChart.timeScale().applyOptions({ visible: false });
 
         candleSeries = addCandlestickSeriesCompat(mainChart, {
-            upColor: '#10b981', downColor: '#ef4444',
-            borderDownColor: '#ef4444', borderUpColor: '#10b981',
-            wickDownColor: '#ef4444', wickUpColor: '#10b981',
+            upColor: '#ffffff',
+            downColor: '#475569',
+            borderUpColor: '#475569',
+            borderDownColor: '#475569',
+            wickUpColor: '#475569',
+            wickDownColor: '#475569',
         });
         
-        macdHist = addHistogramSeriesCompat(macdChart, { color: '#26a69a', priceFormat: { type: 'volume' } });
-        macdLine = addLineSeriesCompat(macdChart, { color: '#3b82f6', lineWidth: 2 });
-        signalLine = addLineSeriesCompat(macdChart, { color: '#fbbf24', lineWidth: 1 });
+        macdHist = addHistogramSeriesCompat(macdChart, { color: '#94a3b8', priceFormat: { type: 'volume' } });
+        macdLine = addLineSeriesCompat(macdChart, { color: '#475569', lineWidth: 1.5 });
+        signalLine = addLineSeriesCompat(macdChart, { color: '#cbd5e1', lineWidth: 1 });
         
-        kLine = addLineSeriesCompat(kdjChart, { color: '#fbbf24', lineWidth: 1.5 });
-        dLine = addLineSeriesCompat(kdjChart, { color: '#3b82f6', lineWidth: 1.5 });
-        jLine = addLineSeriesCompat(kdjChart, { color: '#c084fc', lineWidth: 1.5 });
+        kLine = addLineSeriesCompat(kdjChart, { color: '#475569', lineWidth: 1.5 });
+        dLine = addLineSeriesCompat(kdjChart, { color: '#94a3b8', lineWidth: 1.2 });
+        jLine = addLineSeriesCompat(kdjChart, { color: '#cbd5e1', lineWidth: 1 });
         
-        atrLine = addLineSeriesCompat(atrChart, { color: '#F0B90B', lineWidth: 1.5 });
-        atr200Line = addLineSeriesCompat(atrChart, { color: '#7B68EE', lineWidth: 1.5 });
+        atrLine = addLineSeriesCompat(atrChart, { color: '#475569', lineWidth: 1.5 });
+        atr200Line = addLineSeriesCompat(atrChart, { color: '#cbd5e1', lineWidth: 1.5 });
 
         // Set indicator data
-        macdHist.setData(data.map(d => ({ time: d.time, value: d.MACD_hist, color: d.MACD_hist > 0 ? '#10b981' : '#ef4444' })));
+        macdHist.setData(data.map(d => ({ time: d.time, value: d.MACD_hist, color: d.MACD_hist > 0 ? '#bbf7d0' : '#fecaca' }))); // soft red/green for hist
         macdLine.setData(data.map(d => ({ time: d.time, value: d.MACD })));
         signalLine.setData(data.map(d => ({ time: d.time, value: d.MACD_signal })));
         
@@ -130,54 +146,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
         charts.forEach((c, idx) => c.timeScale().subscribeVisibleLogicalRangeChange(syncTimeRange(idx)));
 
-        // Crosshair sync — main chart drives sub-charts via setCrosshairPosition with actual price values
+        // Crosshair sync across all four charts
         let isCrosshairSyncing = false;
 
-        mainChart.subscribeCrosshairMove(param => {
-            // Update readouts
-            if (param.time) {
-                const idx = timeToIndex.get(param.time);
-                if (idx !== undefined) {
-                    const row = data[idx];
-                    els.o.innerText = row.open.toFixed(2);
-                    els.h.innerText = row.high.toFixed(2);
-                    els.l.innerText = row.low.toFixed(2);
-                    els.c.innerText = row.close.toFixed(2);
-                    els.macd.innerText = row.MACD != null ? row.MACD.toFixed(2) : '--';
-                    els.k.innerText = row.K != null ? row.K.toFixed(2) : '--';
-                    els.d.innerText = row.D != null ? row.D.toFixed(2) : '--';
-                    els.j.innerText = row.J != null ? row.J.toFixed(2) : '--';
-                    els.atr.innerText = row.ATR != null ? row.ATR.toFixed(2) : '--';
-                    if (els.atr200) els.atr200.innerText = row.ATR_200 != null ? row.ATR_200.toFixed(2) : '--';
-                }
-                updateObPanel(param.time);
-            }
-
-            // Sync crosshair to sub-charts
+        function syncCrosshairs(param, sourceChart) {
             if (isCrosshairSyncing) return;
             isCrosshairSyncing = true;
-            if (param.time) {
-                const idx = timeToIndex.get(param.time);
-                if (idx !== undefined) {
-                    const row = data[idx];
-                    console.log('setCrosshairPosition args:', { paramTime: param.time, dataTime: data[idx].time, macd: row.MACD_hist, k: row.K, atr: row.ATR, idx: idx });
-                    try { macdChart.setCrosshairPosition(row.MACD_hist, param.time, macdHist); } catch(e) { console.error('macd error:', e); }
-                    try { kdjChart.setCrosshairPosition(row.K, param.time, kLine); } catch(e) { console.error('kdj error:', e); }
-                    try { atrChart.setCrosshairPosition(row.ATR, param.time, atrLine); } catch(e) { console.error('atr error:', e); }
-                }
-            } else {
-                try { macdChart.clearCrosshairPosition(); } catch(e) {}
-                try { kdjChart.clearCrosshairPosition(); } catch(e) {}
-                try { atrChart.clearCrosshairPosition(); } catch(e) {}
-            }
-            isCrosshairSyncing = false;
-        });
 
-        // Sub-chart crosshair → readouts only (no further sync to avoid loops)
-        [macdChart, kdjChart, atrChart].forEach(c => {
-            c.subscribeCrosshairMove(param => {
-                if (isCrosshairSyncing || !param.time) return;
-                const idx = timeToIndex.get(param.time);
+            const time = param.time;
+            if (time) {
+                const idx = timeToIndex.get(time);
                 if (idx !== undefined) {
                     const row = data[idx];
                     els.o.innerText = row.open.toFixed(2);
@@ -190,10 +168,45 @@ document.addEventListener('DOMContentLoaded', async () => {
                     els.j.innerText = row.J != null ? row.J.toFixed(2) : '--';
                     els.atr.innerText = row.ATR != null ? row.ATR.toFixed(2) : '--';
                     if (els.atr200) els.atr200.innerText = row.ATR_200 != null ? row.ATR_200.toFixed(2) : '--';
+                    
+                    updateObPanel(time);
+
+                    // Update active highlighted OB time & trigger overlay redraw
+                    activeHoveredTime = time;
+                    requestAnimationFrame(updateOverlays);
+
+                    // Sync crosshair lines on all other charts
+                    if (sourceChart !== mainChart) {
+                        try { mainChart.setCrosshairPosition(row.close, time, candleSeries); } catch(e) {}
+                    }
+                    if (sourceChart !== macdChart) {
+                        try { macdChart.setCrosshairPosition(row.MACD_hist, time, macdHist); } catch(e) {}
+                    }
+                    if (sourceChart !== kdjChart) {
+                        try { kdjChart.setCrosshairPosition(row.K, time, kLine); } catch(e) {}
+                    }
+                    if (sourceChart !== atrChart) {
+                        try { atrChart.setCrosshairPosition(row.ATR, time, atrLine); } catch(e) {}
+                    }
                 }
-                updateObPanel(param.time);
-            });
-        });
+            } else {
+                activeHoveredTime = null;
+                requestAnimationFrame(updateOverlays);
+
+                // Clear crosshair lines on all charts except the source if mouse moved out
+                if (sourceChart !== mainChart) { try { mainChart.clearCrosshairPosition(); } catch(e) {} }
+                if (sourceChart !== macdChart) { try { macdChart.clearCrosshairPosition(); } catch(e) {} }
+                if (sourceChart !== kdjChart) { try { kdjChart.clearCrosshairPosition(); } catch(e) {} }
+                if (sourceChart !== atrChart) { try { atrChart.clearCrosshairPosition(); } catch(e) {} }
+            }
+
+            isCrosshairSyncing = false;
+        }
+
+        mainChart.subscribeCrosshairMove(p => syncCrosshairs(p, mainChart));
+        macdChart.subscribeCrosshairMove(p => syncCrosshairs(p, macdChart));
+        kdjChart.subscribeCrosshairMove(p => syncCrosshairs(p, kdjChart));
+        atrChart.subscribeCrosshairMove(p => syncCrosshairs(p, atrChart));
 
 
         // Window Resize
@@ -280,7 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (exactIdx == null || exactIdx < 0 || exactIdx >= currentData.length) return;
             
             // Custom highlight
-            const color = ob.type === 'DEMAND' ? '#8090E0' : '#E0A040';
+            const color = ob.type === 'DEMAND' ? '#0d9488' : '#ea580c';
             newCandleData[exactIdx] = {
                 ...newCandleData[exactIdx],
                 color: color,
@@ -310,7 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 markers.push({
                     time: currentData[exactIdx].time,
                     position: isDemand ? 'belowBar' : 'aboveBar',
-                    color: isDemand ? '#8090E0' : '#E0A040',
+                    color: isDemand ? '#0d9488' : '#ea580c',
                     shape: isDemand ? 'arrowUp' : 'arrowDown',
                     text: `${ob.type} q${ob.quality}`,
                 });
@@ -389,18 +402,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 rect.style.width = w + 'px';
                 rect.style.height = h + 'px';
                 
-                const borderCol = ob.type === 'DEMAND' ? 'rgba(100, 120, 220, 0.50)' : 'rgba(220, 150, 50, 0.50)';
-                const bgOp = [0.08, 0.10, 0.12, 0.15][ob.quality] || 0.08;
-                const bgRGB = ob.type === 'DEMAND' ? '100, 120, 220' : '220, 150, 50';
+                const isActive = (ob.startTime === activeHoveredTime);
+                if (isActive) {
+                    rect.style.border = '2px solid #1d4ed8';
+                    rect.style.backgroundColor = 'transparent';
+                    rect.style.zIndex = '20';
+                } else {
+                    const borderCol = ob.type === 'DEMAND' ? 'rgba(13, 148, 136, 0.60)' : 'rgba(234, 88, 12, 0.60)';
+                    const bgOp = [0.06, 0.08, 0.10, 0.12][ob.quality] || 0.06;
+                    const bgRGB = ob.type === 'DEMAND' ? '13, 148, 136' : '234, 88, 12';
+                    rect.style.border = `1px dashed ${borderCol}`;
+                    rect.style.backgroundColor = `rgba(${bgRGB}, ${bgOp})`;
+                }
                 
-                rect.style.borderColor = borderCol;
-                rect.style.backgroundColor = `rgba(${bgRGB}, ${bgOp})`;
-                
-                const label = document.createElement('div');
-                label.className = 'ob-label';
-                label.style.color = ob.type === 'DEMAND' ? '#8090E0' : '#E0A040';
-                label.innerText = `${ob.type} q${ob.quality}`;
-                rect.appendChild(label);
+                const barsVisible = visibleRange.to - visibleRange.from;
+                const showLabels = barsVisible <= 120;
+
+                if (showLabels || isActive) {
+                    const label = document.createElement('div');
+                    label.className = 'ob-label';
+                    label.style.color = ob.type === 'DEMAND' ? '#0d9488' : '#ea580c';
+                    label.innerText = `${ob.type} q${ob.quality}`;
+                    rect.appendChild(label);
+                }
                 
                 container.appendChild(rect);
             });

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Binance Backtest Bot Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <!-- MathJax CDN -->
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="stylesheet" href="gui.css">
@@ -35,47 +35,76 @@
             <section id="chart-tab" class="tab-pane active">
                 <div class="top-bar">
                     <div class="status-legend" id="status-legend">
-                        <span class="symbol">BTCUSDT 4H</span>
-                        <span class="verify-pill" id="verification-pill">Verification: --</span>
-                        <div class="readouts" id="price-readout">
-                            O: <span id="val-o">--</span> 
-                            H: <span id="val-h">--</span> 
-                            L: <span id="val-l">--</span> 
-                            C: <span id="val-c">--</span>
+                        <div class="symbol-container">
+                            <span class="symbol">BTCUSDT 4H</span>
+                            <span class="verify-pill" id="verification-pill">Verification: --</span>
                         </div>
-                        <div class="readouts indicator-readouts">
-                            MACD: <span id="val-macd" class="blue">--</span>
-                            K: <span id="val-k" class="yellow">--</span> 
-                            D: <span id="val-d" class="blue">--</span> 
-                            J: <span id="val-j" class="purple">--</span>
-                            ATR 14: <span id="val-atr" style="color: #F0B90B">--</span>
-                            ATR 200: <span id="val-atr200" style="color: #7B68EE">--</span>
+                        
+                        <!-- Metric Cards Row -->
+                        <div class="metric-cards">
+                            <div class="metric-card">
+                                <div class="metric-label">OHLC Prices</div>
+                                <div class="metric-value monospace">
+                                    O:<span id="val-o">--</span>
+                                    H:<span id="val-h">--</span>
+                                    L:<span id="val-l">--</span>
+                                    C:<span id="val-c">--</span>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">MACD (12, 26, 9)</div>
+                                <div class="metric-value monospace">
+                                    <span id="val-macd">--</span>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">KDJ (9, 3, 3)</div>
+                                <div class="metric-value monospace">
+                                    K:<span id="val-k">--</span>
+                                    D:<span id="val-d">--</span>
+                                    J:<span id="val-j">--</span>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">ATR (14 / 200)</div>
+                                <div class="metric-value monospace">
+                                    <span id="val-atr">--</span> / <span id="val-atr200">--</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="control-bar">
-                    <label>Min OB Quality
-                        <select id="quality-select"></select>
-                    </label>
-                    <label>OB Level
-                        <select id="ob-level">
-                            <option value="all">All</option>
-                            <option value="internal">Internal</option>
-                            <option value="swing">Swing</option>
-                        </select>
-                    </label>
-                    <label>OB Structure
-                        <select id="ob-structure">
-                            <option value="all">All</option>
-                            <option value="BOS">BOS</option>
-                            <option value="CHoCH">CHoCH</option>
-                        </select>
-                    </label>
-                    <button class="btn-toggle active" id="btn-show-lines">Show Lines: ON</button>
-                    <label class="inline-check"><input id="toggle-ob-zones" type="checkbox" checked> Show OB Zones</label>
-                    <label class="inline-check"><input id="toggle-ob-markers" type="checkbox" checked> Show OB Markers</label>
-                    <button class="btn-toggle active" id="btn-auto-fit">Auto Fit: ON</button>
-                    <button class="btn-toggle" id="btn-sync-gsheet" style="background: #eab308; color: #0f172a; font-weight: 600; font-family: inherit;">Sync GSheets</button>
+                    <div class="control-group filters">
+                        <label>Min OB Quality
+                            <select id="quality-select"></select>
+                        </label>
+                        <label>OB Level
+                            <select id="ob-level">
+                                <option value="all">All</option>
+                                <option value="internal">Internal</option>
+                                <option value="swing">Swing</option>
+                            </select>
+                        </label>
+                        <label>OB Structure
+                            <select id="ob-structure">
+                                <option value="all">All</option>
+                                <option value="BOS">BOS</option>
+                                <option value="CHoCH">CHoCH</option>
+                            </select>
+                        </label>
+                    </div>
+                    
+                    <div class="control-group toggles">
+                        <button class="btn-toggle active" id="btn-show-lines">Show Lines: ON</button>
+                        <label class="inline-check"><input id="toggle-ob-zones" type="checkbox" checked> Show OB Zones</label>
+                        <label class="inline-check"><input id="toggle-ob-markers" type="checkbox" checked> Show OB Markers</label>
+                        <button class="btn-toggle active" id="btn-auto-fit">Auto Fit: ON</button>
+                    </div>
+                    
+                    <div class="control-group actions">
+                        <button id="btn-sync-gsheet" class="btn-primary">Sync GSheets</button>
+                    </div>
                 </div>
 
                 <div class="chart-layout">
