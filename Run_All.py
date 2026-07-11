@@ -5,12 +5,13 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser(description="Binance Backtest Bot - Unified Pipeline Runner")
-    parser.add_argument("--ml", action="store_true", help="Run the ML Optimizer (slow randomized search & classifier training) before starting the server")
     args = parser.parse_args()
 
+    print("==================================================")
     print("  Binance Backtest Bot - Unified Pipeline Runner  ")
+    print("==================================================")
     
-    total_steps = 4 if args.ml else 3
+    total_steps = 2
     current_step = 1
 
     # Step 1: Run backtest and export base data to SQLite
@@ -25,32 +26,7 @@ def main():
         sys.exit(e.returncode)
     current_step += 1
 
-    # Step 2: Verify SQL database schema & feature engineering
-    print(f"\n[Step {current_step}/{total_steps}] Verifying database schema & features...")
-    try:
-        subprocess.run(
-            [sys.executable, "read_data_for_ml.py"],
-            check=True
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"\n[ERROR] Step {current_step} (read_data_for_ml) failed with exit code {e.returncode}.")
-        sys.exit(e.returncode)
-    current_step += 1
-
-    # Optional Step 3: Run the ML Optimizer
-    if args.ml:
-        print(f"\n[Step {current_step}/{total_steps}] Running ML Optimizer (randomized search parameter tuning & RF classifier training)...")
-        try:
-            subprocess.run(
-                [sys.executable, "ml_optimizer.py", "ML Pipeline Auto Run"],
-                check=True
-            )
-        except subprocess.CalledProcessError as e:
-            print(f"\n[ERROR] Step {current_step} (ml_optimizer) failed with exit code {e.returncode}.")
-            sys.exit(e.returncode)
-        current_step += 1
-
-    # Final Step: Run the Dashboard Web Server
+    # Step 2: Run the Dashboard Web Server
     print(f"\n[Step {current_step}/{total_steps}] Launching local web server and opening Dashboard GUI...")
     try:
         subprocess.run(

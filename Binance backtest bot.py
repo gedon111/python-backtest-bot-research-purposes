@@ -538,15 +538,15 @@ _smc_cache = {}
 def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
     if iteration_parameters is None:
         iteration_parameters = {}
-    
-    sl_ratio_min = iteration_parameters.get('sl_ratio_min', 0.015)
-    kdj_j_long_cap = iteration_parameters.get('kdj_j_long_cap', 60.0)
-    kdj_k_long_cap = iteration_parameters.get('kdj_k_long_cap', 50.0)
-    kdj_k_short_floor = iteration_parameters.get('kdj_k_short_floor', 70.0)
-    kdj_j_short_cap = iteration_parameters.get('kdj_j_short_cap', 100.0)
-    atr_mult_exit = iteration_parameters.get('atr_mult_exit', 1.8)
-    atr_mult_be = iteration_parameters.get('atr_mult_be', 2.0)
-    rr_min = iteration_parameters.get('rr_min', 1.5)
+    # Enforced fixed manually-specified parameter set for the paper (no sweeps/optimization)
+    sl_ratio_min = 0.015
+    kdj_j_long_cap = 60.0
+    kdj_k_long_cap = 50.0
+    kdj_k_short_floor = 70.0
+    kdj_j_short_cap = 100.0
+    atr_mult_exit = 1.8
+    atr_mult_be = 2.0
+    rr_min = 1.5
 
     current_entry_ob = None
     current_tp_ob = None

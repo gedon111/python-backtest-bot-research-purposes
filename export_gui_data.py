@@ -473,22 +473,12 @@ def main():
         def do_GET(self):
             if self.path == "/api/iterations":
                 self.handle_get_iterations()
-            elif self.path == "/api/run_ml/status":
-                self.handle_get_ml_status()
             else:
                 super().do_GET()
 
         def do_POST(self):
-            if self.path == "/api/run_ml":
-                self.handle_run_ml()
-            elif self.path == "/api/iterations/update_label":
-                self.handle_update_label()
-            elif self.path == "/api/iterations/select":
-                self.handle_select_iteration()
-            elif self.path == "/api/push_gsheet":
+            if self.path == "/api/push_gsheet":
                 self.handle_push_gsheet()
-            elif self.path == "/api/iterations/delete":
-                self.handle_delete_iteration()
             else:
                 self.send_error(404, "Endpoint not found")
 
@@ -497,8 +487,6 @@ def main():
                 engine = db_manager.init_db()
                 session = db_manager.get_session(engine)
                 
-                # Fetch baseline metrics by querying trades table
-                # We need stats for min_ob_quality levels 0, 1, 2, 3
                 trades = []
                 try:
                     trades = session.query(db_manager.Trade).all()
@@ -521,7 +509,6 @@ def main():
                         "tuned_wr": wr
                     }
                 
-                # Prepend the Heuristic Base ID 0 iteration
                 base_iter = {
                     "iteration_id": 0,
                     "label": "Heuristic Base (No ML)",
@@ -555,262 +542,14 @@ def main():
                     }
                 }
                 
-                iterations = session.query(db_manager.MLIteration).order_by(db_manager.MLIteration.iteration_id.asc()).all()
                 data = [base_iter]
-                for it in iterations:
-                    data.append({
-                        "iteration_id": it.iteration_id,
-                        "label": it.label,
-                        "created_at": it.created_at,
-                        "model_type": it.model_type,
-                        "parameters": json.loads(it.parameters),
-                        "metrics": json.loads(it.metrics),
-                        "pattern_diff": json.loads(it.pattern_diff)
-                    })
                 session.close()
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps(data).encode("utf-8"))
             except Exception as e:
-                import traceback
-                traceback.print_exc()
                 self.send_error(500, f"Database error: {e}")
-
-        def handle_delete_iteration(self):
-            try:
-                content_length = int(self.headers.get('Content-Length', 0))
-                body = self.rfile.read(content_length).decode('utf-8')
-                params = json.loads(body)
-                it_id = int(params["iteration_id"])
-                
-                if it_id == 0:
-                    self.send_error(400, "Cannot delete Heuristic Base iteration")
-                    return
-                
-                engine = db_manager.init_db()
-                session = db_manager.get_session(engine)
-                iteration = session.query(db_manager.MLIteration).filter(db_manager.MLIteration.iteration_id == it_id).first()
-                if iteration:
-                    try:
-                        it_params = json.loads(iteration.parameters)
-                        model_path = it_params.get("classifier_model_path")
-                        if model_path and os.path.isfile(model_path):
-                            os.remove(model_path)
-                            print(f"Deleted model file: {model_path}")
-                    except Exception as e:
-                        print(f"Warning: Failed to delete model file: {e}")
-                    
-                    session.delete(iteration)
-                    session.commit()
-                    session.close()
-                    
-                    global SELECTED_ITERATION_ID
-                    if SELECTED_ITERATION_ID == it_id:
-                        SELECTED_ITERATION_ID = 0
-                    
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json")
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"status": "Success"}).encode("utf-8"))
-                else:
-                    session.close()
-                    self.send_error(404, "Iteration not found")
-            except Exception as e:
-                self.send_error(500, f"Error deleting iteration: {e}")
-
-        def handle_get_ml_status(self):
-            status_path = "artifacts/ml_status.json"
-            status = {"phase": "Idle", "progress": 0, "log": "Optimizer is ready."}
-            if os.path.isfile(status_path):
-                try:
-                    with open(status_path, "r", encoding="utf-8") as f:
-                        status = json.load(f)
-                except Exception:
-                    pass
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps(status).encode("utf-8"))
-
-        def handle_run_ml(self):
-            try:
-                content_length = int(self.headers.get('Content-Length', 0))
-                body = self.rfile.read(content_length).decode('utf-8')
-                params = json.loads(body) if body else {}
-                label = params.get("label", "RandomForest Run")
-                prev_id = params.get("prev_iteration_id")
-                
-                # Check status
-                status_path = "artifacts/ml_status.json"
-                if os.path.isfile(status_path):
-                    try:
-                        with open(status_path, "r", encoding="utf-8") as f:
-                            curr = json.load(f)
-                            if curr.get("phase") not in ["Complete", "Error", "Idle"] and time.time() - curr.get("timestamp", 0) < 60:
-                                self.send_response(409)
-                                self.send_header("Content-Type", "application/json")
-                                self.end_headers()
-                                self.wfile.write(json.dumps({"error": "ML Optimizer is already running."}).encode("utf-8"))
-                                return
-                    except Exception:
-                        pass
-                
-                import subprocess
-                import sys
-                def run_optimizer():
-                    cmd = [sys.executable, "ml_optimizer.py", label]
-                    if prev_id is not None:
-                        cmd.append(str(prev_id))
-                    try:
-                        subprocess.run(cmd, check=True)
-                    except Exception as e:
-                        err_status = {"phase": "Error", "progress": 0, "log": f"Execution failed: {e}", "timestamp": int(time.time())}
-                        with open("artifacts/ml_status.json", "w", encoding="utf-8") as sf:
-                            json.dump(err_status, sf, indent=2)
-                
-                threading.Thread(target=run_optimizer, daemon=True).start()
-                
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.end_headers()
-                self.wfile.write(json.dumps({"status": "Started", "label": label}).encode("utf-8"))
-            except Exception as e:
-                self.send_error(500, f"Failed to start training: {e}")
-
-        def handle_update_label(self):
-            try:
-                content_length = int(self.headers.get('Content-Length', 0))
-                body = self.rfile.read(content_length).decode('utf-8')
-                params = json.loads(body)
-                it_id = int(params["iteration_id"])
-                new_label = str(params["label"])
-                
-                engine = db_manager.init_db()
-                session = db_manager.get_session(engine)
-                iteration = session.query(db_manager.MLIteration).filter(db_manager.MLIteration.iteration_id == it_id).first()
-                if iteration:
-                    iteration.label = new_label
-                    session.commit()
-                    session.close()
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json")
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"status": "Success"}).encode("utf-8"))
-                else:
-                    session.close()
-                    self.send_error(404, "Iteration not found")
-            except Exception as e:
-                self.send_error(500, f"Error updating label: {e}")
-
-        def handle_select_iteration(self):
-            try:
-                content_length = int(self.headers.get('Content-Length', 0))
-                body = self.rfile.read(content_length).decode('utf-8')
-                params = json.loads(body)
-                it_id = int(params["iteration_id"])
-                
-                iteration_parameters = None
-                active_model = None
-                
-                if it_id > 0:
-                    engine = db_manager.init_db()
-                    session = db_manager.get_session(engine)
-                    iteration = session.query(db_manager.MLIteration).filter(db_manager.MLIteration.iteration_id == it_id).first()
-                    if not iteration:
-                        session.close()
-                        self.send_error(404, "Iteration not found")
-                        return
-                    
-                    iteration_params = json.loads(iteration.parameters)
-                    session.close()
-                    
-                    model_path = iteration_params.get("classifier_model_path")
-                    if model_path and os.path.isfile(model_path):
-                        try:
-                            with open(model_path, "rb") as f:
-                                active_model = pickle.load(f)
-                        except Exception as e:
-                            print(f"Error loading model: {e}")
-                    
-                    iteration_parameters = {
-                        "sl_ratio_min": iteration_params.get("sl_ratio_min"),
-                        "kdj_j_long_cap": iteration_params.get("kdj_j_long_cap"),
-                        "kdj_k_long_cap": iteration_params.get("kdj_k_long_cap"),
-                        "kdj_k_short_floor": iteration_params.get("kdj_k_short_floor"),
-                        "kdj_j_short_cap": iteration_params.get("kdj_j_short_cap"),
-                        "atr_mult_exit": iteration_params.get("atr_mult_exit"),
-                        "atr_mult_be": iteration_params.get("atr_mult_be"),
-                        "rr_min": iteration_params.get("rr_min"),
-                        "classifier_model": active_model,
-                        "classifier_threshold": iteration_params.get("classifier_threshold", 0.5)
-                    }
-                
-                bot = load_bot_module()
-                cache_path = "artifacts/candles.csv"
-                if os.path.isfile(cache_path):
-                    base_df = pd.read_csv(cache_path)
-                    base_df["open_time"] = pd.to_datetime(base_df["open_time"])
-                else:
-                    base_df = bot.get_candles(symbol="BTCUSDT", interval=bot.Client.KLINE_INTERVAL_4HOUR)
-                
-                base_df = bot.compute_indicators(base_df)
-                base_df["time"] = base_df["open_time"].apply(lambda x: int(x.timestamp()))
-                
-                levels = [0, 1, 2, 3]
-                runs_by_threshold = {}
-                threshold_runs = []
-                sim_dfs = {}
-                
-                for level in levels:
-                    sim_df = bot.simulate_trades(base_df.copy(), min_ob_quality=level, iteration_parameters=iteration_parameters)
-                    sim_dfs[level] = sim_df
-                    stats = sim_df.attrs.get("trade_stats", {})
-                    trades_df = sim_df.attrs.get("trades_df", pd.DataFrame())
-                    obs = bot.compute_smc(sim_df)
-                    
-                    trades = normalize_records(trades_df.to_dict(orient="records")) if not trades_df.empty else []
-                    obs = normalize_records(obs)
-                    stats = {k: to_native(v) for k, v in stats.items()}
-                    
-                    runs_by_threshold[level] = {
-                        "obs": obs,
-                        "trades": trades,
-                        "stats": stats
-                    }
-                    threshold_runs.append({
-                        "min_quality": level,
-                        "trade_stats": stats,
-                        "trade_count": len(trades),
-                        "orderblock_count": len(obs)
-                    })
-                
-                default_level = 1
-                base_df["Trade_Status"] = sim_dfs[default_level]["Trade_Status"].fillna("")
-                candles = normalize_records(base_df[["time", "open_time", "open", "high", "low", "close", "volume", "MACD", "MACD_signal", "MACD_hist", "K", "D", "J", "ATR", "ATR_200", "Trade_Status"]].to_dict(orient="records"))
-                
-                with open("artifacts/candles.json", "w", encoding="utf-8") as f:
-                    json.dump(candles, f, indent=2, default=fallback_json)
-                with open("artifacts/threshold_runs.json", "w", encoding="utf-8") as f:
-                    json.dump(threshold_runs, f, indent=2, default=fallback_json)
-                with open("artifacts/runs_by_threshold.json", "w", encoding="utf-8") as f:
-                    json.dump(runs_by_threshold, f, indent=2, default=fallback_json)
-                
-                default_run = runs_by_threshold.get(default_level, runs_by_threshold[0])
-                pd.DataFrame(default_run["trades"]).to_csv("artifacts/trades_default_view.csv", index=False)
-                pd.DataFrame(default_run["obs"]).to_csv("artifacts/orderblocks_default_view.csv", index=False)
-                
-                global SELECTED_ITERATION_ID
-                SELECTED_ITERATION_ID = it_id
-                
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.end_headers()
-                self.wfile.write(json.dumps({"status": "Success", "iteration_id": it_id}).encode("utf-8"))
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                self.send_error(500, f"Error selecting iteration: {e}")
 
         def handle_push_gsheet(self):
             try:
