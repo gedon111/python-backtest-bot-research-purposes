@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // === Chart Theme and Custom Colors Settings (Option B) ===
     const LIGHT_PRESET = {
-        candleUp: "#10b981",
-        candleDown: "#ef4444",
+        candleUp: "#26a69a",
+        candleDown: "#ef5350",
         candleWick: "#475569",
         demand: "#0d9488",
         supply: "#ea580c",
@@ -17,9 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const DARK_PRESET = {
-        candleUp: "#22c55e",
-        candleDown: "#ef4444",
-        candleWick: "#94a3b8",
+        candleUp: "#26a69a",
+        candleDown: "#ef5350",
+        candleWick: "#475569",
         demand: "#00f0ff",
         supply: "#f97316",
         macd: "#3b82f6",
@@ -40,6 +40,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
         return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '128, 128, 128';
+    }
+
+    function parseHexColor(hex) {
+        const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+        const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(fullHex);
+        if (!result) {
+            return { rgb: '128, 128, 128', alpha: 1.0, hex: '#808080' };
+        }
+        const r = parseInt(result[1], 16);
+        const g = parseInt(result[2], 16);
+        const b = parseInt(result[3], 16);
+        const alpha = result[4] !== undefined ? parseInt(result[4], 16) / 255 : 1.0;
+        return {
+            rgb: `${r}, ${g}, ${b}`,
+            alpha: alpha,
+            hex: `#${result[1]}${result[2]}${result[3]}`
+        };
+    }
+
+    function hexToRgbaStr(hex) {
+        const parsed = parseHexColor(hex);
+        return `rgba(${parsed.rgb}, ${parsed.alpha})`;
     }
     const navItems = document.querySelectorAll('.nav-item');
     const tabPanes = document.querySelectorAll('.tab-pane');
@@ -167,7 +190,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         atrLine = addLineSeriesCompat(atrChart, { color: '#475569', lineWidth: 1.5 });
         atr200Line = addLineSeriesCompat(atrChart, { color: '#cbd5e1', lineWidth: 1.5 });
 
-        macdHist.setData(data.map(d => ({ time: d.time, value: d.MACD_hist })));
+        macdHist.setData(data.map(d => ({
+            time: d.time,
+            value: d.MACD_hist,
+            color: d.MACD_hist > 0 ? hexToRgbaStr(activeDataColors.candleUp) : hexToRgbaStr(activeDataColors.candleDown)
+        })));
         macdLine.setData(data.map(d => ({ time: d.time, value: d.MACD })));
         signalLine.setData(data.map(d => ({ time: d.time, value: d.MACD_signal })));
         
@@ -179,6 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         atr200Line.setData(data.map(d => ({ time: d.time, value: d.ATR_200 })));
 
         // Sync Zoom/Pan
+        let overlayTimer = null;
         const syncTimeRange = (sourceChartIndex) => (timeRange) => {
             if (isSyncing || !timeRange) return;
             isSyncing = true;
@@ -187,7 +215,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     c.timeScale().setVisibleLogicalRange(timeRange);
                 }
             });
-            updateOverlays();
+            
+            // Hide overlays immediately during active drag/zoom to bypass DOM reflows
+            const container = document.getElementById('html-overlay-container');
+            if (container) container.style.display = 'none';
+            
+            clearTimeout(overlayTimer);
+            overlayTimer = setTimeout(() => {
+                updateOverlays();
+                if (container) container.style.display = 'block';
+            }, 80);
+            
             isSyncing = false;
         };
         charts.forEach((c, idx) => c.timeScale().subscribeVisibleLogicalRangeChange(syncTimeRange(idx)));
@@ -217,9 +255,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     updateObPanel(time);
 
-                    // Update active highlighted OB time & trigger overlay redraw
-                    activeHoveredTime = time;
-                    requestAnimationFrame(updateOverlays);
+                    if (activeHoveredTime !== time) {
+                        activeHoveredTime = time;
+                        updateActiveHighlight(time);
+                    }
 
                     // Sync crosshair lines on all other charts
                     if (sourceChart !== mainChart) {
@@ -236,8 +275,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
             } else {
-                activeHoveredTime = null;
-                requestAnimationFrame(updateOverlays);
+                if (activeHoveredTime !== null) {
+                    activeHoveredTime = null;
+                    updateActiveHighlight(null);
+                }
 
                 // Clear crosshair lines on all charts except the source if mouse moved out
                 if (sourceChart !== mainChart) { try { mainChart.clearCrosshairPosition(); } catch(e) {} }
@@ -277,9 +318,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Listen for pointer events on the main pane to catch Y-axis drags/zooms for overlay syncing
         const paneMainEl = document.getElementById('pane-main');
-        paneMainEl.addEventListener('mousemove', () => requestAnimationFrame(updateOverlays));
-        paneMainEl.addEventListener('wheel', () => requestAnimationFrame(updateOverlays));
-        paneMainEl.addEventListener('touchmove', () => requestAnimationFrame(updateOverlays));
+        let dragTimer = null;
+        let isMouseDown = false;
+        paneMainEl.addEventListener('mousedown', () => { isMouseDown = true; });
+        document.addEventListener('mouseup', () => { isMouseDown = false; });
+        
+        const triggerDragRedraw = () => {
+            const container = document.getElementById('html-overlay-container');
+            if (container) container.style.display = 'none';
+            clearTimeout(dragTimer);
+            dragTimer = setTimeout(() => {
+                updateOverlays();
+                if (container) container.style.display = 'block';
+            }, 80);
+        };
+
+        paneMainEl.addEventListener('mousemove', () => {
+            if (isMouseDown) triggerDragRedraw();
+        });
+        paneMainEl.addEventListener('wheel', triggerDragRedraw);
+        paneMainEl.addEventListener('touchmove', triggerDragRedraw);
 
         // Controls setup
         setupControls(runsByThreshold);
@@ -427,6 +485,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateOverlays() {
         if (!mainChart || !candleSeries) return;
+        const start = performance.now();
         const container = document.getElementById('html-overlay-container');
         container.innerHTML = '';
         
@@ -455,6 +514,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 const rect = document.createElement('div');
                 rect.className = 'ob-rectangle';
+                rect.setAttribute('data-start-time', ob.startTime);
+                rect.setAttribute('data-quality', ob.quality);
+                rect.setAttribute('data-type', ob.type);
+                
                 const w = Math.max(1, endX - startX);
                 const h = Math.abs(bottomY - topY);
                 const y = Math.min(topY, bottomY);
@@ -471,10 +534,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     rect.style.zIndex = '20';
                 } else {
                     const obColor = ob.type === 'DEMAND' ? activeDataColors.demand : activeDataColors.supply;
-                    const rgb = hexToRgb(obColor);
-                    const bgOp = [0.06, 0.08, 0.10, 0.12][ob.quality] || 0.06;
-                    rect.style.border = `1px dashed rgba(${rgb}, 0.60)`;
-                    rect.style.backgroundColor = `rgba(${rgb}, ${bgOp})`;
+                    const parsed = parseHexColor(obColor);
+                    const baseOp = [0.08, 0.09, 0.10, 0.12][ob.quality] || 0.08;
+                    const bgOp = baseOp * parsed.alpha;
+                    const borderOp = 0.40 * parsed.alpha;
+                    rect.style.border = `1px dashed rgba(${parsed.rgb}, ${borderOp})`;
+                    rect.style.backgroundColor = `rgba(${parsed.rgb}, ${bgOp})`;
                 }
                 
                 container.appendChild(rect);
@@ -510,7 +575,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     label.style.position = 'absolute';
                     label.style.left = drawLeft + 'px';
                     label.style.top = (y + currentOffset + 2) + 'px';
-                    label.style.color = ob.type === 'DEMAND' ? activeDataColors.demand : activeDataColors.supply;
+                    label.style.color = ob.type === 'DEMAND' ? hexToRgbaStr(activeDataColors.demand) : hexToRgbaStr(activeDataColors.supply);
                     label.style.zIndex = isActive ? '25' : '15';
                     label.innerText = `${ob.type} q${ob.quality}`;
                     container.appendChild(label);
@@ -598,6 +663,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                 createLine(slY, 'sl', t.sl, t.hitSl);
             });
         }
+        const duration = performance.now() - start;
+        console.log(`[Performance] updateOverlays took ${duration.toFixed(2)}ms`);
+    }
+
+    function updateActiveHighlight(hoveredTime) {
+        const start = performance.now();
+        const container = document.getElementById('html-overlay-container');
+        if (!container) return;
+        
+        const rects = container.querySelectorAll('.ob-rectangle');
+        rects.forEach(rect => {
+            const startTime = Number(rect.getAttribute('data-start-time'));
+            const obQuality = Number(rect.getAttribute('data-quality'));
+            const obType = rect.getAttribute('data-type');
+            
+            if (startTime === hoveredTime) {
+                rect.style.border = '2px solid #1d4ed8';
+                rect.style.backgroundColor = 'transparent';
+                rect.style.zIndex = '20';
+            } else {
+                const obColor = obType === 'DEMAND' ? activeDataColors.demand : activeDataColors.supply;
+                const parsed = parseHexColor(obColor);
+                const baseOp = [0.08, 0.09, 0.10, 0.12][obQuality] || 0.08;
+                const bgOp = baseOp * parsed.alpha;
+                const borderOp = 0.40 * parsed.alpha;
+                rect.style.border = `1px dashed rgba(${parsed.rgb}, ${borderOp})`;
+                rect.style.backgroundColor = `rgba(${parsed.rgb}, ${bgOp})`;
+                rect.style.zIndex = '';
+            }
+        });
+        
+        const duration = performance.now() - start;
+        console.log(`[Performance] updateActiveHighlight took ${duration.toFixed(2)}ms`);
     }
 
     function updateObPanel(time) {
@@ -766,10 +864,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const toggleEl = document.getElementById('theme-toggle');
         if (toggleEl) toggleEl.checked = isDark;
         
-        // Update charts canvas backgrounds and grid lines
-        const chartBg = isDark ? '#1e293b' : '#ffffff';
+        const chartBg = isDark ? '#131722' : '#ffffff';
         const chartText = isDark ? '#94a3b8' : '#475569';
-        const gridColor = isDark ? '#334155' : '#f1f5f9';
+        const gridColor = isDark ? '#1f222e' : '#f1f5f9';
         
         if (charts && charts.length > 0) {
             charts.forEach(c => {
@@ -790,74 +887,81 @@ document.addEventListener('DOMContentLoaded', async () => {
     function applyDataColors(colors) {
         activeDataColors = { ...colors };
         
-        // Update inputs
+        // Update swatches
         const mappings = {
-            'picker-candle-up': colors.candleUp,
-            'picker-candle-down': colors.candleDown,
-            'picker-candle-wick': colors.candleWick,
-            'picker-demand': colors.demand,
-            'picker-supply': colors.supply,
-            'picker-macd': colors.macd,
-            'picker-macd-signal': colors.macdSignal,
-            'picker-macd-hist': colors.macdHist,
-            'picker-kdj-k': colors.kdjK,
-            'picker-kdj-d': colors.kdjD,
-            'picker-kdj-j': colors.kdjJ,
-            'picker-atr-14': colors.atr14,
-            'picker-atr-200': colors.atr200
+            'candleUp': colors.candleUp,
+            'candleDown': colors.candleDown,
+            'candleWick': colors.candleWick,
+            'demand': colors.demand,
+            'supply': colors.supply,
+            'macd': colors.macd,
+            'macdSignal': colors.macdSignal,
+            'macdHist': colors.macdHist,
+            'kdjK': colors.kdjK,
+            'kdjD': colors.kdjD,
+            'kdjJ': colors.kdjJ,
+            'atr14': colors.atr14,
+            'atr200': colors.atr200
         };
         
         for (const [id, val] of Object.entries(mappings)) {
-            const el = document.getElementById(id);
-            if (el) el.value = val;
+            const picker = document.querySelector(`.custom-color-picker[data-id="${id}"]`);
+            if (picker) {
+                const swatch = picker.querySelector('.picker-swatch');
+                if (swatch) {
+                    swatch.style.setProperty('--swatch-color', hexToRgbaStr(val));
+                }
+            }
         }
         
         // 1. Candles (Bull/Bear/Wick)
         if (candleSeries) {
             candleSeries.applyOptions({
-                upColor: colors.candleUp,
-                downColor: colors.candleDown,
-                borderUpColor: colors.candleUp,
-                borderDownColor: colors.candleDown,
-                wickUpColor: colors.candleWick,
-                wickDownColor: colors.candleWick
+                upColor: hexToRgbaStr(colors.candleUp),
+                downColor: hexToRgbaStr(colors.candleDown),
+                borderUpColor: hexToRgbaStr(colors.candleUp),
+                borderDownColor: hexToRgbaStr(colors.candleDown),
+                wickUpColor: colors.candleWick === '#475569' ? hexToRgbaStr(colors.candleUp) : hexToRgbaStr(colors.candleWick),
+                wickDownColor: colors.candleWick === '#475569' ? hexToRgbaStr(colors.candleDown) : hexToRgbaStr(colors.candleWick)
             });
         }
         
         // 2. MACD
-        if (macdHist) {
-            macdHist.applyOptions({
-                color: colors.macdHist
-            });
+        if (macdHist && currentData) {
+            macdHist.setData(currentData.map(d => ({
+                time: d.time,
+                value: d.MACD_hist,
+                color: d.MACD_hist > 0 ? hexToRgbaStr(colors.candleUp) : hexToRgbaStr(colors.candleDown)
+            })));
         }
         if (macdLine) {
             macdLine.applyOptions({
-                color: colors.macd
+                color: hexToRgbaStr(colors.macd)
             });
         }
         if (signalLine) {
             signalLine.applyOptions({
-                color: colors.macdSignal
+                color: hexToRgbaStr(colors.macdSignal)
             });
         }
         
         // 3. KDJ
         if (kLine) {
-            kLine.applyOptions({ color: colors.kdjK });
+            kLine.applyOptions({ color: hexToRgbaStr(colors.kdjK) });
         }
         if (dLine) {
-            dLine.applyOptions({ color: colors.kdjD });
+            dLine.applyOptions({ color: hexToRgbaStr(colors.kdjD) });
         }
         if (jLine) {
-            jLine.applyOptions({ color: colors.kdjJ });
+            jLine.applyOptions({ color: hexToRgbaStr(colors.kdjJ) });
         }
         
         // 4. ATR
         if (atrLine) {
-            atrLine.applyOptions({ color: colors.atr14 });
+            atrLine.applyOptions({ color: hexToRgbaStr(colors.atr14) });
         }
         if (atr200Line) {
-            atr200Line.applyOptions({ color: colors.atr200 });
+            atr200Line.applyOptions({ color: hexToRgbaStr(colors.atr200) });
         }
         
         // 5. Repaint Overlays and Highlights
@@ -957,33 +1061,168 @@ document.addEventListener('DOMContentLoaded', async () => {
             saveThemeSettings();
         });
         
-        const pickers = [
-            { id: 'picker-candle-up', key: 'candleUp' },
-            { id: 'picker-candle-down', key: 'candleDown' },
-            { id: 'picker-candle-wick', key: 'candleWick' },
-            { id: 'picker-demand', key: 'demand' },
-            { id: 'picker-supply', key: 'supply' },
-            { id: 'picker-macd', key: 'macd' },
-            { id: 'picker-macd-signal', key: 'macdSignal' },
-            { id: 'picker-macd-hist', key: 'macdHist' },
-            { id: 'picker-kdj-k', key: 'kdjK' },
-            { id: 'picker-kdj-d', key: 'kdjD' },
-            { id: 'picker-kdj-j', key: 'kdjJ' },
-            { id: 'picker-atr-14', key: 'atr14' },
-            { id: 'picker-atr-200', key: 'atr200' }
-        ];
+        initCustomColorPickers();
+    }
+
+    function initCustomColorPickers() {
+        const pickers = document.querySelectorAll('.custom-color-picker');
         
-        pickers.forEach(p => {
-            const el = document.getElementById(p.id);
-            if (el) {
-                el.addEventListener('input', (e) => {
-                    activeDataColors[p.key] = e.target.value;
-                    applyDataColors(activeDataColors);
-                });
-                el.addEventListener('change', () => {
-                    saveThemeSettings();
-                });
+        const presetColors = [
+            // Grayscale
+            "#ffffff", "#e0e3eb", "#d1d4dc", "#b2b5be", "#9f9f9f", "#848484", "#666666", "#4a4a4a", "#2b2b2b", "#000000",
+            // Row 1 (Light pastels)
+            "#ffcdd2", "#ffe0b2", "#fff9c4", "#c8e6c9", "#b2dfdb", "#b3e5fc", "#bbdefb", "#d1c4e9", "#e1bee7", "#f8bbd0",
+            // Row 2
+            "#ef9a9a", "#ffcc80", "#fff59d", "#a5d6a7", "#80cbc4", "#81d4fa", "#90caf9", "#b39ddb", "#ce93d8", "#f48fb1",
+            // Row 3
+            "#e57373", "#ffb74d", "#fff176", "#81c784", "#4db6ac", "#4fc3f7", "#64b5f6", "#9575cd", "#ba68c8", "#f06292",
+            // Row 4 (Base standards)
+            "#ef5350", "#ffa726", "#ffee58", "#66bb6a", "#26a69a", "#29b6f6", "#42a5f5", "#7e57c2", "#ab47bc", "#ec407a",
+            // Row 5 (Darks)
+            "#c62828", "#ef6c00", "#f9a825", "#2e7d32", "#00695c", "#0277bd", "#1565c0", "#4527a0", "#6a1b9a", "#ad1457"
+        ];
+
+        // Close all popovers when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-color-picker')) {
+                document.querySelectorAll('.picker-popover').forEach(p => p.classList.remove('active'));
             }
+        });
+
+        pickers.forEach(picker => {
+            const id = picker.getAttribute('data-id');
+            const swatch = picker.querySelector('.picker-swatch');
+            
+            // Create popover dynamically
+            const popover = document.createElement('div');
+            popover.className = 'picker-popover';
+            
+            // 1. Grid container
+            const grid = document.createElement('div');
+            grid.className = 'popover-grid';
+            presetColors.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'popover-swatch';
+                item.style.backgroundColor = c;
+                item.addEventListener('click', () => {
+                    const currentVal = activeDataColors[id] || '#ffffff';
+                    const parsed = parseHexColor(currentVal);
+                    const alphaHex = Math.round(parsed.alpha * 255).toString(16).padStart(2, '0');
+                    const newVal = c + alphaHex;
+                    
+                    activeDataColors[id] = newVal;
+                    applyDataColors(activeDataColors);
+                    saveThemeSettings();
+                    popover.classList.remove('active');
+                });
+                grid.appendChild(item);
+            });
+            popover.appendChild(grid);
+            
+            // 2. Custom Color Row
+            const customRow = document.createElement('div');
+            customRow.className = 'popover-custom-row';
+            
+            const plusBtn = document.createElement('button');
+            plusBtn.className = 'popover-plus-btn';
+            plusBtn.textContent = '+';
+            
+            const nativeInput = document.createElement('input');
+            nativeInput.type = 'color';
+            nativeInput.style.display = 'none';
+            
+            plusBtn.addEventListener('click', () => {
+                const currentVal = activeDataColors[id] || '#ffffff';
+                const parsed = parseHexColor(currentVal);
+                nativeInput.value = parsed.hex;
+                nativeInput.click();
+            });
+            
+            nativeInput.addEventListener('change', (e) => {
+                const chosenColor = e.target.value; // 6-digit hex
+                const sliderVal = parseInt(slider.value, 10);
+                const alphaHex = Math.round((sliderVal / 100) * 255).toString(16).padStart(2, '0');
+                const newVal = chosenColor + alphaHex;
+                
+                activeDataColors[id] = newVal;
+                applyDataColors(activeDataColors);
+                saveThemeSettings();
+            });
+            
+            customRow.appendChild(plusBtn);
+            customRow.appendChild(nativeInput);
+            popover.appendChild(customRow);
+            
+            // 3. Opacity Slider
+            const sliderSec = document.createElement('div');
+            sliderSec.className = 'popover-slider-section';
+            
+            const sliderLabel = document.createElement('label');
+            sliderLabel.textContent = 'Opacity';
+            sliderSec.appendChild(sliderLabel);
+            
+            const sliderRow = document.createElement('div');
+            sliderRow.className = 'popover-slider-row';
+            
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.min = '0';
+            slider.max = '100';
+            slider.className = 'popover-slider';
+            
+            const sliderValDisplay = document.createElement('span');
+            sliderValDisplay.className = 'popover-slider-val';
+            sliderValDisplay.textContent = '100%';
+            
+            const updateSliderTrack = (hexColor) => {
+                const parsed = parseHexColor(hexColor);
+                slider.style.setProperty('--slider-track-bg', `linear-gradient(to right, rgba(${parsed.rgb}, 0), rgba(${parsed.rgb}, 1))`);
+            };
+            
+            let debounceTimer = null;
+            slider.addEventListener('input', (e) => {
+                const sliderVal = parseInt(e.target.value, 10);
+                sliderValDisplay.textContent = sliderVal + '%';
+                
+                const currentVal = activeDataColors[id] || '#ffffff';
+                const parsed = parseHexColor(currentVal);
+                const alphaHex = Math.round((sliderVal / 100) * 255).toString(16).padStart(2, '0');
+                const newVal = parsed.hex + alphaHex;
+                
+                activeDataColors[id] = newVal;
+                swatch.style.setProperty('--swatch-color', hexToRgbaStr(newVal));
+                
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    applyDataColors(activeDataColors);
+                }, 150);
+            });
+            
+            slider.addEventListener('change', () => {
+                saveThemeSettings();
+            });
+            
+            sliderRow.appendChild(slider);
+            sliderRow.appendChild(sliderValDisplay);
+            sliderSec.appendChild(sliderRow);
+            popover.appendChild(sliderSec);
+            
+            picker.appendChild(popover);
+            
+            swatch.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.picker-popover').forEach(p => {
+                    if (p !== popover) p.classList.remove('active');
+                });
+                popover.classList.toggle('active');
+                
+                const currentVal = activeDataColors[id] || '#ffffff';
+                const parsed = parseHexColor(currentVal);
+                const alphaPercent = Math.round(parsed.alpha * 100);
+                slider.value = alphaPercent;
+                sliderValDisplay.textContent = alphaPercent + '%';
+                updateSliderTrack(currentVal);
+            });
         });
     }
 

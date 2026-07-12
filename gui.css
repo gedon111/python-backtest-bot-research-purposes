@@ -903,10 +903,172 @@ input:checked + .slider:before {
 
 /* Dark Mode Chrome overrides */
 body.dark-theme {
-    --bg-base: #0f172a;
-    --bg-surface: #1e293b;
-    --bg-surface-hover: #334155;
+    --bg-base: #131722;
+    --bg-surface: #1c2030;
+    --bg-surface-hover: #2e3347;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
-    --border: #334155;
+    --border: #2a2e39;
+}
+
+/* Custom Palette Picker */
+.custom-color-picker {
+    position: relative;
+    display: inline-block;
+}
+
+.picker-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                      linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+                      linear-gradient(45deg, transparent 75%, #ccc 75%), 
+                      linear-gradient(-45deg, transparent 75%, #ccc 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+    position: relative;
+    overflow: hidden;
+}
+
+body.dark-theme .picker-swatch {
+    background-image: linear-gradient(45deg, #444 25%, transparent 25%), 
+                      linear-gradient(-45deg, #444 25%, transparent 25%), 
+                      linear-gradient(45deg, transparent 75%, #444 75%), 
+                      linear-gradient(-45deg, transparent 75%, #444 75%);
+}
+
+.picker-swatch::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--swatch-color, transparent);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+.picker-popover {
+    position: absolute;
+    top: 110%;
+    right: 0;
+    z-index: 1000;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    padding: 12px;
+    width: 236px;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    animation: popoverFadeIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.picker-popover.active {
+    display: flex;
+}
+
+@keyframes popoverFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.popover-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 18px);
+    gap: 4px;
+}
+
+.popover-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.1);
+    box-sizing: border-box;
+    transition: transform 0.1s;
+}
+.popover-swatch:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 1px var(--text-main);
+    z-index: 1;
+}
+
+.popover-custom-row {
+    display: flex;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+}
+
+.popover-plus-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px dashed var(--text-muted);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.2s;
+}
+.popover-plus-btn:hover {
+    border-color: var(--text-main);
+    color: var(--text-main);
+}
+
+.popover-slider-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.popover-slider-section label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+.popover-slider-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.popover-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    background: var(--slider-track-bg, #ccc);
+    border: 1px solid var(--border);
+}
+.popover-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text-main);
+    border: 1px solid var(--bg-surface);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.popover-slider-val {
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    color: var(--text-main);
+    width: 38px;
+    text-align: right;
 }

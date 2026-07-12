@@ -565,8 +565,8 @@ def main():
                     data = {
                         "pageTheme": "light",
                         "dataColors": {
-                            "candleUp": "#10b981",
-                            "candleDown": "#ef4444",
+                            "candleUp": "#26a69a",
+                            "candleDown": "#ef5350",
                             "candleWick": "#475569",
                             "demand": "#0d9488",
                             "supply": "#ea580c",

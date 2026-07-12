@@ -1,11 +1,11 @@
 {
-  "pageTheme": "dark",
+  "pageTheme": "light",
   "dataColors": {
     "candleUp": "#10b981",
     "candleDown": "#ef4444",
     "candleWick": "#475569",
-    "demand": "#0d9488",
-    "supply": "#ea580c",
+    "demand": "#64b5f6ff",
+    "supply": "#ef5350ff",
     "macd": "#1d4ed8",
     "macdSignal": "#f97316",
     "macdHist": "#10b981",
