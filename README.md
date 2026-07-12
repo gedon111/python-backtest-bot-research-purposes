@@ -31,6 +31,17 @@ python Run_Dashboard.py
   set GOOGLE_SHEET_ID=your_sheet_id
   ```
 
+### 3. Run with Docker (Alternative Setup)
+Alternatively, you can build and run the project inside a Docker container. The included `Dockerfile` installs all dependencies (including NumPy, Pandas, SciPy, and SQLAlchemy) and launches the pipeline:
+```bash
+# Build the Docker image
+docker build -t binance-backtest-bot .
+
+# Run the container (exposes the dashboard on port 8765)
+docker run -p 8765:8765 binance-backtest-bot
+```
+This automatically runs the backtest simulations, saves the trade results locally to `backtest_results.db`, and launches the interactive dashboard server at `http://localhost:8765/gui.html`.
+
 ---
 
 ## Interactive Backtest Dashboard
@@ -306,4 +317,7 @@ Entries
 - 2026-05-03 | Execution Optimization & GUI Crash Fix | update | Replaced `run_dashboard.bat` with a native `Run_Dashboard.py` launcher and embedded the web server launch into `export_gui_data.py`. Optimized backend by caching simulations to prevent redundant calculations during GSheet export, halving execution time. Implemented a Track Allocator in `gui.js` to fix LightweightCharts rendering crashes caused by overlapping Order Blocks. | To improve backend performance, fix critical UI crashes, and simplify the local startup process.
 - 2026-05-04 | Advanced UI Sync & Visualization | update | Implemented unified crosshair synchronization across all panes using precise price-point alignment. Added dynamic trade exit reason labels to the dashboard. Refactored pane resizing to use pixel-based calculations with `localStorage` persistence. Fixed indicator dot alignment on sub-charts. | To provide a premium, professional-grade analysis experience and resolve synchronization limitations in Lightweight Charts.
 - 2026-06-15 | Quick Start Documentation | update | Added a simplified "Quick Start" execution guide explaining the single-command startup via `Run_Dashboard.py`. | To improve user boarding and simplify pipeline run instructions.
+- 2026-07-11 | Custom Palette Picker & Visual Themes | update | Replaced native color inputs in settings drawer with custom popup palettes. Added opacity sliders and preset grids. Aligned default visuals and dark mode theme parameters to TradingView standards (#131722 dark canvas, transparent order blocks). | To provide a responsive, premium visual theme and customizable chart elements.
+- 2026-07-12 | Performance Optimizations & Dynamic Indicators | update | Debounced logical range scroll changes and paused DOM updates during active navigation to restore 60fps pan/zoom. Replaced full hover rebuilds with updateActiveHighlight selector (<0.3ms). Linked MACD histogram bar colors dynamically to bullish/bearish candle presets. Added scipy to Dockerfile and documented docker run. | To eliminate zoom-out lag and unify technical indicator styles with user customizations.
+
 
