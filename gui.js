@@ -1700,7 +1700,14 @@ window.loadAndRenderStats = async function() {
     try {
         const response = await fetch("/api/trades");
         if (!response.ok) throw new Error("Failed to retrieve trades table.");
-        const trades = await response.json();
+        let trades = await response.json();
+        
+        if (trades && !Array.isArray(trades) && Array.isArray(trades.trades)) {
+            trades = trades.trades;
+        }
+        if (!Array.isArray(trades)) {
+            throw new Error("API response did not return a valid array of trades.");
+        }
         
         console.log(`[Stats Engine] Loaded ${trades.length} trades from DB.`);
         
@@ -1712,7 +1719,7 @@ window.loadAndRenderStats = async function() {
         renderBinomialTests(stats);
         renderANOVA(stats);
         renderKruskalWallis(stats);
-        renderCorrelations(stats);
+        renderCorrelations(trades);
         renderExitReasons(trades);
         renderLongShort(trades);
         renderRobustnessCheck(trades);
@@ -2124,6 +2131,7 @@ function renderKruskalWallis(stats) {
 }
 
 function renderCorrelations(trades) {
+    if (!Array.isArray(trades)) return;
     const resDiv = document.getElementById("correlation-results");
     resDiv.innerHTML = "";
     
@@ -2256,6 +2264,7 @@ function computeCorrelationSpearman(X, Y) {
 }
 
 function renderExitReasons(trades, threshold = 1) {
+    if (!Array.isArray(trades)) return;
     const tbody = document.getElementById("exit-reasons-body");
     tbody.innerHTML = "";
     
@@ -2334,6 +2343,7 @@ function renderExitReasons(trades, threshold = 1) {
 }
 
 function renderLongShort(trades) {
+    if (!Array.isArray(trades)) return;
     const tbody = document.getElementById("long-short-body");
     tbody.innerHTML = "";
     
@@ -2385,6 +2395,7 @@ function renderLongShort(trades) {
 }
 
 function renderRobustnessCheck(trades) {
+    if (!Array.isArray(trades)) return;
     const bannerDiv = document.getElementById("robustness-agreement-banner");
     const tbody = document.getElementById("robustness-bins-body");
     if (!tbody || !bannerDiv) return;
