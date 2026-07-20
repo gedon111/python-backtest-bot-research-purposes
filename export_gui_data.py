@@ -475,6 +475,8 @@ def main():
                 self.handle_get_iterations()
             elif self.path == "/api/get_theme":
                 self.handle_get_theme()
+            elif self.path.startswith("/api/trades"):
+                self.handle_get_trades()
             else:
                 super().do_GET()
 
@@ -485,6 +487,64 @@ def main():
                 self.handle_save_theme()
             else:
                 self.send_error(404, "Endpoint not found")
+
+        def handle_get_trades(self):
+            try:
+                import urllib.parse
+                parsed_url = urllib.parse.urlparse(self.path)
+                query_params = urllib.parse.parse_qs(parsed_url.query)
+                
+                min_ob_quality_str = query_params.get("min_ob_quality", [None])[0]
+                min_ob_quality = None
+                if min_ob_quality_str is not None:
+                    try:
+                        min_ob_quality = int(min_ob_quality_str)
+                    except ValueError:
+                        pass
+                
+                engine = db_manager.init_db()
+                session = db_manager.get_session(engine)
+                
+                # Query trades and join order_blocks to fetch quality score
+                query = session.query(db_manager.Trade, db_manager.OrderBlock.quality).\
+                    join(db_manager.OrderBlock, db_manager.Trade.entry_ob_id == db_manager.OrderBlock.ob_id)
+                
+                if min_ob_quality is not None:
+                    query = query.filter(db_manager.Trade.min_ob_quality == min_ob_quality)
+                
+                results = query.all()
+                
+                trades_data = []
+                for trade, quality in results:
+                    trades_data.append({
+                        "trade_id": trade.trade_id,
+                        "side": trade.side,
+                        "min_ob_quality": trade.min_ob_quality,
+                        "entry_time": trade.entry_time,
+                        "exit_time": trade.exit_time,
+                        "entry_price": trade.entry_price,
+                        "exit_price": trade.exit_price,
+                        "stop_loss": trade.stop_loss,
+                        "take_profit": trade.take_profit,
+                        "pnl_pct": trade.pnl_pct,
+                        "hold_bars": trade.hold_bars,
+                        "exit_reason": trade.exit_reason,
+                        "entry_ob_id": trade.entry_ob_id,
+                        "tp_ob_id": trade.tp_ob_id,
+                        "quality_score": quality
+                    })
+                
+                session.close()
+                
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(trades_data, default=fallback_json).encode("utf-8"))
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                self.send_error(500, f"Database error: {e}")
+
 
         def handle_get_iterations(self):
             try:

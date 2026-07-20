@@ -14,7 +14,7 @@ def main():
     total_steps = 2
     current_step = 1
 
-    # Step 1: Run backtest and export base data to SQLite
+    # backtest and sql
     print(f"\n[Step {current_step}/{total_steps}] Running backtest simulations & loading database...")
     try:
         subprocess.run(
@@ -26,7 +26,7 @@ def main():
         sys.exit(e.returncode)
     current_step += 1
 
-    # Step 2: Run the Dashboard Web Server
+    # web
     print(f"\n[Step {current_step}/{total_steps}] Launching local web server and opening Dashboard GUI...")
     try:
         subprocess.run(

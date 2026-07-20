@@ -25,6 +25,10 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
                     Formula Sandbox
                 </button>
+                <button class="nav-item" data-tab="stats-tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+                    Research Statistics
+                </button>
             </div>
         </nav>
 
@@ -280,6 +284,227 @@
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Research Statistics Tab -->
+            <section id="stats-tab" class="tab-pane">
+                <div class="stats-header">
+                    <h2>Research Statistics</h2>
+                    <p>Live statistical test validation compiled directly from the backtest trades dataset compared against published paper benchmarks.</p>
+                    <div id="stats-global-warning" class="global-warning-banner hidden">
+                        <strong>⚠️ System Alert:</strong> Some p-value approximations failed self-validation checks. Please check console errors.
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <!-- 1. Descriptive Stats -->
+                    <div class="stat-card full-width">
+                        <h3>1. Descriptive Statistics by Threshold</h3>
+                        <p class="stat-desc">Win rates, total returns, average trade returns, and standard deviations grouped by minimum OB quality levels.</p>
+                        
+                        <div class="math-solution">
+                            <h4>Stage 1: Standard Deviation Formula & Substitution</h4>
+                            <div id="math-desc-sd" class="math-math">Calculating...</div>
+                        </div>
+                        
+                        <div class="stat-result-card">
+                            <h4>Stage 2: Live Results vs. Published Reference</h4>
+                            <div class="table-container">
+                                <table class="stats-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Quality</th>
+                                            <th>Metric</th>
+                                            <th>Live Value</th>
+                                            <th>Paper Reference</th>
+                                            <th>Difference</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="desc-stats-body">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Binomial Test -->
+                    <div class="stat-card">
+                        <h3>2. Binomial Test per Threshold (One-sided, p₀ = 0.5)</h3>
+                        <p class="stat-desc">Hypothesis test evaluating if the win rate is significantly greater than random chance (50%).</p>
+                        
+                        <div class="math-solution">
+                            <h4>Stage 1: Binomial CDF/PMF Summation Formula</h4>
+                            <div id="math-binomial" class="math-math">Calculating...</div>
+                        </div>
+                        
+                        <div class="stat-result-card">
+                            <h4>Stage 2: Results & Significance</h4>
+                            <div id="validation-binom" class="val-badge error hidden">p-value approximation unverified</div>
+                            <div class="stat-metrics-flex" id="binomial-results">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. One-Way ANOVA -->
+                    <div class="stat-card">
+                        <h3>3. One-Way ANOVA (pnl_pct across thresholds)</h3>
+                        <p class="stat-desc">Parametric test of whether there are statistically significant differences between the four threshold group means.</p>
+                        
+                        <div class="math-solution">
+                            <h4>Stage 1: ANOVA Worked Derivation</h4>
+                            <div id="math-anova" class="math-math">Calculating...</div>
+                        </div>
+                        
+                        <div class="stat-result-card">
+                            <h4>Stage 2: F-Statistic & ANOVA Table</h4>
+                            <div id="validation-anova" class="val-badge error hidden">p-value approximation unverified</div>
+                            <div id="anova-results">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Kruskal-Wallis H-Test -->
+                    <div class="stat-card">
+                        <h3>4. Kruskal-Wallis H-Test (Non-parametric ANOVA)</h3>
+                        <p class="stat-desc">Non-parametric test comparing the median returns across the four quality threshold groups.</p>
+                        
+                        <div class="math-solution">
+                            <h4>Stage 1: Rank Sum Formula & Substituted Math</h4>
+                            <div id="math-kruskal" class="math-math">Calculating...</div>
+                        </div>
+                        
+                        <div class="stat-result-card">
+                            <h4>Stage 2: H-Statistic & Chi-square p-value</h4>
+                            <div id="validation-kruskal" class="val-badge error hidden">p-value approximation unverified</div>
+                            <div id="kruskal-results">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Pearson & Spearman Correlation -->
+                    <div class="stat-card">
+                        <h3>5. Pearson & Spearman Correlation Coefficients</h3>
+                        <p class="stat-desc">Evaluating linear and monotonic relationships for: (a) OB quality vs PnL, and (b) Hold duration vs PnL.</p>
+                        
+                        <div class="math-solution">
+                            <h4>Stage 1: Covariance & Rank-Difference Formulations</h4>
+                            <div id="math-correlation" class="math-math">Calculating...</div>
+                        </div>
+                        
+                        <div class="stat-result-card">
+                            <h4>Stage 2: Correlation Matrices & t-Test Significance</h4>
+                            <div id="validation-correlation" class="val-badge error hidden">p-value approximation unverified</div>
+                            <div id="correlation-results">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Exit Reason Distribution -->
+                    <div class="stat-card">
+                        <h3>6. Exit Reason Distribution</h3>
+                        <p class="stat-desc">Summary of hold times and performance grouped by trade closing event triggers.</p>
+                        
+                        <div class="filter-row" style="margin-bottom:1rem;">
+                            <label>Filter by Quality Threshold:
+                                <select id="exit-reason-quality-select" style="padding:0.25rem 0.5rem; border-radius:4px; background:var(--bg-surface); border:1px solid var(--border); color:var(--text); font-size:0.9rem;">
+                                    <option value="0">Quality 0</option>
+                                    <option value="1" selected>Quality 1</option>
+                                    <option value="2">Quality 2</option>
+                                    <option value="3">Quality 3</option>
+                                </select>
+                            </label>
+                        </div>
+                        
+                        <div class="stat-result-card" style="margin-top:0;">
+                            <div class="table-container">
+                                <table class="stats-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Exit Reason</th>
+                                            <th>Count (N)</th>
+                                            <th>Percentage (%)</th>
+                                            <th>Avg PnL (%)</th>
+                                            <th>Win Rate (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="exit-reasons-body">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 7. Long vs Short Breakdown -->
+                    <div class="stat-card">
+                        <h3>7. Long vs. Short Breakdown</h3>
+                        <p class="stat-desc">Comparison of trading directions across the entire backtest history.</p>
+                        
+                        <div class="stat-result-card" style="margin-top:0;">
+                            <div class="table-container">
+                                <table class="stats-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Direction</th>
+                                            <th>Count (N)</th>
+                                            <th>Win Rate (%)</th>
+                                            <th>Avg Return (%)</th>
+                                            <th>Std Dev (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="long-short-body">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 8. Mutually-Exclusive Quality Bin ANOVA / Kruskal-Wallis (Robustness Check) -->
+                    <div class="stat-card full-width">
+                        <h3>8. Mutually-Exclusive Quality Bin ANOVA / Kruskal-Wallis (Robustness Check)</h3>
+                        <p class="stat-desc">The primary ANOVA/Kruskal-Wallis above compares nested threshold groups (Q0-Q3) where higher thresholds are subsets of lower ones, meaning the same trade can appear in multiple groups. This calculator instead groups trades by their exact raw quality_score (0-5, non-overlapping, each trade counted exactly once) to provide an independent-groups comparison as a check on whether the nested-group result holds under stricter assumptions.</p>
+                        
+                        <!-- Side-by-Side Method Agreement Summary Banner -->
+                        <div id="robustness-agreement-banner" style="margin-bottom: 1.25rem;">
+                            <!-- Populated dynamically -->
+                        </div>
+
+                        <div class="math-solution">
+                            <h4>Stage 1: Worked Derivation (ANOVA & Kruskal-Wallis)</h4>
+                            <div id="math-robustness" class="math-math">Calculating...</div>
+                        </div>
+                        
+                        <div class="stat-result-card">
+                            <h4>Stage 2: Non-Overlapping Quality Bin Results (N = 27 Unique Trades)</h4>
+                            <div class="table-container">
+                                <table class="stats-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Raw Quality Score</th>
+                                            <th>Count (N)</th>
+                                            <th>Sample Size Status</th>
+                                            <th>Avg PnL (%)</th>
+                                            <th>Std Dev (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="robustness-bins-body">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div style="margin-top:0.75rem; font-size:0.82rem; color:var(--text-muted); font-style:italic;">
+                                💡 <strong>Note on Quality Score 5:</strong> No trades in this dataset achieved the maximum quality score of 5 across the full backtest period, indicating a 'perfect' institutional footprint score was never observed in this sample.
                             </div>
                         </div>
                     </div>
