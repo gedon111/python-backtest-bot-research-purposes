@@ -182,14 +182,14 @@ Filtering for `min_ob_quality = 0` isolates the 27 unique historical trade execu
 \[ \bar{y} = \frac{1}{n} \sum_{i=1}^{n} y_i, \quad SD = \sqrt{\frac{1}{n-1} \sum_{i=1}^{n} (y_i - \bar{y})^2} \]
 
 #### Plain-English Explanation:
-* **What it does:** Measures the average return ($\bar{y}$) and the volatility/spread ($SD$) of trade percentage returns within a specific filter group.
+* **What it does:** Measures the average return ($\bar{y}$) and the variability/dispersion ($SD$) of trade percentage returns within a specific filter group.
 * **Symbol Breakdown:**
   * $y_i$: The percentage profit or loss (PnL %) of trade $i$.
   * $n$: Total number of trades in that threshold group.
-  * $\bar{y}$: Average return per trade.
+  * $\bar{y}$: Average percentage return per trade.
   * $SD$: Sample standard deviation (uses $n-1$ in the denominator to correct for sample estimation bias).
-* **Question Answered:** *"What is the typical performance and risk profile of trades under this quality filter?"*
-* **Trading Interpretation:** A higher mean return with a lower standard deviation indicates a more stable, higher-quality strategy execution.
+* **Question Answered:** *"What is the average return and spread of returns under this quality filter?"*
+* **Statistical Observation:** Reports the center and dispersion of historical trade outcomes. A higher mean with lower standard deviation indicates higher average return per trade relative to trade-to-trade variability.
 
 ---
 
@@ -199,16 +199,16 @@ Filtering for `min_ob_quality = 0` isolates the 27 unique historical trade execu
 \[ P(K \ge k) = \sum_{i=k}^{n} \binom{n}{i} p^i (1-p)^{n-i}, \quad \text{where } \binom{n}{i} = \frac{n!}{i!(n-i)!} \]
 
 #### Plain-English Explanation:
-* **What it does:** Calculates the exact probability of achieving $k$ or more winning trades out of $n$ total trades purely by random chance, assuming a coin-flip benchmark ($p = 0.50$, or 50% win probability).
+* **What it does:** Calculates the exact probability of achieving $k$ or more winning trades out of $n$ total trades under a null model of a random coin flip ($p = 0.50$, or 50% win probability).
 * **Symbol Breakdown:**
   * $n$: Total number of trades executed in the group.
   * $k$: Number of winning trades ($y_i > 0$).
-  * $p = 0.50$: Baseline expected win probability under a zero-edge strategy.
+  * $p = 0.50$: Baseline expected win probability under a zero-edge random model.
   * $P(K \ge k)$: The p-value.
-* **Question Answered:** *"Is our strategy's observed win rate significantly better than a random 50/50 coin flip?"*
-* **Trading Interpretation:**
-  * **Significant ($p < 0.05$):** We reject the null hypothesis ($H_0$). The strategy possesses a genuine statistical edge ($>50\%$ win rate) that cannot be explained by luck alone (e.g. Threshold 0: $p = 0.026$).
-  * **Not Significant ($p \ge 0.05$):** We fail to reject $H_0$. The observed win rate could easily occur by chance (e.g. Threshold 3: 5/10 wins, $p = 0.623$).
+* **Question Answered:** *"Is the observed win rate statistically significantly higher than 50%?"*
+* **Statistical Observation:**
+  * **Statistically Significant ($p < 0.05$):** We reject the null hypothesis ($H_0$). The observed win rate is higher than 50% to a degree unlikely to occur by random chance (e.g., Threshold 0: 19/27 wins = 70.37%, $p = 0.0261$).
+  * **Not Statistically Significant ($p \ge 0.05$):** We fail to reject $H_0$. The win rate does not statistically deviate from 50% at $\alpha = 0.05$ (e.g., Threshold 3: 5/10 wins = 50.00%, $p = 0.6231$).
 
 ---
 
@@ -219,17 +219,16 @@ Filtering for `min_ob_quality = 0` isolates the 27 unique historical trade execu
 \[ MSB = \frac{SSB}{k - 1}, \quad MSW = \frac{SSW}{N - k}, \quad F = \frac{MSB}{MSW} \]
 
 #### Plain-English Explanation:
-* **What it does:** Compares trade percentage returns across multiple groups to test whether at least one group has a significantly different average return than the others. It compares the variability *between* group averages ($MSB$) against the variability of trades *within* each group ($MSW$).
+* **What it does:** Compares trade percentage returns across multiple groups to test whether at least one group mean differs significantly from the others. It compares variance *between* group averages ($MSB$) to variance *within* individual groups ($MSW$).
 * **Symbol Breakdown:**
-  * $k$: Number of groups being compared ($k=4$ for primary threshold groups $Q_0\text{--}Q_3$; $k=5$ for non-empty mutually-exclusive quality bins $0\text{--}4$).
+  * $k$: Number of non-empty groups compared ($k=4$ for primary threshold groups $Q_0\text{--}Q_3$; $k=5$ for non-empty quality bins $0\text{--}4$).
   * $n_g$: Number of trades in group $g$.
   * $\bar{y}_g$: Average return of group $g$.
-  * $\bar{y}$: Overall average return across all trades ($N$).
-  * $F$: The F-ratio. Larger values of $F$ suggest group means are genuinely different.
-* **Question Answered:** *"Does increasing the minimum Order Block quality filter produce a statistically significant difference in trade returns?"*
-* **Trading Interpretation:**
-  * **Significant ($p < 0.05$):** The quality filter actively alters average trade performance (e.g. higher quality OBs deliver higher average returns).
-  * **Not Significant ($p \ge 0.05$):** The quality filter does NOT produce statistically different average trade returns (e.g. Primary Nested ANOVA: $F = 0.232, p = 0.874$; Robustness ANOVA: $F = 0.401, p = 0.806$).
+  * $\bar{y}$: Overall grand mean return across all trades ($N$).
+  * $F$: The F-ratio test statistic.
+* **Question Answered:** *"Are there statistically significant differences in mean trade returns across the quality score groups?"*
+* **Statistical Observation:**
+  * **Not Statistically Significant ($p \ge 0.05$):** We fail to reject $H_0$. Mean trade returns do not differ significantly across groups (Primary Nested ANOVA: $F = 0.2324, p = 0.8736$; Robustness ANOVA: $F = 0.4011, p = 0.8058$).
 
 ---
 
@@ -239,15 +238,15 @@ Filtering for `min_ob_quality = 0` isolates the 27 unique historical trade execu
 \[ H_{raw} = \frac{12}{N(N+1)} \sum_{g=1}^{k} \frac{R_g^2}{n_g} - 3(N+1), \quad C = 1 - \frac{\sum (t^3 - t)}{N^3 - N}, \quad H = \frac{H_{raw}}{C} \]
 
 #### Plain-English Explanation:
-* **What it does:** The non-parametric equivalent of One-Way ANOVA. Instead of using actual percentage returns, it ranks all trades from lowest return (Rank 1) to highest return (Rank $N$), and tests whether the distribution of ranks differs significantly across quality groups. It includes a tie correction factor $C$ for trades with identical PnL.
+* **What it does:** Non-parametric alternative to One-Way ANOVA. Converts returns to ranks (Rank 1 = lowest return, Rank $N$ = highest return) and tests whether the rank distributions differ across quality groups. Includes tie correction $C$.
 * **Symbol Breakdown:**
-  * $N$: Total trade observations.
-  * $R_g$: Sum of ranks assigned to trades in group $g$.
+  * $N$: Total trade count.
+  * $R_g$: Sum of ranks in group $g$.
   * $t$: Number of tied trades at a specific return value.
-  * $H$: Kruskal-Wallis test statistic.
-* **Question Answered:** *"Does the median/rank return distribution differ across quality groups without assuming returns follow a bell-curve (normal) distribution?"*
-* **Trading Interpretation:**
-  * **Not Significant ($p \ge 0.05$):** Confirms ANOVA results under non-normal return distributions (e.g. Primary Kruskal: $H = 1.105, p = 0.776$; Robustness Kruskal: $H = 2.805, p = 0.591$).
+  * $H$: Kruskal-Wallis H statistic.
+* **Question Answered:** *"Do the rank distributions of trade returns differ significantly across quality groups?"*
+* **Statistical Observation:**
+  * **Not Statistically Significant ($p \ge 0.05$):** Rank distributions do not differ significantly across groups (Primary Kruskal: $H = 1.1045, p = 0.7760$; Robustness Kruskal: $H = 2.8053, p = 0.5909$).
 
 ---
 
@@ -258,16 +257,16 @@ Filtering for `min_ob_quality = 0` isolates the 27 unique historical trade execu
 \[ t_r = r \sqrt{\frac{N-2}{1 - r^2}} \]
 
 #### Plain-English Explanation:
-* **What it does:** Measures the strength and direction of a straight-line (linear) relationship between two continuous variables $X$ and $Y$.
+* **What it does:** Measures linear association between two continuous variables $X$ and $Y$.
 * **Symbol Breakdown:**
   * $X$: Quality score or hold duration in bars.
   * $Y$: Trade return (PnL %).
-  * $r$: Correlation coefficient ranging from $-1.0$ (perfect inverse relationship) to $+1.0$ (perfect positive relationship).
-  * $t_r$: Student-t test statistic used to derive the p-value.
-* **Question Answered:** *"Is there a straight-line linear relationship between OB quality score (or trade hold duration) and trade return?"*
-* **Trading Interpretation:**
-  * **Pair A (Quality vs PnL):** $r = -0.183, p = 0.099$ (Not significant at $\alpha = 0.05$). Higher quality scores do not linearly increase return.
-  * **Pair B (Hold Bars vs PnL):** $r = +0.557, p < 0.001$ (Highly Significant). Longer trade hold durations are strongly associated with higher trade returns.
+  * $r$: Pearson correlation coefficient ($-1.0 \le r \le +1.0$).
+  * $t_r$: Student-t statistic for evaluating statistical significance.
+* **Question Answered:** *"Is there a statistically significant linear correlation between $X$ and trade return $Y$?"*
+* **Statistical Observation:**
+  * **Pair A (Quality Score vs. PnL):** $r = -0.1833, p = 0.0992$ (Not statistically significant at $\alpha = 0.05$).
+  * **Pair B (Hold Duration vs. PnL):** $r = +0.5571, p < 0.0001$ (Statistically significant positive linear correlation).
 
 ---
 
@@ -277,88 +276,132 @@ Filtering for `min_ob_quality = 0` isolates the 27 unique historical trade execu
 \[ \rho = \frac{N \sum R(X)R(Y) - \sum R(X) \sum R(Y)}{\sqrt{[N \sum R(X)^2 - (\sum R(X))^2][N \sum R(Y)^2 - (\sum R(Y))^2]}} \]
 
 #### Plain-English Explanation:
-* **What it does:** Measures monotonic (consistent directional) relationships by converting both variables into ranks before calculating correlation. Using Pearson correlation on ranks handles tied values properly.
+* **What it does:** Measures monotonic (rank-order) correlation between $X$ and $Y$ by computing Pearson correlation on ranked variables $R(X)$ and $R(Y)$.
 * **Symbol Breakdown:**
-  * $R(X)$: Rank of quality score or hold duration.
-  * $R(Y)$: Rank of trade PnL %.
-  * $\rho$: Spearman's rank correlation coefficient.
-* **Question Answered:** *"Do higher quality scores (or longer hold durations) consistently rank higher in profit percentage?"*
-* **Trading Interpretation:**
-  * **Pair A (Quality vs PnL Ranks):** $\rho = -0.251, p = 0.023$ (Statistically Significant inverse rank relationship). Higher quality score OBs tend to rank slightly lower in profit due to tighter take-profit targets relative to wider stops.
-  * **Pair B (Hold Duration vs PnL Ranks):** $\rho = +0.534, p < 0.001$ (Highly Significant positive rank relationship).
+  * $R(X)$: Rank of variable $X$.
+  * $R(Y)$: Rank of trade return $Y$.
+  * $\rho$: Spearman's rank correlation coefficient ($-1.0 \le \rho \le +1.0$).
+* **Question Answered:** *"Is there a statistically significant monotonic rank correlation between $X$ and trade return $Y$?"*
+* **Statistical Observation:**
+  * **Pair A (Quality Score vs. PnL Ranks):** $\rho = -0.2512, p = 0.0228$ (Statistically significant inverse rank correlation at $\alpha = 0.05$). Trades with higher raw quality scores tended to rank lower in percentage return in this backtest sample.  
+    > *Note on Inference vs. Observation:* The statistical test establishes the inverse rank relationship ($\rho = -0.2512, p = 0.0228$). Speculative explanations (such as target or stop-loss placement mechanics) represent external hypotheses and are not proven by the correlation test itself.
+  * **Pair B (Hold Duration vs. PnL Ranks):** $\rho = +0.5344, p < 0.0001$ (Statistically significant positive rank correlation).
 
 ---
 
 ### 7. Exit Reason Distribution Breakdown
 
 #### Plain-English Explanation:
-* **What it does:** Aggregates trades by how they exited (`ATR MOVE EXIT`, `KDJ RESET EXIT`, `TRAILING EXIT`, `HIT STOP LOSS`) and computes local average return and win rate per exit type.
-* **Question Answered:** *"Which exit rule produces the highest returns and win rates?"*
-* **Trading Interpretation:** Shows that trend-following exits (`ATR Move Exit` = 100% Win Rate, +3.88% avg) drive strategy profitability, while discrete indicator resets (`KDJ Reset Exit` = 50% Win Rate, -0.31% avg) reduce performance.
+* **What it does:** Groups trades by exit reason (`ATR MOVE EXIT`, `KDJ RESET EXIT`, `TRAILING EXIT`, `HIT STOP LOSS`) and computes local trade counts, win rates, and average returns.
+* **Question Answered:** *"What are the empirical win rates and mean returns for each exit reason category?"*
+* **Statistical Observation:**
+  * `ATR MOVE EXIT` ($N=8$): Win Rate $= 100.00\%$, Mean Return $= +3.88\%$
+  * `TRAILING EXIT (50% RETRACE)` ($N=6$): Win Rate $= 66.67\%$, Mean Return $= +0.39\%$
+  * `KDJ RESET EXIT` ($N=8$): Win Rate $= 50.00\%$, Mean Return $= -0.31\%$
+  * `HIT STOP LOSS` ($N=2$): Win Rate $= 0.00\%$, Mean Return $= -3.13\%$  
+    > *Note on Inference vs. Observation:* These descriptive metrics describe historical outcome distributions per category. Asserting that one exit type "drives overall strategy profitability" is a causal inference beyond what descriptive grouping demonstrates.
 
 ---
 
 ### 8. Long vs. Short Directional Breakdown
 
 #### Plain-English Explanation:
-* **What it does:** Segregates trades by direction (LONG vs SHORT) and evaluates $N$, win rate, mean return, and standard deviation for each direction.
-* **Question Answered:** *"Does the strategy perform differently when buying (Long) versus selling short (Short)?"*
-* **Trading Interpretation:** Shows that Long trades ($N=48$, WR $= 77.08\%$, Avg $= +1.20\%$) significantly outperform Short trades ($N=34$, WR $= 50.00\%$, Avg $= +0.64\%$) during the 2022–2026 backtest window.
+* **What it does:** Segregates trades by trade direction (LONG vs. SHORT) and reports sample counts, win rates, mean returns, and standard deviations.
+* **Question Answered:** *"What were the historical trade outcome statistics for Long trades versus Short trades?"*
+* **Statistical Observation:**
+  * **Long Trades:** $N=48$, Win Rate $= 77.08\%$, Mean Return $= +1.20\%$, SD $= 2.22\%$
+  * **Short Trades:** $N=34$, Win Rate $= 50.00\%$, Mean Return $= +0.64\%$, SD $= 3.39\%$
 
 ---
 
 ## 3. Worked Example Walkthrough: One-Way ANOVA
 
-This step-by-step walkthrough demonstrates the exact mathematical derivation of the **Section 8 Mutually-Exclusive Quality Bin One-Way ANOVA** across the $N=27$ unique historical trades.
+This step-by-step walkthrough demonstrates the exact mathematical derivation of the **Section 8 Mutually-Exclusive Quality Bin One-Way ANOVA** across the $N=27$ unique historical trades (`min_ob_quality = 0`).
 
 ### Step 1: Input Data Summary (Non-Overlapping Quality Bins)
 
-| Group ($g$) | Quality Score | Sample Size ($n_g$) | Trade Returns ($y_{g,i}$ %) | Group Mean ($\bar{y}_g$) | Group Std Dev ($SD_g$) |
-| :---: | :---: | :---: | :--- | :---: | :---: |
-| 1 | 0 | 3 | `[+3.68%, +0.73%, +1.24%]` | $+1.8833\%$ | $1.5483\%$ |
-| 2 | 1 | 4 | `[+2.79%, -0.78%, +2.38%, -1.09%]` | $+0.8263\%$ | $1.5921\%$ |
-| 3 | 2 | 11 | `[+0.44%, -0.09%, +0.25%, -1.60%, +0.63%, +1.38%, -2.03%, +4.36%, +3.47%, +3.51%, +7.49%]` | $+1.6191\%$ | $2.5532\%$ |
-| 4 | 3 | 8 | `[-0.66%, +6.69%, +3.22%, -4.65%, +0.38%, +3.51%, +0.12%, -4.69%]` | $+0.4900\%$ | $3.5103\%$ |
-| 5 | 4 | 1 | `[-0.38%]` | $-0.3810\%$ | $0.0000\%$ |
-| **Total** | **--** | **$N = 27$** | **All 27 Unique Trades** | **$\bar{y} = +1.1224\%$** | **--** |
+The 27 unique historical trades are grouped below by their actual assigned raw `quality_score` (0 through 4; Quality Score 5 has $N=0$ trades). Trade IDs and PnL values are taken directly from the database trade log.
+
+| Group ($g$) | Quality Score | Trade IDs & Individual Returns ($y_{g,i}$ %) | Count ($n_g$) | Group Mean ($\bar{y}_g$) | Group Std Dev ($SD_g$) |
+| :---: | :---: | :--- | :---: | :---: | :---: |
+| 1 | 0 | **ID 7:** $+1.23\%$, **ID 10:** $+0.77\%$, **ID 27:** $+3.65\%$ | 3 | $+1.8833\%$ | $1.5476\%$ |
+| 2 | 1 | **ID 6:** $-0.09\%$, **ID 11:** $-0.78\%$, **ID 15:** $+2.79\%$, **ID 17:** $+1.38\%$ | 4 | $+0.8256\%$ | $1.5918\%$ |
+| 3 | 2 | **ID 1:** $-0.66\%$, **ID 4:** $+3.22\%$, **ID 5:** $+0.44\%$, **ID 12:** $+0.63\%$, **ID 14:** $-1.15\%$, **ID 16:** $+0.38\%$, **ID 19:** $+4.36\%$, **ID 20:** $+3.47\%$, **ID 23:** $+0.12\%$, **ID 24:** $+2.38\%$, **ID 26:** $+4.62\%$ | 11 | $+1.6194\%$ | $2.0528\%$ |
+| 4 | 3 | **ID 2:** $+6.69\%$, **ID 8:** $-4.65\%$, **ID 9:** $+0.25\%$, **ID 13:** $-1.60\%$, **ID 18:** $-2.03\%$, **ID 21:** $+1.63\%$, **ID 22:** $+3.51\%$, **ID 25:** $+0.13\%$ | 8 | $+0.4902\%$ | $3.5098\%$ |
+| 5 | 4 | **ID 3:** $-0.38\%$ | 1 | $-0.3809\%$ | $0.0000\%$ |
+| **Total** | **--** | **All 27 Unique Historical Trades** | **$N = 27$** | **$\bar{y} = +1.1225\%$** | **--** |
 
 ---
 
-### Step 2: Compute Overall Grand Mean ($ar{y}$)
+### Step 2: Compute Overall Grand Mean ($\bar{y}$)
 
-\[ \bar{y} = \frac{\sum y_i}{N} = \frac{+30.3056}{27} = +1.1224\% \]
+Sum of all 27 trade returns:
+\[ \sum_{i=1}^{27} y_i = +30.3065\% \]
+
+Grand Mean ($\bar{y}$):
+\[ \bar{y} = \frac{\sum_{i=1}^{27} y_i}{N} = \frac{+30.3065}{27} = +1.1225\% \]
 
 ---
 
 ### Step 3: Compute Sum of Squares Between Groups ($SSB$)
 
+Formula:
 \[ SSB = \sum_{g=1}^{5} n_g (\bar{y}_g - \bar{y})^2 \]
 
-Substituting numbers for each bin:
-* **Bin 0:** $3 \times (1.8833 - 1.1224)^2 = 3 \times (0.7609)^2 = 3 \times 0.5790 = 1.7370$
-* **Bin 1:** $4 \times (0.8263 - 1.1224)^2 = 4 \times (-0.2961)^2 = 4 \times 0.0877 = 0.3508$
-* **Bin 2:** $11 \times (1.6191 - 1.1224)^2 = 11 \times (0.4967)^2 = 11 \times 0.2467 = 2.7137$
-* **Bin 3:** $8 \times (0.4900 - 1.1224)^2 = 8 \times (-0.6324)^2 = 8 \times 0.3999 = 3.1992$
-* **Bin 4:** $1 \times (-0.3810 - 1.1224)^2 = 1 \times (-1.5034)^2 = 1 \times 2.2602 = 2.2602$
+Calculations per bin:
+* **Bin 0 ($n_0 = 3, \bar{y}_0 = +1.8833\%$):**  
+  Diff $= 1.8833 - 1.1225 = +0.7608\%$  
+  Diff$^2 = 0.5788$  
+  Term $= 3 \times 0.5788 = 1.7364$
 
-Summing all group components:
-\[ SSB = 1.7370 + 0.3508 + 2.7137 + 3.1992 + 2.2602 = 10.2609 \]
+* **Bin 1 ($n_1 = 4, \bar{y}_1 = +0.8256\%$):**  
+  Diff $= 0.8256 - 1.1225 = -0.2969\%$  
+  Diff$^2 = 0.0881$  
+  Term $= 4 \times 0.0881 = 0.3524$
+
+* **Bin 2 ($n_2 = 11, \bar{y}_2 = +1.6194\%$):**  
+  Diff $= 1.6194 - 1.1225 = +0.4969\%$  
+  Diff$^2 = 0.2469$  
+  Term $= 11 \times 0.2469 = 2.7159$
+
+* **Bin 3 ($n_3 = 8, \bar{y}_3 = +0.4902\%$):**  
+  Diff $= 0.4902 - 1.1225 = -0.6323\%$  
+  Diff$^2 = 0.3998$  
+  Term $= 8 \times 0.3998 = 3.1984$
+
+* **Bin 4 ($n_4 = 1, \bar{y}_4 = -0.3809\%$):**  
+  Diff $= -0.3809 - 1.1225 = -1.5034\%$  
+  Diff$^2 = 2.2602$  
+  Term $= 1 \times 2.2602 = 2.2602$
+
+Sum of all 5 terms:
+\[ SSB = 1.7364 + 0.3524 + 2.7159 + 3.1984 + 2.2602 = 10.2633 \quad (\approx 10.2644 \text{ exact unrounded}) \]
 
 ---
 
 ### Step 4: Compute Sum of Squares Within Groups ($SSW$)
 
-\[ SSW = \sum_{g=1}^{5} (n_g - 1) SD_g^2 \]
+Formula:
+\[ SSW = \sum_{g=1}^{5} \sum_{i=1}^{n_g} (y_{g,i} - \bar{y}_g)^2 = \sum_{g=1}^{5} (n_g - 1) SD_g^2 \]
 
-Substituting numbers:
-* **Bin 0:** $(3 - 1) \times (1.5483)^2 = 2 \times 2.3972 = 4.7944$
-* **Bin 1:** $(4 - 1) \times (1.5921)^2 = 3 \times 2.5348 = 7.6044$
-* **Bin 2:** $(11 - 1) \times (2.5532)^2 = 10 \times 6.5188 = 65.1880$
-* **Bin 3:** $(8 - 1) \times (3.5103)^2 = 7 \times 12.3222 = 86.2554$
-* **Bin 4:** $(1 - 1) \times (0.0000)^2 = 0.0000$
+Calculations per bin:
+* **Bin 0 ($n_0 = 3, SD_0 = 1.5476\%$):**  
+  Sum of squared deviations $= (3 - 1) \times (1.5476)^2 = 2 \times 2.3951 = 4.7902$
 
-Summing all within-group components:
-\[ SSW = 4.7944 + 7.6044 + 65.1880 + 86.2554 + 0 = 140.7632 \]
+* **Bin 1 ($n_1 = 4, SD_1 = 1.5918\%$):**  
+  Sum of squared deviations $= (4 - 1) \times (1.5918)^2 = 3 \times 2.5338 = 7.6014$
+
+* **Bin 2 ($n_2 = 11, SD_2 = 2.0528\%$):**  
+  Sum of squared deviations $= (11 - 1) \times (2.0528)^2 = 10 \times 4.2140 = 42.1400$
+
+* **Bin 3 ($n_3 = 8, SD_3 = 3.5098\%$):**  
+  Sum of squared deviations $= (8 - 1) \times (3.5098)^2 = 7 \times 12.3187 = 86.2309$
+
+* **Bin 4 ($n_4 = 1, SD_4 = 0.0000\%$):**  
+  Sum of squared deviations $= 0.0000$
+
+Sum of all within-group deviations:
+\[ SSW = 4.7902 + 7.6014 + 42.1400 + 86.2309 + 0 = 140.7625 \quad (\approx 140.7632 \text{ exact unrounded}) \]
 
 ---
 
@@ -367,7 +410,7 @@ Summing all within-group components:
 * **Degrees of Freedom Between ($df_b$):** $k - 1 = 5 - 1 = 4$
 * **Degrees of Freedom Within ($df_w$):** $N - k = 27 - 5 = 22$
 * **Mean Square Between ($MSB$):**
-  \[ MSB = \frac{SSB}{df_b} = \frac{10.2609}{4} = 2.5652 \]
+  \[ MSB = \frac{SSB}{df_b} = \frac{10.2644}{4} = 2.5661 \]
 * **Mean Square Within ($MSW$):**
   \[ MSW = \frac{SSW}{df_w} = \frac{140.7632}{22} = 6.3983 \]
 
@@ -375,22 +418,22 @@ Summing all within-group components:
 
 ### Step 6: Compute F-Ratio & P-Value
 
-\[ F_{robust} = \frac{MSB}{MSW} = \frac{2.5652}{6.3983} = 0.4010 \]
+\[ F_{robust} = \frac{MSB}{MSW} = \frac{2.5661}{6.3983} = 0.4011 \]
 
 Using the F-distribution CDF ($df_1 = 4, df_2 = 22$):
-\[ p\text{-value} = P(F_{4,22} \ge 0.4010) = 0.8058 \]
+\[ p\text{-value} = P(F_{4,22} \ge 0.4011) = 0.8058 \]
 
-### Conclusion:
-Because $p = 0.8058 > 0.05$, we fail to reject the null hypothesis. There is no statistically significant difference in trade percentage returns across the mutually-exclusive quality bins.
+### Verification Status:
+The regenerated walkthrough uses the exact live trade IDs and PnL values from the dataset. The resulting test statistic ($F = 0.4011$) and p-value ($p = 0.8058$) **match the live confirmed UI result exactly**.
 
 ---
 
 ## 4. Known Issues & Corrections Log
 
 ### Finding 1: Threshold 1 Exit Reason Table Typo
-* **Description:** In the published paper's exit reason table, the row for `min_ob_quality = 1` reported an ATR Move exit average return of $4.01\%$ and a Trailing Exit win rate of $68.18\%$.
-* **Root Cause:** The author mistakenly copy-pasted the **global statistics** across all thresholds combined ($N=82$) into the Threshold 1 table row.
-* **Verification Proof:** A global trailing exit count yields $\frac{15 \text{ wins}}{22 \text{ trades}} = 68.18\%$. However, under Threshold 1 specifically, there are only $N=6$ trailing exits ($4$ wins, $2$ losses), making a $68.18\%$ win rate mathematically impossible (local win rate is $\frac{4}{6} = 66.67\%$).
+* **Observed Finding:** In the published paper's exit reason table, the row for `min_ob_quality = 1` reported an ATR Move exit average return of $4.01\%$ and a Trailing Exit win rate of $68.18\%$.
+* **Root Cause:** The global statistics across all thresholds combined ($N=82$) were mistakenly placed into the Threshold 1 table row.
+* **Verification Proof:** A global trailing exit count yields $\frac{15 \text{ wins}}{22 \text{ trades}} = 68.18\%$. Under Threshold 1 specifically, there are only $N=6$ trailing exits ($4$ wins, $2$ losses), making a $68.18\%$ win rate mathematically impossible for that row (local win rate is $\frac{4}{6} = 66.67\%$).
 * **Corrected Local Threshold 1 Figures:**
   * ATR Move Exit ($N=8$): $+3.88\%$ Avg PnL, $100.00\%$ Win Rate
   * KDJ Reset Exit ($N=8$): $-0.31\%$ Avg PnL, $50.00\%$ Win Rate
@@ -399,32 +442,31 @@ Because $p = 0.8058 > 0.05$, we fail to reject the null hypothesis. There is no 
 ---
 
 ### Finding 2: Sample Independence & The Robustness Check
-* **Description:** The primary ANOVA ($F=0.232$) and Kruskal-Wallis ($H=1.105$) compare groups $Q_0, Q_1, Q_2, Q_3$.
-* **Issue:** Because $Q_3 \subset Q_2 \subset Q_1 \subset Q_0$, the 82 rows represent 27 physical trades repeated across 4 filter sweeps. This violates the assumption of mutually independent groups required by standard ANOVA.
-* **Resolution:** Section 8 was added to evaluate trades grouped into non-overlapping raw quality bins (0 through 5, $N=27$ unique trades).
-* **Finding:** The robustness check yielded $F=0.401, p=0.806$ and $H=2.805, p=0.591$, confirming that both methods agree ($p > 0.05$).
+* **Observed Finding:** The primary ANOVA ($F=0.2324, p=0.8736$) and Kruskal-Wallis ($H=1.1045, p=0.7760$) compare groups $Q_0, Q_1, Q_2, Q_3$.
+* **Methodological Property:** Because $Q_3 \subset Q_2 \subset Q_1 \subset Q_0$, the 82 rows represent 27 physical trade executions repeated across 4 threshold filter sweeps. This violates the assumption of mutually independent groups required by standard ANOVA.
+* **Resolution & Result:** Section 8 evaluates trades grouped into non-overlapping raw quality bins (0 through 5, $N=27$ unique trades). The robustness check yielded $F=0.4011, p=0.8058$ and $H=2.8053, p=0.5909$, demonstrating directional agreement between both grouping methods ($p > 0.05$).
 
 ---
 
 ### Finding 3: Spearman Tied-Rank Formula Fix
-* **Description:** The original JavaScript Spearman implementation used the textbook shortcut formula $\rho = 1 - \frac{6 \sum d_i^2}{N(N^2-1)}$.
-* **Issue:** The shortcut formula assumes zero tied ranks. When tied PnL values occur, it underestimates correlation magnitude and produces incorrect p-values.
-* **Fix:** Updated `computeCorrelationSpearman` to perform a formal rank transformation and compute the Pearson correlation coefficient of the ranked series (matching Python `scipy.stats.spearmanr`).
+* **Observed Finding:** The original JavaScript Spearman implementation used the textbook shortcut formula $\rho = 1 - \frac{6 \sum d_i^2}{N(N^2-1)}$.
+* **Mathematical Property:** The shortcut formula assumes zero tied ranks. When tied PnL values occur, it under-reports correlation magnitude and yields inaccurate p-values.
+* **Resolution:** Updated `computeCorrelationSpearman` to perform a rank transformation and compute the Pearson correlation coefficient of the ranked series (matching Python `scipy.stats.spearmanr`).
 
 ---
 
 ## 5. Glossary of Statistical Terms
 
 * **p-value:** The probability of obtaining a result as extreme as (or more extreme than) the observed sample data, assuming the null hypothesis is true.
-* **Significance Level ($lpha = 0.05$):** The threshold below which a p-value is considered statistically significant, indicating a genuine effect rather than random variation.
-* **Null Hypothesis ($H_0$):** The baseline assumption that there is no effect, no difference, or no relationship between variables.
+* **Significance Level ($\alpha = 0.05$):** The threshold below which a p-value is considered statistically significant, indicating a result unlikely under $H_0$.
+* **Null Hypothesis ($H_0$):** The baseline assumption that there is no effect, no difference, or no relationship between variables in the population.
 * **Alternative Hypothesis ($H_1$):** The hypothesis that a real effect, difference, or correlation exists in the data.
 * **Degrees of Freedom ($df$):** The number of independent pieces of information that go into calculating a statistic.
 * **F-statistic:** The test statistic generated by ANOVA, representing the ratio of variance between group means to variance within groups.
 * **H-statistic:** The non-parametric test statistic generated by the Kruskal-Wallis test based on rank sums.
 * **Pearson Correlation ($r$):** A measure of the linear (straight-line) relationship between two quantitative variables.
-* **Spearman Correlation ($ho$):** A measure of the monotonic (directional rank) relationship between two variables.
-* **Standard Deviation ($SD$):** A measure of how spread out numbers are from their average value.
-* **Mean ($ar{y}$):** The arithmetic average of a set of values.
-* **Binomial Test:** An exact test of the statistical significance of deviations from an expected 50/50 binary outcome distribution.
+* **Spearman Correlation ($\rho$):** A measure of the monotonic (directional rank) relationship between two variables.
+* **Standard Deviation ($SD$):** A measure of the dispersion or spread of data points relative to their mean.
+* **Mean ($\bar{y}$):** The arithmetic average of a set of values.
+* **Binomial Test:** An exact test of the statistical significance of deviations from an expected binary outcome probability distribution ($p=0.50$).
 * **Sample Independence:** The requirement that observations in one group provide no information about observations in another group.
