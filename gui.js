@@ -1885,28 +1885,7 @@ function renderOrthogonalCriteria(trades) {
     });
 }
 
-function renderDescriptiveStats(stats) {
-    const tbody = document.getElementById("desc-stats-body");
-    tbody.innerHTML = "";
-    
-    for (let q of [0, 1, 2, 3]) {
-        let live = stats.by_threshold[q];
-        let ref = PAPER_REFS.desc[q];
-        
-        // Add table rows
-        let rows = [
-            `<tr>
-                <td rowspan="5" style="font-weight:600; border-bottom: 2px solid var(--border);">Threshold ${q}</td>
-                <td>Sample Size (N)</td>
-                <td>${live.n}</td>
-                <td>${ref.n}</td>
-                <td>${live.n - ref.n}</td>
-                <td>${getStatusIndicator(live.n, ref.n)}</td>
-             </tr>`,
-            `<tr>
-                <td>Win Rate (%)</td>
-                <td>${live.wr.toFixed(2)}%</td>
-                <td>${ref.wr.toFixed(2)}%</td>
+
 function renderBaselineOverview(trades) {
     const tbody = document.getElementById("baseline-overview-body");
     if (!tbody || !Array.isArray(trades)) return;
@@ -1944,7 +1923,7 @@ function renderBaselineOverview(trades) {
             <td>${sd_total.toFixed(2)}%</td>
          </tr>`,
         `<tr style="border-top: 1px dashed var(--border);">
-            <td style="font-weight:500;">Rank 1 Winner (Bar ${top1.entry_idx}, ${top1.side})</td>
+            <td style="font-weight:500;">Rank 1 Winner (OB #${top1.entry_ob_id || top1.trade_id}, ${top1.side})</td>
             <td>1</td>
             <td>100.0%</td>
             <td style="font-weight:600; color:var(--long);">+${top1.pnl_pct.toFixed(2)}%</td>
@@ -1953,7 +1932,7 @@ function renderBaselineOverview(trades) {
             <td>--</td>
          </tr>`,
         `<tr>
-            <td style="font-weight:500;">Rank 2 Winner (Bar ${top2.entry_idx}, ${top2.side})</td>
+            <td style="font-weight:500;">Rank 2 Winner (OB #${top2.entry_ob_id || top2.trade_id}, ${top2.side})</td>
             <td>1</td>
             <td>100.0%</td>
             <td style="font-weight:600; color:var(--long);">+${top2.pnl_pct.toFixed(2)}%</td>
@@ -1962,7 +1941,7 @@ function renderBaselineOverview(trades) {
             <td>--</td>
          </tr>`,
         `<tr>
-            <td style="font-weight:500;">Rank 3 Winner (Bar ${top3.entry_idx}, ${top3.side})</td>
+            <td style="font-weight:500;">Rank 3 Winner (OB #${top3.entry_ob_id || top3.trade_id}, ${top3.side})</td>
             <td>1</td>
             <td>100.0%</td>
             <td style="font-weight:600; color:var(--long);">+${top3.pnl_pct.toFixed(2)}%</td>
