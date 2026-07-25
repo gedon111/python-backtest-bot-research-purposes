@@ -505,9 +505,16 @@ def main():
                 engine = db_manager.init_db()
                 session = db_manager.get_session(engine)
                 
-                # Query trades and join order_blocks to fetch quality score
-                query = session.query(db_manager.Trade, db_manager.OrderBlock.quality).\
-                    join(db_manager.OrderBlock, db_manager.Trade.entry_ob_id == db_manager.OrderBlock.ob_id)
+                # Query trades and join order_blocks to fetch quality score and criteria flags
+                query = session.query(
+                    db_manager.Trade,
+                    db_manager.OrderBlock.quality,
+                    db_manager.OrderBlock.quality_displacement,
+                    db_manager.OrderBlock.quality_large_bar,
+                    db_manager.OrderBlock.quality_fvg,
+                    db_manager.OrderBlock.quality_liquidity_sweep,
+                    db_manager.OrderBlock.quality_volume_expansion
+                ).join(db_manager.OrderBlock, db_manager.Trade.entry_ob_id == db_manager.OrderBlock.ob_id)
                 
                 if min_ob_quality is not None:
                     query = query.filter(db_manager.Trade.min_ob_quality == min_ob_quality)
@@ -515,7 +522,7 @@ def main():
                 results = query.all()
                 
                 trades_data = []
-                for trade, quality in results:
+                for trade, quality, disp, lb, fvg, liq, vol in results:
                     trades_data.append({
                         "trade_id": trade.trade_id,
                         "side": trade.side,
@@ -531,7 +538,12 @@ def main():
                         "exit_reason": trade.exit_reason,
                         "entry_ob_id": trade.entry_ob_id,
                         "tp_ob_id": trade.tp_ob_id,
-                        "quality_score": quality
+                        "quality_score": quality,
+                        "quality_displacement": bool(disp) if disp is not None else False,
+                        "quality_large_bar": bool(lb) if lb is not None else False,
+                        "quality_fvg": bool(fvg) if fvg is not None else False,
+                        "quality_liquidity_sweep": bool(liq) if liq is not None else False,
+                        "quality_volume_expansion": bool(vol) if vol is not None else False,
                     })
                 
                 session.close()

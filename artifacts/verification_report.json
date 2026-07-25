@@ -17,24 +17,24 @@
   },
   "recalculation_hashes_by_threshold": {
     "0": {
-      "orderblocks_hash": "72a6938170bb41807c52da4766557a1dafb9b5265a79af84fa9edda3c87e2ead",
-      "trades_hash": "d0f4e109f33697d5116fc00bd3808ad5a996defa002db7625ed27c8adc3b3297",
+      "orderblocks_hash": "8b0067e3b0ff60261c74110c699bd3ebc952dd3b846cab4b9670364122b036cb",
+      "trades_hash": "6ea0f627a9733af063d01786ef10cdd73fa97b0052034c94d59c7934e2dc34e1",
       "stats_hash": "6a1008ce370a7ee921da2d09b8b03b08ab08862ee5e724246d40f57209376625"
     },
     "1": {
-      "orderblocks_hash": "72a6938170bb41807c52da4766557a1dafb9b5265a79af84fa9edda3c87e2ead",
-      "trades_hash": "f05f6e87d1d7992f848380ab25af9f4a94b4e9350287044ad5067942a0c1a71d",
-      "stats_hash": "eb91473a45e1c2bd68b7f132efd19343ef6dc4d275a0c5e60ffcdd44d70b823e"
+      "orderblocks_hash": "8b0067e3b0ff60261c74110c699bd3ebc952dd3b846cab4b9670364122b036cb",
+      "trades_hash": "7d1dd179492bbe77a0b448836a6635010e33a7e218a1bfa170d6f8b6742c1708",
+      "stats_hash": "e4772145b53a092a2f3a31744a6dad120e266c20a31e895420e0dfffb6eb0441"
     },
     "2": {
-      "orderblocks_hash": "72a6938170bb41807c52da4766557a1dafb9b5265a79af84fa9edda3c87e2ead",
-      "trades_hash": "c0ce885ccf789f3a68d2c9cec7e78b06dde7ae2bf4cdb7130ccab2af886d2226",
-      "stats_hash": "3142ce2e42a87200e751ef1abbc3f9062b366a6456567c2ee98d2ee6af29e27c"
+      "orderblocks_hash": "8b0067e3b0ff60261c74110c699bd3ebc952dd3b846cab4b9670364122b036cb",
+      "trades_hash": "37b6513a3e123bbf5b7a7d0234592b40e3ae868a4164793652d1c6c51383304d",
+      "stats_hash": "eb91473a45e1c2bd68b7f132efd19343ef6dc4d275a0c5e60ffcdd44d70b823e"
     },
     "3": {
-      "orderblocks_hash": "72a6938170bb41807c52da4766557a1dafb9b5265a79af84fa9edda3c87e2ead",
-      "trades_hash": "0dab34fc2e41fca6508f99fadbd31519e1fdcb530d5c5a4168421854e9716676",
-      "stats_hash": "34be22fea4ad7ace844099974ecfc62b1935f698d9833736a2ce7515fb5460d7"
+      "orderblocks_hash": "8b0067e3b0ff60261c74110c699bd3ebc952dd3b846cab4b9670364122b036cb",
+      "trades_hash": "f80568eca765d41e8e1328ac18a857c8ae1858a7bcdfee0d4b2a6da3f309003c",
+      "stats_hash": "05e10220a847e343fd554ad5e3c141b38b1e116d8f37b5f758d512ca04228375"
     }
   }
 }

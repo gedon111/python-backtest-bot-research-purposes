@@ -309,11 +309,11 @@ def compute_smc(df):
 
                     fvg = False
                     try:
-                        for j in range(ob_idx + 1, min(n - 1, ob_idx + 4)):
-                            if float(lows[j + 1]) > float(highs[j]) and ob['type'] == 'DEMAND':
+                        for j in range(ob_idx, min(n - 2, ob_idx + 3)):
+                            if ob['type'] == 'DEMAND' and float(lows[j + 2]) > float(highs[j]):
                                 fvg = True
                                 break
-                            if float(highs[j + 1]) < float(lows[j]) and ob['type'] == 'SUPPLY':
+                            if ob['type'] == 'SUPPLY' and float(highs[j + 2]) < float(lows[j]):
                                 fvg = True
                                 break
                     except Exception:
@@ -399,11 +399,11 @@ def compute_smc(df):
 
                     fvg = False
                     try:
-                        for j in range(ob_idx + 1, min(n - 1, ob_idx + 4)):
-                            if float(lows[j + 1]) > float(highs[j]) and ob['type'] == 'DEMAND':
+                        for j in range(ob_idx, min(n - 2, ob_idx + 3)):
+                            if ob['type'] == 'DEMAND' and float(lows[j + 2]) > float(highs[j]):
                                 fvg = True
                                 break
-                            if float(highs[j + 1]) < float(lows[j]) and ob['type'] == 'SUPPLY':
+                            if ob['type'] == 'SUPPLY' and float(highs[j + 2]) < float(lows[j]):
                                 fvg = True
                                 break
                     except Exception:
@@ -866,6 +866,11 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
                     'pnl_pct': pnl,
                     'entry_ob_bar': (current_entry_ob.get('ob_bar') if current_entry_ob else None),
                     'entry_ob_quality': (current_entry_ob.get('quality') if current_entry_ob else None),
+                    'entry_ob_quality_displacement': (bool(current_entry_ob.get('quality_displacement')) if current_entry_ob else False),
+                    'entry_ob_quality_large_bar': (bool(current_entry_ob.get('quality_large_bar')) if current_entry_ob else False),
+                    'entry_ob_quality_fvg': (bool(current_entry_ob.get('quality_fvg')) if current_entry_ob else False),
+                    'entry_ob_quality_liquidity_sweep': (bool(current_entry_ob.get('quality_liquidity_sweep')) if current_entry_ob else False),
+                    'entry_ob_quality_volume_expansion': (bool(current_entry_ob.get('quality_volume_expansion')) if current_entry_ob else False),
                     'entry_ob_created_at': (current_entry_ob.get('created_at') if current_entry_ob else None),
                     'entry_ob_level': (current_entry_ob.get('level') if current_entry_ob else None),
                     'entry_ob_type': (current_entry_ob.get('type') if current_entry_ob else None),
@@ -942,6 +947,11 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
                     'pnl_pct': pnl,
                     'entry_ob_bar': (current_entry_ob.get('ob_bar') if current_entry_ob else None),
                     'entry_ob_quality': (current_entry_ob.get('quality') if current_entry_ob else None),
+                    'entry_ob_quality_displacement': (bool(current_entry_ob.get('quality_displacement')) if current_entry_ob else False),
+                    'entry_ob_quality_large_bar': (bool(current_entry_ob.get('quality_large_bar')) if current_entry_ob else False),
+                    'entry_ob_quality_fvg': (bool(current_entry_ob.get('quality_fvg')) if current_entry_ob else False),
+                    'entry_ob_quality_liquidity_sweep': (bool(current_entry_ob.get('quality_liquidity_sweep')) if current_entry_ob else False),
+                    'entry_ob_quality_volume_expansion': (bool(current_entry_ob.get('quality_volume_expansion')) if current_entry_ob else False),
                     'entry_ob_created_at': (current_entry_ob.get('created_at') if current_entry_ob else None),
                     'entry_ob_level': (current_entry_ob.get('level') if current_entry_ob else None),
                     'entry_ob_type': (current_entry_ob.get('type') if current_entry_ob else None),

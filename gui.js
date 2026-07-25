@@ -1715,6 +1715,7 @@ window.loadAndRenderStats = async function() {
         const stats = computeAllStatistics(trades);
         
         // Render UI
+        renderOrthogonalCriteria(trades);
         renderDescriptiveStats(stats);
         renderBinomialTests(stats);
         renderANOVA(stats);
@@ -1814,6 +1815,113 @@ function getStatusIndicator(live, ref) {
     } else {
         return `<span class="status-check-pill mismatch">⚠️ Mismatch</span>`;
     }
+}
+
+function renderOrthogonalCriteria(trades) {
+    if (!Array.isArray(trades)) return;
+    const tbody = document.getElementById("orthogonal-criteria-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    
+    // Filter to min_ob_quality = 0 trades (orthogonal baseline set)
+    let baseTrades = trades.filter(t => t.min_ob_quality === 0);
+    if (baseTrades.length === 0) baseTrades = trades;
+    
+    const criteria = [
+        { label: "Displacement", key: "quality_displacement" },
+        { label: "LargeBar", key: "quality_large_bar" },
+        { label: "FVG", key: "quality_fvg" },
+        { label: "LiqSweep", key: "quality_liquidity_sweep" },
+        { label: "VolExpansion", key: "quality_volume_expansion" }
+    ];
+    
+    criteria.forEach(item => {
+        let t_list = baseTrades.filter(t => Boolean(t[item.key]) === true);
+        let f_list = baseTrades.filter(t => Boolean(t[item.key]) === false);
+        
+        let n_t = t_list.length, n_f = f_list.length;
+        let w_t = t_list.filter(t => t.pnl_pct > 0).length, l_t = n_t - w_t;
+        let w_f = f_list.filter(t => t.pnl_pct > 0).length, l_f = n_f - w_f;
+        
+        let wr_t = n_t > 0 ? (w_t / n_t) * 100 : 0.0;
+        let wr_f = n_f > 0 ? (w_f / n_f) * 100 : 0.0;
+        
+        let tot_t = t_list.reduce((sum, t) => sum + t.pnl_pct, 0.0);
+        let tot_f = f_list.reduce((sum, t) => sum + t.pnl_pct, 0.0);
+        
+        let avg_t = n_t > 0 ? tot_t / n_t : 0.0;
+        let avg_f = n_f > 0 ? tot_f / n_f : 0.0;
+        
+        let sd_t = 0.0;
+        if (n_t > 1) {
+            let sqSum = t_list.reduce((sum, t) => sum + Math.pow(t.pnl_pct - avg_t, 2), 0.0);
+            sd_t = Math.sqrt(sqSum / (n_t - 1));
+        }
+        
+        let sd_f = 0.0;
+        if (n_f > 1) {
+            let sqSum = f_list.reduce((sum, t) => sum + Math.pow(t.pnl_pct - avg_f, 2), 0.0);
+            sd_f = Math.sqrt(sqSum / (n_f - 1));
+        }
+        
+        let orVal = 1.0;
+        if (w_t === 0 || l_t === 0 || w_f === 0 || l_f === 0) {
+            orVal = ((w_t + 0.5) * (l_f + 0.5)) / ((l_t + 0.5) * (w_f + 0.5));
+        } else {
+            orVal = (w_t * l_f) / (l_t * w_f);
+        }
+        
+        let isAdequate = (n_t >= 5 && n_f >= 5);
+        let fisherPText = "--";
+        let welchPText = "--";
+        let statusBadge = "";
+        
+        if (isAdequate) {
+            let seDiff = Math.sqrt((sd_t * sd_t / n_t) + (sd_f * sd_f / n_f));
+            let tStat = seDiff > 0 ? (avg_t - avg_f) / seDiff : 0;
+            let numDf = Math.pow((sd_t * sd_t / n_t) + (sd_f * sd_f / n_f), 2);
+            let denDf = (Math.pow(sd_t * sd_t / n_t, 2) / (n_t - 1)) + (Math.pow(sd_f * sd_f / n_f, 2) / (n_f - 1));
+            let dfWelch = denDf > 0 ? numDf / denDf : (n_t + n_f - 2);
+            let welchP = studentTPValue(tStat, dfWelch);
+            
+            welchPText = isNaN(welchP) ? "--" : welchP.toFixed(4);
+            
+            let grandN = n_t + n_f;
+            let expected_wt = (n_t * (w_t + w_f)) / grandN;
+            let chiSq = Math.pow(Math.abs(w_t - expected_wt) - 0.5, 2) / expected_wt;
+            let fisherP = chiSquarePValue(chiSq, 1);
+            fisherPText = isNaN(fisherP) ? "--" : fisherP.toFixed(4);
+            
+            statusBadge = `<span class="status-check-pill match">✓ Adequate Sample</span>`;
+        } else {
+            statusBadge = `<span class="status-check-pill mismatch">⚠️ Descriptive Only (n < 5)</span>`;
+        }
+        
+        let rows = [
+            `<tr>
+                <td rowspan="2" style="font-weight:600; vertical-align:middle; border-bottom: 2px solid var(--border);">${item.label}</td>
+                <td>True</td>
+                <td>${n_t}</td>
+                <td>${wr_t.toFixed(2)}%</td>
+                <td>${tot_t.toFixed(2)}%</td>
+                <td>${avg_t.toFixed(2)}%</td>
+                <td>${sd_t.toFixed(2)}%</td>
+                <td rowspan="2" style="vertical-align:middle; font-weight:600;">${orVal.toFixed(4)}</td>
+                <td rowspan="2" style="vertical-align:middle;">${fisherPText}</td>
+                <td rowspan="2" style="vertical-align:middle;">${welchPText}</td>
+                <td rowspan="2" style="vertical-align:middle; border-bottom: 2px solid var(--border);">${statusBadge}</td>
+             </tr>`,
+            `<tr style="border-bottom: 2px solid var(--border);">
+                <td>False</td>
+                <td>${n_f}</td>
+                <td>${wr_f.toFixed(2)}%</td>
+                <td>${tot_f.toFixed(2)}%</td>
+                <td>${avg_f.toFixed(2)}%</td>
+                <td>${sd_f.toFixed(2)}%</td>
+             </tr>`
+        ];
+        tbody.innerHTML += rows.join("");
+    });
 }
 
 function renderDescriptiveStats(stats) {

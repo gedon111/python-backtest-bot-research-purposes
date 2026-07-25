@@ -13,6 +13,17 @@
   {
     "min_quality": 1,
     "trade_stats": {
+      "Total Trades": 26,
+      "Total Net Return (%)": 29.075669465412282,
+      "Avg Return/Trade (%)": 1.1182949794389339,
+      "Win Rate (%)": 69.23076923076923
+    },
+    "trade_count": 26,
+    "orderblock_count": 761
+  },
+  {
+    "min_quality": 2,
+    "trade_stats": {
       "Total Trades": 24,
       "Total Net Return (%)": 24.65645437080543,
       "Avg Return/Trade (%)": 1.0273522654502263,
@@ -22,25 +33,14 @@
     "orderblock_count": 761
   },
   {
-    "min_quality": 2,
-    "trade_stats": {
-      "Total Trades": 21,
-      "Total Net Return (%)": 21.264336328840816,
-      "Avg Return/Trade (%)": 1.012587444230515,
-      "Win Rate (%)": 66.66666666666666
-    },
-    "trade_count": 21,
-    "orderblock_count": 761
-  },
-  {
     "min_quality": 3,
     "trade_stats": {
-      "Total Trades": 10,
-      "Total Net Return (%)": 3.4507041775306604,
-      "Avg Return/Trade (%)": 0.345070417753066,
-      "Win Rate (%)": 50.0
+      "Total Trades": 14,
+      "Total Net Return (%)": 6.592577973284303,
+      "Avg Return/Trade (%)": 0.4708984266631645,
+      "Win Rate (%)": 57.14285714285714
     },
-    "trade_count": 10,
+    "trade_count": 14,
     "orderblock_count": 761
   }
 ]

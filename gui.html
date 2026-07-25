@@ -301,6 +301,36 @@
                 </div>
 
                 <div class="stats-grid">
+                    <!-- 0. Orthogonal Analysis: Independent 5-Criterion Breakdown -->
+                    <div class="stat-card full-width">
+                        <h3>Orthogonal Analysis: Independent 5-Criterion Breakdown</h3>
+                        <p class="stat-desc">Evaluating trade performance for each of the 5 criteria independently (True vs. False subgroups) across the N=27 trade dataset.</p>
+                        <div class="stat-result-card" style="margin-top:0.5rem;">
+                            <div class="table-container">
+                                <table class="stats-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Criterion</th>
+                                            <th>Subgroup</th>
+                                            <th>Count (N)</th>
+                                            <th>Win Rate (%)</th>
+                                            <th>Total Return (%)</th>
+                                            <th>Avg Return (%)</th>
+                                            <th>Std Dev (%)</th>
+                                            <th>Odds Ratio</th>
+                                            <th>Fisher Exact p</th>
+                                            <th>Welch t-test p</th>
+                                            <th>Statistical Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="orthogonal-criteria-body">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 1. Descriptive Stats -->
                     <div class="stat-card full-width">
                         <h3>1. Descriptive Statistics by Threshold</h3>
