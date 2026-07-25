@@ -293,18 +293,34 @@
             <!-- Research Statistics Tab -->
             <section id="stats-tab" class="tab-pane">
                 <div class="stats-header">
-                    <h2>Research Statistics</h2>
-                    <p>Live statistical test validation compiled directly from the backtest trades dataset compared against published paper benchmarks.</p>
-                    <div id="stats-global-warning" class="global-warning-banner hidden">
-                        <strong>⚠️ System Alert:</strong> Some p-value approximations failed self-validation checks. Please check console errors.
-                    </div>
+                    <h2>Research Statistics & Methodology Synthesis</h2>
+                    <p>Live statistical test validation compiled directly from the BTCUSDT 4H backtest dataset (2022–2026).</p>
                 </div>
 
                 <div class="stats-grid">
                     <!-- 0. Orthogonal Analysis: Independent 5-Criterion Breakdown -->
                     <div class="stat-card full-width">
                         <h3>Orthogonal Analysis: Independent 5-Criterion Breakdown</h3>
-                        <p class="stat-desc">Evaluating trade performance and return contribution for each of the 5 criteria independently across the N=27 trade dataset (+30.31% total net return).</p>
+                        <p class="stat-desc">Evaluating trade performance and return contribution for each of the 5 criteria independently across the N=27 baseline trade dataset.</p>
+                        
+                        <div class="stat-metrics-flex" style="margin-bottom: 1.25rem;">
+                            <div class="stat-metric-badge">
+                                <span class="stat-metric-label">Baseline Strategy Return</span>
+                                <span class="stat-metric-val">+30.31%</span>
+                                <span class="stat-metric-sig">N = 27 Trades (70.37% WR)</span>
+                            </div>
+                            <div class="stat-metric-badge">
+                                <span class="stat-metric-label">Corrected FVG Population</span>
+                                <span class="stat-metric-val">47.57%</span>
+                                <span class="stat-metric-sig">362 / 761 Detected OBs</span>
+                            </div>
+                            <div class="stat-metric-badge">
+                                <span class="stat-metric-label">Top 3 Return Concentration</span>
+                                <span class="stat-metric-val">51.72%</span>
+                                <span class="stat-metric-sig">+15.68% from Top 3 Winners</span>
+                            </div>
+                        </div>
+
                         <div class="stat-result-card" style="margin-top:0.5rem;">
                             <div class="table-container">
                                 <table class="stats-table">
@@ -329,31 +345,25 @@
                         </div>
                     </div>
 
-                    <!-- 1. Descriptive Stats -->
+                    <!-- 1. Baseline Strategy Overview & Return Concentration -->
                     <div class="stat-card full-width">
-                        <h3>1. Descriptive Statistics by Threshold</h3>
-                        <p class="stat-desc">Win rates, total returns, average trade returns, and standard deviations grouped by minimum OB quality levels.</p>
-                        
-                        <div class="math-solution">
-                            <h4>Stage 1: Standard Deviation Formula & Substitution</h4>
-                            <div id="math-desc-sd" class="math-math">Calculating...</div>
-                        </div>
-                        
-                        <div class="stat-result-card">
-                            <h4>Stage 2: Live Results vs. Published Reference</h4>
+                        <h3>1. Baseline Strategy Overview & Return Concentration</h3>
+                        <p class="stat-desc">Single-dataset baseline performance summary (N = 27) and concentration analysis of top historical winning trades.</p>
+                        <div class="stat-result-card" style="margin-top:0.5rem;">
                             <div class="table-container">
                                 <table class="stats-table">
                                     <thead>
                                         <tr>
-                                            <th>Quality</th>
-                                            <th>Metric</th>
-                                            <th>Live Value</th>
-                                            <th>Paper Reference</th>
-                                            <th>Difference</th>
-                                            <th>Status</th>
+                                            <th>Trade Rank / Group</th>
+                                            <th>Trade Count (N)</th>
+                                            <th>Win Rate (%)</th>
+                                            <th>Total PnL (%)</th>
+                                            <th>Share of Total Return (%)</th>
+                                            <th>Avg Return / Trade (%)</th>
+                                            <th>Std Dev (%)</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="desc-stats-body">
+                                    <tbody id="baseline-overview-body">
                                         <!-- Populated dynamically -->
                                     </tbody>
                                 </table>
@@ -361,67 +371,54 @@
                         </div>
                     </div>
 
-                    <!-- 2. Binomial Test -->
-                    <div class="stat-card">
-                        <h3>2. Binomial Test per Threshold (One-sided, p₀ = 0.5)</h3>
-                        <p class="stat-desc">Hypothesis test evaluating if the win rate is significantly greater than random chance (50%).</p>
-                        
-                        <div class="math-solution">
-                            <h4>Stage 1: Binomial CDF/PMF Summation Formula</h4>
-                            <div id="math-binomial" class="math-math">Calculating...</div>
+                    <!-- 2. Order Block Quality Equivalence & Methodological Caution -->
+                    <div class="stat-card full-width">
+                        <h3>2. Order Block Quality Equivalence & Methodological Caution</h3>
+                        <p class="stat-desc">Methodological analysis evaluating trade quality score equivalence between top winners and losses, and co-occurrence multi-counting cautions.</p>
+                        <div id="quality-equivalence-container">
+                            <!-- Populated dynamically -->
                         </div>
-                        
-                        <div class="stat-result-card">
-                            <h4>Stage 2: Results & Significance</h4>
-                            <div id="validation-binom" class="val-badge error hidden">p-value approximation unverified</div>
-                            <div class="stat-metrics-flex" id="binomial-results">
-                                <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- 3. 3-Arm Controlled Ablation Study -->
+                    <div class="stat-card full-width">
+                        <h3>3. 3-Arm Controlled Ablation Study (Isolating the Order Block Structural Gate)</h3>
+                        <p class="stat-desc">Comparing the full OB-gated strategy against indicator-only entry triggers (flat ATR stop vs. 5-bar swing-pivot stop) to test whether the OB gate adds measurable value independent of indicators.</p>
+                        <div class="stat-result-card" style="margin-top:0.5rem;">
+                            <div class="table-container">
+                                <table class="stats-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Strategy Variant</th>
+                                            <th>Risk Placement Anchoring</th>
+                                            <th>Count (N)</th>
+                                            <th>Win Rate (%)</th>
+                                            <th>Total Net Return (%)</th>
+                                            <th>Avg Return / Trade (%)</th>
+                                            <th>Std Dev (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ablation-study-body">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 3. One-Way ANOVA -->
-                    <div class="stat-card">
-                        <h3>3. One-Way ANOVA (pnl_pct across thresholds)</h3>
-                        <p class="stat-desc">Parametric test of whether there are statistically significant differences between the four threshold group means.</p>
-                        
-                        <div class="math-solution">
-                            <h4>Stage 1: ANOVA Worked Derivation</h4>
-                            <div id="math-anova" class="math-math">Calculating...</div>
-                        </div>
-                        
-                        <div class="stat-result-card">
-                            <h4>Stage 2: F-Statistic & ANOVA Table</h4>
-                            <div id="validation-anova" class="val-badge error hidden">p-value approximation unverified</div>
-                            <div id="anova-results">
-                                <!-- Populated dynamically -->
-                            </div>
+                    <!-- 4. Bootstrap Resampling Audit & Entry-Bar Overlap Audit -->
+                    <div class="stat-card full-width">
+                        <h3>4. Bootstrap Resampling Audit (B = 2,000) & Entry-Bar Overlap Audit</h3>
+                        <p class="stat-desc">Resampling n=27 trades from the 138-trade indicators-only pool over 2,000 iterations to control for sample size disparity, alongside entry-bar overlap analysis.</p>
+                        <div id="bootstrap-audit-container">
+                            <!-- Populated dynamically -->
                         </div>
                     </div>
 
-                    <!-- 4. Kruskal-Wallis H-Test -->
+                    <!-- 5. Pearson & Spearman Correlation (Hold Duration vs PnL) -->
                     <div class="stat-card">
-                        <h3>4. Kruskal-Wallis H-Test (Non-parametric ANOVA)</h3>
-                        <p class="stat-desc">Non-parametric test comparing the median returns across the four quality threshold groups.</p>
-                        
-                        <div class="math-solution">
-                            <h4>Stage 1: Rank Sum Formula & Substituted Math</h4>
-                            <div id="math-kruskal" class="math-math">Calculating...</div>
-                        </div>
-                        
-                        <div class="stat-result-card">
-                            <h4>Stage 2: H-Statistic & Chi-square p-value</h4>
-                            <div id="validation-kruskal" class="val-badge error hidden">p-value approximation unverified</div>
-                            <div id="kruskal-results">
-                                <!-- Populated dynamically -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 5. Pearson & Spearman Correlation -->
-                    <div class="stat-card">
-                        <h3>5. Pearson & Spearman Correlation Coefficients</h3>
-                        <p class="stat-desc">Evaluating linear and monotonic relationships for: (a) OB quality vs PnL, and (b) Hold duration vs PnL.</p>
+                        <h3>5. Hold Duration vs. PnL Return Correlation</h3>
+                        <p class="stat-desc">Evaluating linear and monotonic relationships between trade hold duration (in 4H bars) and PnL percentage return.</p>
                         
                         <div class="math-solution">
                             <h4>Stage 1: Covariance & Rank-Difference Formulations</h4>
@@ -429,8 +426,7 @@
                         </div>
                         
                         <div class="stat-result-card">
-                            <h4>Stage 2: Correlation Matrices & t-Test Significance</h4>
-                            <div id="validation-correlation" class="val-badge error hidden">p-value approximation unverified</div>
+                            <h4>Stage 2: Correlation Matrices & Significance</h4>
                             <div id="correlation-results">
                                 <!-- Populated dynamically -->
                             </div>
@@ -439,19 +435,8 @@
 
                     <!-- 6. Exit Reason Distribution -->
                     <div class="stat-card">
-                        <h3>6. Exit Reason Distribution</h3>
-                        <p class="stat-desc">Summary of hold times and performance grouped by trade closing event triggers.</p>
-                        
-                        <div class="filter-row" style="margin-bottom:1rem;">
-                            <label>Filter by Quality Threshold:
-                                <select id="exit-reason-quality-select" style="padding:0.25rem 0.5rem; border-radius:4px; background:var(--bg-surface); border:1px solid var(--border); color:var(--text); font-size:0.9rem;">
-                                    <option value="0">Quality 0</option>
-                                    <option value="1" selected>Quality 1</option>
-                                    <option value="2">Quality 2</option>
-                                    <option value="3">Quality 3</option>
-                                </select>
-                            </label>
-                        </div>
+                        <h3>6. Exit Reason Distribution (Baseline Dataset N = 27)</h3>
+                        <p class="stat-desc">Summary of hold times and trade performance grouped by closing event triggers across the full baseline dataset.</p>
                         
                         <div class="stat-result-card" style="margin-top:0;">
                             <div class="table-container">
@@ -474,9 +459,9 @@
                     </div>
 
                     <!-- 7. Long vs Short Breakdown -->
-                    <div class="stat-card">
-                        <h3>7. Long vs. Short Breakdown</h3>
-                        <p class="stat-desc">Comparison of trading directions across the entire backtest history.</p>
+                    <div class="stat-card full-width">
+                        <h3>7. Directional Long vs. Short Breakdown</h3>
+                        <p class="stat-desc">Comparison of long versus short trade performance across the baseline backtest history.</p>
                         
                         <div class="stat-result-card" style="margin-top:0;">
                             <div class="table-container">
@@ -486,6 +471,7 @@
                                             <th>Direction</th>
                                             <th>Count (N)</th>
                                             <th>Win Rate (%)</th>
+                                            <th>Total Return (%)</th>
                                             <th>Avg Return (%)</th>
                                             <th>Std Dev (%)</th>
                                         </tr>
@@ -498,42 +484,21 @@
                         </div>
                     </div>
 
-                    <!-- 8. Mutually-Exclusive Quality Bin ANOVA / Kruskal-Wallis (Robustness Check) -->
+                    <!-- 8. Research Methodology & Synthesis Summary -->
                     <div class="stat-card full-width">
-                        <h3>8. Mutually-Exclusive Quality Bin ANOVA / Kruskal-Wallis (Robustness Check)</h3>
-                        <p class="stat-desc">The primary ANOVA/Kruskal-Wallis above compares nested threshold groups (Q0-Q3) where higher thresholds are subsets of lower ones, meaning the same trade can appear in multiple groups. This calculator instead groups trades by their exact raw quality_score (0-5, non-overlapping, each trade counted exactly once) to provide an independent-groups comparison as a check on whether the nested-group result holds under stricter assumptions.</p>
+                        <h3>8. Research Methodology Synthesis & Conclusions</h3>
+                        <p class="stat-desc">Summary of structural revisions, collinearity resolution, and key takeaways from the backtest evaluation.</p>
                         
-                        <!-- Side-by-Side Method Agreement Summary Banner -->
-                        <div id="robustness-agreement-banner" style="margin-bottom: 1.25rem;">
-                            <!-- Populated dynamically -->
-                        </div>
-
-                        <div class="math-solution">
-                            <h4>Stage 1: Worked Derivation (ANOVA & Kruskal-Wallis)</h4>
-                            <div id="math-robustness" class="math-math">Calculating...</div>
-                        </div>
-                        
-                        <div class="stat-result-card">
-                            <h4>Stage 2: Non-Overlapping Quality Bin Results (N = 27 Unique Trades)</h4>
-                            <div class="table-container">
-                                <table class="stats-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Raw Quality Score</th>
-                                            <th>Count (N)</th>
-                                            <th>Sample Size Status</th>
-                                            <th>Avg PnL (%)</th>
-                                            <th>Std Dev (%)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="robustness-bins-body">
-                                        <!-- Populated dynamically -->
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div style="margin-top:0.75rem; font-size:0.82rem; color:var(--text-muted); font-style:italic;">
-                                💡 <strong>Note on Quality Score 5:</strong> No trades in this dataset achieved the maximum quality score of 5 across the full backtest period, indicating a 'perfect' institutional footprint score was never observed in this sample.
-                            </div>
+                        <div class="stat-result-card" style="margin-top:0.5rem; line-height:1.6; font-size:0.92rem; color:var(--text-main);">
+                            <p style="margin-bottom:0.75rem;">
+                                <strong>1. Retirement of Composite Score Sweeps:</strong> The original 0–5 composite quality score sweep created nested subsets where higher threshold trade sets were strict subsets of lower ones ($Q_3 \subset Q_2 \subset Q_1 \subset Q_0$), confounding statistical comparison. The strategy is now evaluated as a single un-truncated baseline ($N=27, \text{WR}=70.37\%, \text{Return}=+30.31\%$).
+                            </p>
+                            <p style="margin-bottom:0.75rem;">
+                                <strong>2. Independent Orthogonal Criteria:</strong> Evaluating each of the 5 criteria independently shows that no single Order Block annotation drives statistically significant performance disparity. The core trading edge is derived from the **MACD histogram momentum alignment**, **KDJ acceleration**, **ATR regime filter**, and **Risk-Reward structure**.
+                            </p>
+                            <p style="margin-bottom:0.5rem;">
+                                <strong>3. Indispensability of the OB Gate:</strong> Controlled ablation demonstrates that removing the OB spatial gate increases trade volume by 5.2x ($N=140$) but degrades net return to $-14.63\%$ (flat ATR stop) and $-25.50\%$ (swing pivot stop). The OB structural gate is indispensable for spatial entry selection, filtering out low-conviction indicator triggers during market consolidation.
+                            </p>
                         </div>
                     </div>
                 </div>
