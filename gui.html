@@ -60,8 +60,11 @@
                                     <span id="val-macd">--</span>
                                 </div>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-label">KDJ (9, 3, 3)</div>
+                            <div class="metric-card" title="Sub-chart displays global baseline KDJ(9,3,3). Active trade entries & exits dynamically use adaptive KDJ lookback based on Order Block age: max(1, entry_idx - ob_bar).">
+                                <div class="metric-label" style="display:flex; align-items:center; justify-content:space-between;">
+                                    <span>KDJ (9, 3, 3)</span>
+                                    <span class="info-icon" style="cursor:pointer; font-size:0.75rem; opacity:0.8;" title="Methodology Note: Sub-chart renders static KDJ(9,3,3) for global visualization. During backtest execution, trade entry and exit evaluation dynamically scale KDJ lookback to the triggering Order Block age: period = max(1, entry_idx - ob_bar).">ℹ️ Adaptive</span>
+                                </div>
                                 <div class="metric-value monospace">
                                     K:<span id="val-k">--</span>
                                     D:<span id="val-d">--</span>

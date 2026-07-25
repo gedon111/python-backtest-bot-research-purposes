@@ -172,12 +172,13 @@ Candidate OBs must satisfy:
 To trigger a SHORT position on bar $i$:
 1. **Touch Condition**: $High_i \ge ob['bottom']$ and $Close_i \le ob['top']$.
 2. **MACD Alignment**: $\text{Hist}_i > 0$ AND $\text{Hist}_i < \text{Hist}_{i-1}$ AND $\text{Hist}_{i-1} < \text{Hist}_{i-2}$ (Histogram falling 2 consecutive bars).
-3. **KDJ Alignment**: $K_i > 50$ AND $J_i > K_i > D_i$.
+3. **Unified KDJ Overbought Alignment & Bounds**:
+   $$70.0 \le K_i \le 100.0, \quad D_i < K_i < J_i \le 100.0$$
+   *(Note: The code evaluates $K_i > 50$, $J_i > K_i > D_i$, $K_i \ge 70.0$, and $J_i \le 100.0$. Since $K_i \ge 70.0$ is the binding lower bound on $K_i$, $K_i > 50$ is a looser prerequisite subsumed by $K_i \ge 70.0$. This unifies all KDJ conditions into one non-redundant statement).*
 4. **K Acceleration**: $1.0 \le (K_i - K_{i-1}) - (K_{i-1} - K_{i-2}) \le 6.0$.
 5. **ATR Volatility Regime**: $ATR_{14} / ATR_{200} \notin [0.8, 1.0]$.
-6. **K Floor & J Cap**: $K_i \ge 70.0$ AND $J_i \le 100.0$.
-7. **Stop Loss & SL Ratio**: $SL = ob['top'] + 0.5 \times ATR_{14}$. Risk $= SL - Close$. Require $Risk / Close \ge 1.5\%$.
-8. **Reward-to-Risk**: $TP = \text{Nearest Demand OB Top}$ (or $Close - 2.0 \times Risk$). Require $(Close - TP) / Risk \ge 1.5$.
+6. **Stop Loss & SL Ratio**: $SL = ob['top'] + 0.5 \times ATR_{14}$. Risk $= SL - Close$. Require $Risk / Close \ge 1.5\%$.
+7. **Reward-to-Risk**: $TP = \text{Nearest Demand OB Top}$ (or $Close - 2.0 \times Risk$). Require $(Close - TP) / Risk \ge 1.5$.
 
 ### 5.3 Strict Exit Priority Order (Active Position)
 Checked on every bar $i$ while in position:
@@ -260,5 +261,5 @@ Running `simulate_trades(df, min_ob_quality=0)` produces 27 baseline trades. Eac
 | Feature / Area | Code Implementation | Dashboard Text / UI Display | Audit Finding & Assessment |
 | :--- | :--- | :--- | :--- |
 | **ATR Formula** | `tr.rolling(n).mean()` (Simple Rolling Mean) | `gui.html` Sandbox: "ATR (Simple Moving Average) $\frac{1}{n} \sum TR_i$" | **Accurate in UI**. (Note: `Binance backtest bot.py` line 166 docstring contains a minor typo calling it Wilder's RMA, but UI and code math match SMA). |
-| **Adaptive KDJ Mechanism** | Dynamic period $\text{period} = \max(1, \text{entry\_idx} - \text{ob\_bar})$ in trade loop | Metric badge: "KDJ (9, 3, 3)". No visual callout of the adaptive trade lookback. | **Simplified in UI**. Sub-chart displays standard KDJ(9,3,3) for global visualization, while trade loop uses custom adaptive period internally. |
+| **Adaptive KDJ Mechanism** | Dynamic period $\text{period} = \max(1, \text{entry\_idx} - \text{ob\_bar})$ in trade loop | Metric badge: "KDJ (9, 3, 3) ℹ️ Adaptive" with methodology tooltip. | **Resolved in UI**. Sub-chart displays standard KDJ(9,3,3) for global visualization, while interactive tooltip explicitly clarifies the trade-level adaptive lookback. |
 | **Dataset Scope** | Pre-filtered to `min_ob_quality === 0` ($N=27$ baseline) | Sections 0–8 render $N=27$ baseline metrics live | **Accurate in UI**. Strict dataset isolation enforced in `loadAndRenderStats()`. |
