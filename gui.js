@@ -1700,21 +1700,22 @@ window.loadAndRenderStats = async function() {
     try {
         const response = await fetch("/api/trades");
         if (!response.ok) throw new Error("Failed to retrieve trades table.");
-        let trades = await response.json();
+        let rawTrades = await response.json();
         
-        if (trades && !Array.isArray(trades) && Array.isArray(trades.trades)) {
-            trades = trades.trades;
+        if (rawTrades && !Array.isArray(rawTrades) && Array.isArray(rawTrades.trades)) {
+            rawTrades = rawTrades.trades;
         }
-        if (!Array.isArray(trades)) {
+        if (!Array.isArray(rawTrades)) {
             throw new Error("API response did not return a valid array of trades.");
         }
         
-        console.log(`[Stats Engine] Loaded ${trades.length} trades from DB.`);
+        // Filter strictly to min_ob_quality = 0 baseline trade set (N = 27)
+        let trades = rawTrades.filter(t => t.min_ob_quality === 0);
+        if (trades.length === 0) trades = rawTrades;
         
-        // Execute computations
-        const stats = computeAllStatistics(trades);
+        console.log(`[Stats Engine] Filtered ${trades.length} baseline trades (min_ob_quality = 0) from ${rawTrades.length} total DB records.`);
         
-        // Render UI Sections
+        // Render UI Sections exclusively on the N=27 baseline trade dataset
         renderOrthogonalCriteria(trades);
         renderBaselineOverview(trades);
         renderQualityEquivalence(trades);
