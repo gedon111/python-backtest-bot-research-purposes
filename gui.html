@@ -60,15 +60,18 @@
                                     <span id="val-macd">--</span>
                                 </div>
                             </div>
-                            <div class="metric-card" title="Sub-chart displays global baseline KDJ(9,3,3). Active trade entries & exits dynamically use adaptive KDJ lookback based on Order Block age: max(1, entry_idx - ob_bar).">
+                            <div class="metric-card" id="kdj-metric-card" style="min-width: 270px; title='Sub-chart displays global baseline KDJ(9,3,3). Active trade evaluation dynamically uses adaptive KDJ lookback: max(1, entry_idx - ob_bar).'">
                                 <div class="metric-label" style="display:flex; align-items:center; justify-content:space-between;">
-                                    <span>KDJ (9, 3, 3)</span>
-                                    <span class="info-icon" style="cursor:pointer; font-size:0.75rem; opacity:0.8;" title="Methodology Note: Sub-chart renders static KDJ(9,3,3) for global visualization. During backtest execution, trade entry and exit evaluation dynamically scale KDJ lookback to the triggering Order Block age: period = max(1, entry_idx - ob_bar).">ℹ️ Adaptive</span>
+                                    <span id="kdj-mode-title" style="font-weight:700; color:var(--text-main);">Static KDJ (9, 3, 3)</span>
+                                    <span id="kdj-mode-badge" style="font-size:0.68rem; font-weight:600; padding:2px 6px; border-radius:4px; background:var(--bg-surface); border:1px solid var(--border); color:var(--text-muted);">Chart View (Fixed)</span>
                                 </div>
-                                <div class="metric-value monospace">
+                                <div class="metric-value monospace" style="margin-top:2px;">
                                     K:<span id="val-k">--</span>
                                     D:<span id="val-d">--</span>
                                     J:<span id="val-j">--</span>
+                                </div>
+                                <div class="kdj-legend-key" style="font-size:0.68rem; color:var(--text-muted); margin-top:4px; border-top:1px dashed var(--border); padding-top:3px; line-height:1.2;">
+                                    <span style="color:var(--text-main); font-weight:600;">Static KDJ(9,3,3)</span>: default chart view. <span style="color:#0d9488; font-weight:600;">Adaptive KDJ</span>: dynamic lookback used during trade evaluation.
                                 </div>
                             </div>
                             <div class="metric-card">
@@ -88,8 +91,8 @@
                         <label>OB Level
                             <select id="ob-level">
                                 <option value="all">All</option>
-                                <option value="internal">Internal</option>
                                 <option value="swing">Swing</option>
+                                <option value="internal">Internal</option>
                             </select>
                         </label>
                         <label>OB Structure
@@ -160,6 +163,18 @@
                             
                             <div class="ob-score">
                                 Quality Score: <strong id="ob-quality">--</strong> / 5
+                            </div>
+
+                            <div class="ob-kdj-eval" style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px;">
+                                <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem;">
+                                    KDJ Evaluation Mode
+                                </div>
+                                <div id="ob-kdj-status" style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+                                    Static KDJ (9, 3, 3)
+                                </div>
+                                <div id="ob-kdj-desc" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.3;">
+                                    Default chart view using static 9-period RSV lookback.
+                                </div>
                             </div>
                         </div>
                         

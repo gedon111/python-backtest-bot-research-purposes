@@ -547,6 +547,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     rect.style.backgroundColor = `rgba(${parsed.rgb}, ${bgOp})`;
                 }
                 
+                rect.style.pointerEvents = 'all';
+                rect.style.cursor = 'pointer';
+                rect.addEventListener('mouseenter', () => {
+                    updateObPanel(ob.startTime);
+                    updateActiveHighlight(ob.startTime);
+                });
+                rect.addEventListener('click', () => {
+                    updateObPanel(ob.startTime);
+                    updateActiveHighlight(ob.startTime);
+                });
+                
                 container.appendChild(rect);
                 
                 const barsVisible = visibleRange.to - visibleRange.from;
@@ -619,6 +630,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     fill.style.width = w + 'px';
                     fill.style.top = Math.min(y1, y2) + 'px';
                     fill.style.height = Math.abs(y1 - y2) + 'px';
+                    fill.style.pointerEvents = 'all';
+                    fill.style.cursor = 'pointer';
+                    fill.addEventListener('mouseenter', () => {
+                        updateKdjModeIndicator(t.entry_idx, null);
+                    });
+                    fill.addEventListener('click', () => {
+                        updateKdjModeIndicator(t.entry_idx, null);
+                    });
                     container.appendChild(fill);
                 };
                 createFill(entryY, tpY, 'win-zone');
@@ -703,15 +722,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log(`[Performance] updateActiveHighlight took ${duration.toFixed(2)}ms`);
     }
 
+    function updateKdjModeIndicator(hoveredIdx, foundOb) {
+        const titleEl = document.getElementById('kdj-mode-title');
+        const badgeEl = document.getElementById('kdj-mode-badge');
+        const obKdjStatus = document.getElementById('ob-kdj-status');
+        const obKdjDesc = document.getElementById('ob-kdj-desc');
+        
+        let activeTrade = null;
+        if (foundOb) {
+            const obExactIdx = foundOb.exactIdx;
+            activeTrade = processedTrades.find(t => t.ob_bar === obExactIdx || t.entry_ob_bar === obExactIdx || t.entry_idx === obExactIdx);
+        }
+        if (!activeTrade && hoveredIdx !== undefined && hoveredIdx !== null) {
+            activeTrade = processedTrades.find(t => t.entry_idx <= hoveredIdx && hoveredIdx <= t.exit_idx);
+        }
+        
+        if (activeTrade) {
+            const obBar = activeTrade.ob_bar !== undefined ? activeTrade.ob_bar : (activeTrade.entry_ob_bar !== undefined ? activeTrade.entry_ob_bar : activeTrade.entry_idx);
+            const period = Math.max(1, activeTrade.entry_idx - obBar);
+            
+            if (titleEl) {
+                titleEl.innerHTML = `<span style="color:#0d9488; font-weight:700;">Adaptive KDJ (period = ${period})</span>`;
+            }
+            if (badgeEl) {
+                badgeEl.innerText = `ACTIVE TRADE EVAL (p=${period})`;
+                badgeEl.style.background = 'rgba(13, 148, 136, 0.15)';
+                badgeEl.style.border = '1px solid #0d9488';
+                badgeEl.style.color = '#0d9488';
+            }
+            if (obKdjStatus) {
+                obKdjStatus.innerHTML = `<span style="color:#0d9488;">⚡ Adaptive KDJ (period = ${period} bars)</span>`;
+            }
+            if (obKdjDesc) {
+                obKdjDesc.innerHTML = `OB Origin Bar <strong>${obBar}</strong> → Entry Bar <strong>${activeTrade.entry_idx}</strong>.<br>Trade evaluation used dynamic ${period}-bar RSV lookback window.`;
+            }
+        } else {
+            if (titleEl) {
+                titleEl.innerHTML = `<span style="color:var(--text-main); font-weight:700;">Static KDJ (9, 3, 3)</span>`;
+            }
+            if (badgeEl) {
+                badgeEl.innerText = `Chart View (Fixed)`;
+                badgeEl.style.background = 'var(--bg-surface)';
+                badgeEl.style.border = '1px solid var(--border)';
+                badgeEl.style.color = 'var(--text-muted)';
+            }
+            if (obKdjStatus) {
+                obKdjStatus.innerHTML = `<span style="color:var(--text-main);">Static KDJ (9, 3, 3)</span>`;
+            }
+            if (obKdjDesc) {
+                obKdjDesc.innerHTML = `Default chart view using static 9-period RSV lookback.`;
+            }
+        }
+    }
+
     function updateObPanel(time) {
         const obDetails = document.getElementById('ob-details');
         const obEmpty = document.getElementById('ob-empty-state');
         
         let foundOb = null;
+        let timeIdx = null;
         if (time) {
             foundOb = processedObs.find(ob => ob.startTime === time);
+            timeIdx = timeToIndex.get(time);
         }
         
+        updateKdjModeIndicator(timeIdx, foundOb);
+
         if (foundOb) {
             document.getElementById('ob-type').innerText = foundOb.type;
             document.getElementById('ob-type').className = `badge ${foundOb.type.toLowerCase()}`;
