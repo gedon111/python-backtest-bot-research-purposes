@@ -35,7 +35,7 @@ def fallback_json(obj):
 
 def load_bot_module():
     try:
-        spec = importlib.util.spec_from_file_location("bot", "Binance backtest bot.py")
+        spec = importlib.util.spec_from_file_location("bot", "src/Binance backtest bot.py")
         bot = importlib.util.module_from_spec(spec)
         sys.modules["bot"] = bot
         spec.loader.exec_module(bot)
@@ -54,7 +54,7 @@ def load_bot_module():
         sys.modules['binance'] = binance_mod
         sys.modules['binance.client'] = binance_client_mod
         
-        spec = importlib.util.spec_from_file_location("bot", "Binance backtest bot.py")
+        spec = importlib.util.spec_from_file_location("bot", "src/Binance backtest bot.py")
         bot = importlib.util.module_from_spec(spec)
         sys.modules["bot"] = bot
         spec.loader.exec_module(bot)

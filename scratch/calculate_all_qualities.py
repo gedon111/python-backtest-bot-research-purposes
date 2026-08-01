@@ -4,7 +4,7 @@ import pandas as pd
 
 sys.path.append(os.path.abspath("."))
 import importlib.util
-spec = importlib.util.spec_from_file_location("bot", "Binance backtest bot.py")
+spec = importlib.util.spec_from_file_location("bot", "src/Binance backtest bot.py")
 bot = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bot)
 

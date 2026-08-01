@@ -60,7 +60,9 @@ import os
 import glob
 
 # ─── SAFE CONFIG (GITHUB-FRIENDLY) ───────────────────────────────────────────
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Repo root, not this file's own directory (src/) -- SERVICE KEY/ lives at
+# repo root and did not move when this file moved into src/.
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Keep real Binance keys in environment variables.
 BINANCE_API_KEY_ENV    = "BINANCE_API_KEY"

@@ -62,7 +62,7 @@ Indicators are computed **once** over the complete 8,767-bar DataFrame prior to 
   $$TR_t = \max\left(H_t - L_t, \, |H_t - C_{t-1}|, \, |L_t - C_{t-1}|\right)$$
 * **Smoothing Formula**: Computed as a **Simple Rolling Mean (SMA)** over $N$ periods:
   $$ATR_{14}(t) = \frac{1}{14} \sum_{i=0}^{13} TR_{t-i}, \quad ATR_{200}(t) = \frac{1}{200} \sum_{i=0}^{199} TR_{t-i}$$
-  > ⚠️ **Implementation Note**: `Binance backtest bot.py` line 166 mentions Wilder's RMA in comments, but the executable Python code executes `tr.rolling(n).mean()`. The strategy uses Simple Rolling Mean for both ATRs.
+  > ⚠️ **Implementation Note**: `src/Binance backtest bot.py` line 166 mentions Wilder's RMA in comments, but the executable Python code executes `tr.rolling(n).mean()`. The strategy uses Simple Rolling Mean for both ATRs.
 
 * **Downstream ATR Usage**:
   - $ATR_{14}$: Stop-loss distance ($0.5 \times ATR_{14}$), minimum SL ratio filter ($1.5\%$), trailing stop triggers, and ATR move exits ($1.8 \times ATR_{14}$).
@@ -260,6 +260,6 @@ Running `simulate_trades(df, min_ob_quality=0)` produces 27 baseline trades. Eac
 
 | Feature / Area | Code Implementation | Dashboard Text / UI Display | Audit Finding & Assessment |
 | :--- | :--- | :--- | :--- |
-| **ATR Formula** | `tr.rolling(n).mean()` (Simple Rolling Mean) | `gui.html` Sandbox: "ATR (Simple Moving Average) $\frac{1}{n} \sum TR_i$" | **Accurate in UI**. (Note: `Binance backtest bot.py` line 166 docstring contains a minor typo calling it Wilder's RMA, but UI and code math match SMA). |
+| **ATR Formula** | `tr.rolling(n).mean()` (Simple Rolling Mean) | `gui.html` Sandbox: "ATR (Simple Moving Average) $\frac{1}{n} \sum TR_i$" | **Accurate in UI**. (Note: `src/Binance backtest bot.py` line 166 docstring contains a minor typo calling it Wilder's RMA, but UI and code math match SMA). |
 | **Adaptive KDJ Mechanism** | Dynamic period $\text{period} = \max(1, \text{entry\_idx} - \text{ob\_bar})$ in trade loop | Metric badge: "KDJ (9, 3, 3) ℹ️ Adaptive" with methodology tooltip. | **Resolved in UI**. Sub-chart displays standard KDJ(9,3,3) for global visualization, while interactive tooltip explicitly clarifies the trade-level adaptive lookback. |
 | **Dataset Scope** | Pre-filtered to `min_ob_quality === 0` ($N=27$ baseline) | Sections 0–8 render $N=27$ baseline metrics live | **Accurate in UI**. Strict dataset isolation enforced in `loadAndRenderStats()`. |

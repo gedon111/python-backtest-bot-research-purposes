@@ -64,7 +64,7 @@ The strategy in this file is the v9 variant documented in the source comments, w
 File Scope
 
 Main script:
-- `Binance backtest bot.py`
+- `src/Binance backtest bot.py`
 
 Expected local structure:
 - `SERVICE KEY/` (for Google service account json file)
@@ -259,7 +259,7 @@ Summary sheet:
 
 Main Execution Defaults
 
-When executed directly (`python "Binance backtest bot.py"`), it runs:
+When executed directly (`python "src/Binance backtest bot.py"`), it runs:
 - symbol: `BTCUSDT`
 - interval: `4H`
 - date range:
@@ -280,7 +280,7 @@ How To Run Safely
    - `GOOGLE_SHEET_ID`
 2. Ensure the Google service account has access to the target sheet.
 3. Run:
-   - `python "Binance backtest bot.py"`
+   - `python "src/Binance backtest bot.py"`
 
 If placeholders are still present, export will stop with a clear message.
 
