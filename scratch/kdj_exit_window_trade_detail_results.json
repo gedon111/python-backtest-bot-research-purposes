@@ -1,0 +1,302 @@
+{
+  "q1_win_loss_table": [
+    {
+      "entry_idx": 335,
+      "side": "SHORT",
+      "baseline": "LOSS",
+      "fixed_period_p25": "LOSS",
+      "fixed_period_74": "LOSS",
+      "fixed_period_p75": "LOSS"
+    },
+    {
+      "entry_idx": 359,
+      "side": "SHORT",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 673,
+      "side": "LONG",
+      "baseline": "LOSS",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "LOSS",
+      "fixed_period_p75": "LOSS"
+    },
+    {
+      "entry_idx": 902,
+      "side": "SHORT",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 1050,
+      "side": "SHORT",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 1158,
+      "side": "LONG",
+      "baseline": "LOSS",
+      "fixed_period_p25": "LOSS",
+      "fixed_period_74": "LOSS",
+      "fixed_period_p75": "LOSS"
+    },
+    {
+      "entry_idx": 1913,
+      "side": "SHORT",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 2624,
+      "side": "SHORT",
+      "baseline": "LOSS",
+      "fixed_period_p25": "LOSS",
+      "fixed_period_74": "LOSS",
+      "fixed_period_p75": "LOSS"
+    },
+    {
+      "entry_idx": 2859,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 3100,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 3196,
+      "side": "SHORT",
+      "baseline": "LOSS",
+      "fixed_period_p25": "LOSS",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 3859,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 3947,
+      "side": "SHORT",
+      "baseline": "LOSS",
+      "fixed_period_p25": "LOSS",
+      "fixed_period_74": "LOSS",
+      "fixed_period_p75": "LOSS"
+    },
+    {
+      "entry_idx": 4455,
+      "side": "LONG",
+      "baseline": "LOSS",
+      "fixed_period_p25": "LOSS",
+      "fixed_period_74": "LOSS",
+      "fixed_period_p75": "LOSS"
+    },
+    {
+      "entry_idx": 5800,
+      "side": "SHORT",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 5825,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 6040,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 6109,
+      "side": "SHORT",
+      "baseline": "LOSS",
+      "fixed_period_p25": "LOSS",
+      "fixed_period_74": "LOSS",
+      "fixed_period_p75": "LOSS"
+    },
+    {
+      "entry_idx": 6366,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 6537,
+      "side": "SHORT",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 6991,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 7109,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 7938,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "LOSS",
+      "fixed_period_p75": "LOSS"
+    },
+    {
+      "entry_idx": 7964,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "LOSS",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 8188,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 8280,
+      "side": "LONG",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    },
+    {
+      "entry_idx": 8596,
+      "side": "SHORT",
+      "baseline": "WIN",
+      "fixed_period_p25": "WIN",
+      "fixed_period_74": "WIN",
+      "fixed_period_p75": "WIN"
+    }
+  ],
+  "q1_identical_across_p25_74_p75": false,
+  "q1_flips": {
+    "fixed_period_p25_vs_fixed_period_74": [
+      673,
+      3196,
+      7938,
+      7964
+    ],
+    "fixed_period_p25_vs_fixed_period_p75": [
+      673,
+      3196,
+      7938,
+      7964
+    ]
+  },
+  "q2_watch_trades_table": [
+    {
+      "config": "baseline",
+      "period": null,
+      "pnl_359": 6.688833259794862,
+      "exit_reason_359": "ATR MOVE EXIT",
+      "pnl_2624": -4.654359367321062,
+      "exit_reason_2624": "HIT STOP LOSS",
+      "total_net_return_pct": 30.30645635603194
+    },
+    {
+      "config": "fixed_period_9",
+      "period": 9,
+      "pnl_359": 6.688833259794862,
+      "exit_reason_359": "ATR MOVE EXIT",
+      "pnl_2624": -4.654359367321062,
+      "exit_reason_2624": "HIT STOP LOSS",
+      "total_net_return_pct": 28.054758698485593
+    },
+    {
+      "config": "fixed_period_p25",
+      "period": 38,
+      "pnl_359": 6.688833259794862,
+      "exit_reason_359": "ATR MOVE EXIT",
+      "pnl_2624": -4.654359367321062,
+      "exit_reason_2624": "HIT STOP LOSS",
+      "total_net_return_pct": 28.6852120114225
+    },
+    {
+      "config": "fixed_period_74",
+      "period": 74,
+      "pnl_359": 6.688833259794862,
+      "exit_reason_359": "ATR MOVE EXIT",
+      "pnl_2624": -4.654359367321062,
+      "exit_reason_2624": "HIT STOP LOSS",
+      "total_net_return_pct": 31.889404616426184
+    },
+    {
+      "config": "fixed_period_p75",
+      "period": 114,
+      "pnl_359": 6.688833259794862,
+      "exit_reason_359": "ATR MOVE EXIT",
+      "pnl_2624": -4.654359367321062,
+      "exit_reason_2624": "HIT STOP LOSS",
+      "total_net_return_pct": 26.342730641082124
+    },
+    {
+      "config": "fixed_period_439",
+      "period": 439,
+      "pnl_359": 6.688833259794862,
+      "exit_reason_359": "ATR MOVE EXIT",
+      "pnl_2624": -4.654359367321062,
+      "exit_reason_2624": "HIT STOP LOSS",
+      "total_net_return_pct": 29.512955750203492
+    }
+  ],
+  "q2_total_return_by_config": {
+    "baseline": 30.30645635603194,
+    "fixed_period_9": 28.054758698485593,
+    "fixed_period_p25": 28.6852120114225,
+    "fixed_period_74": 31.889404616426184,
+    "fixed_period_p75": 26.342730641082124,
+    "fixed_period_439": 29.512955750203492
+  },
+  "q2_spread_total_return_pts": 5.54667397534406,
+  "q2_spread_pnl_359_pts": 0.0,
+  "q2_spread_pnl_2624_pts": 0.0
+}

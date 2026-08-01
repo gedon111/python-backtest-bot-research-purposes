@@ -1,0 +1,806 @@
+{
+  "description": "Additive counterfactual: fixed exit-window period vs. baseline OB-relative dynamic period (entry_idx - ob_bar) in kdj_reset_init. Entry logic, OB detection, static KDJ(9,3,3), and stop/TP/RR rules are untouched; only the post-entry exit-signal window is varied. No changes made to Binance backtest bot.py; kdj_reset_init was monkeypatched at runtime on an in-memory module copy per config.",
+  "observed_w_distribution": {
+    "n": 27,
+    "sorted_w": [
+      14,
+      20,
+      21,
+      26,
+      28,
+      30,
+      31,
+      45,
+      49,
+      49,
+      57,
+      59,
+      65,
+      74,
+      90,
+      91,
+      94,
+      104,
+      106,
+      112,
+      115,
+      126,
+      136,
+      137,
+      149,
+      153,
+      439
+    ],
+    "min": 14,
+    "p25": 38.0,
+    "median": 74.0,
+    "p75": 113.5,
+    "max": 439,
+    "p25_rounded_for_grid": 38,
+    "p75_rounded_for_grid": 114
+  },
+  "grid": [
+    "baseline",
+    "fixed_period_9",
+    "fixed_period_p25",
+    "fixed_period_74",
+    "fixed_period_p75",
+    "fixed_period_439"
+  ],
+  "sanity_check": {
+    "identical_entries": true,
+    "details": []
+  },
+  "configs": {
+    "baseline": {
+      "label": "baseline",
+      "fixed_period": null,
+      "trade_count": 27,
+      "win_rate_pct": 70.37037037037037,
+      "total_net_return_pct": 30.306456356031937,
+      "avg_return_per_trade_pct": 1.1224613465197013,
+      "sd_return_pct": 2.4101357189345545,
+      "exit_reason_distribution": {
+        "ATR MOVE EXIT": 9,
+        "TRAILING EXIT (50% RETRACE)": 8,
+        "KDJ RESET EXIT": 8,
+        "HIT STOP LOSS": 2
+      },
+      "entries": [
+        [
+          335,
+          "SHORT"
+        ],
+        [
+          359,
+          "SHORT"
+        ],
+        [
+          673,
+          "LONG"
+        ],
+        [
+          902,
+          "SHORT"
+        ],
+        [
+          1050,
+          "SHORT"
+        ],
+        [
+          1158,
+          "LONG"
+        ],
+        [
+          1913,
+          "SHORT"
+        ],
+        [
+          2624,
+          "SHORT"
+        ],
+        [
+          2859,
+          "LONG"
+        ],
+        [
+          3100,
+          "LONG"
+        ],
+        [
+          3196,
+          "SHORT"
+        ],
+        [
+          3859,
+          "LONG"
+        ],
+        [
+          3947,
+          "SHORT"
+        ],
+        [
+          4455,
+          "LONG"
+        ],
+        [
+          5800,
+          "SHORT"
+        ],
+        [
+          5825,
+          "LONG"
+        ],
+        [
+          6040,
+          "LONG"
+        ],
+        [
+          6109,
+          "SHORT"
+        ],
+        [
+          6366,
+          "LONG"
+        ],
+        [
+          6537,
+          "SHORT"
+        ],
+        [
+          6991,
+          "LONG"
+        ],
+        [
+          7109,
+          "LONG"
+        ],
+        [
+          7938,
+          "LONG"
+        ],
+        [
+          7964,
+          "LONG"
+        ],
+        [
+          8188,
+          "LONG"
+        ],
+        [
+          8280,
+          "LONG"
+        ],
+        [
+          8596,
+          "SHORT"
+        ]
+      ]
+    },
+    "fixed_period_9": {
+      "label": "fixed_period_9",
+      "fixed_period": 9,
+      "trade_count": 27,
+      "win_rate_pct": 59.25925925925925,
+      "total_net_return_pct": 28.054758698485585,
+      "avg_return_per_trade_pct": 1.0390651369809476,
+      "sd_return_pct": 2.4544745285841376,
+      "exit_reason_distribution": {
+        "KDJ RESET EXIT": 12,
+        "ATR MOVE EXIT": 8,
+        "TRAILING EXIT (50% RETRACE)": 5,
+        "HIT STOP LOSS": 2
+      },
+      "entries": [
+        [
+          335,
+          "SHORT"
+        ],
+        [
+          359,
+          "SHORT"
+        ],
+        [
+          673,
+          "LONG"
+        ],
+        [
+          902,
+          "SHORT"
+        ],
+        [
+          1050,
+          "SHORT"
+        ],
+        [
+          1158,
+          "LONG"
+        ],
+        [
+          1913,
+          "SHORT"
+        ],
+        [
+          2624,
+          "SHORT"
+        ],
+        [
+          2859,
+          "LONG"
+        ],
+        [
+          3100,
+          "LONG"
+        ],
+        [
+          3196,
+          "SHORT"
+        ],
+        [
+          3859,
+          "LONG"
+        ],
+        [
+          3947,
+          "SHORT"
+        ],
+        [
+          4455,
+          "LONG"
+        ],
+        [
+          5800,
+          "SHORT"
+        ],
+        [
+          5825,
+          "LONG"
+        ],
+        [
+          6040,
+          "LONG"
+        ],
+        [
+          6109,
+          "SHORT"
+        ],
+        [
+          6366,
+          "LONG"
+        ],
+        [
+          6537,
+          "SHORT"
+        ],
+        [
+          6991,
+          "LONG"
+        ],
+        [
+          7109,
+          "LONG"
+        ],
+        [
+          7938,
+          "LONG"
+        ],
+        [
+          7964,
+          "LONG"
+        ],
+        [
+          8188,
+          "LONG"
+        ],
+        [
+          8280,
+          "LONG"
+        ],
+        [
+          8596,
+          "SHORT"
+        ]
+      ]
+    },
+    "fixed_period_p25": {
+      "label": "fixed_period_p25",
+      "fixed_period": 38,
+      "trade_count": 27,
+      "win_rate_pct": 70.37037037037037,
+      "total_net_return_pct": 28.685212011422497,
+      "avg_return_per_trade_pct": 1.0624152596823146,
+      "sd_return_pct": 2.426339387226931,
+      "exit_reason_distribution": {
+        "KDJ RESET EXIT": 10,
+        "ATR MOVE EXIT": 8,
+        "TRAILING EXIT (50% RETRACE)": 7,
+        "HIT STOP LOSS": 2
+      },
+      "entries": [
+        [
+          335,
+          "SHORT"
+        ],
+        [
+          359,
+          "SHORT"
+        ],
+        [
+          673,
+          "LONG"
+        ],
+        [
+          902,
+          "SHORT"
+        ],
+        [
+          1050,
+          "SHORT"
+        ],
+        [
+          1158,
+          "LONG"
+        ],
+        [
+          1913,
+          "SHORT"
+        ],
+        [
+          2624,
+          "SHORT"
+        ],
+        [
+          2859,
+          "LONG"
+        ],
+        [
+          3100,
+          "LONG"
+        ],
+        [
+          3196,
+          "SHORT"
+        ],
+        [
+          3859,
+          "LONG"
+        ],
+        [
+          3947,
+          "SHORT"
+        ],
+        [
+          4455,
+          "LONG"
+        ],
+        [
+          5800,
+          "SHORT"
+        ],
+        [
+          5825,
+          "LONG"
+        ],
+        [
+          6040,
+          "LONG"
+        ],
+        [
+          6109,
+          "SHORT"
+        ],
+        [
+          6366,
+          "LONG"
+        ],
+        [
+          6537,
+          "SHORT"
+        ],
+        [
+          6991,
+          "LONG"
+        ],
+        [
+          7109,
+          "LONG"
+        ],
+        [
+          7938,
+          "LONG"
+        ],
+        [
+          7964,
+          "LONG"
+        ],
+        [
+          8188,
+          "LONG"
+        ],
+        [
+          8280,
+          "LONG"
+        ],
+        [
+          8596,
+          "SHORT"
+        ]
+      ]
+    },
+    "fixed_period_74": {
+      "label": "fixed_period_74",
+      "fixed_period": 74,
+      "trade_count": 27,
+      "win_rate_pct": 70.37037037037037,
+      "total_net_return_pct": 31.889404616426177,
+      "avg_return_per_trade_pct": 1.1810890598676362,
+      "sd_return_pct": 2.46116639147652,
+      "exit_reason_distribution": {
+        "ATR MOVE EXIT": 10,
+        "TRAILING EXIT (50% RETRACE)": 8,
+        "KDJ RESET EXIT": 7,
+        "HIT STOP LOSS": 2
+      },
+      "entries": [
+        [
+          335,
+          "SHORT"
+        ],
+        [
+          359,
+          "SHORT"
+        ],
+        [
+          673,
+          "LONG"
+        ],
+        [
+          902,
+          "SHORT"
+        ],
+        [
+          1050,
+          "SHORT"
+        ],
+        [
+          1158,
+          "LONG"
+        ],
+        [
+          1913,
+          "SHORT"
+        ],
+        [
+          2624,
+          "SHORT"
+        ],
+        [
+          2859,
+          "LONG"
+        ],
+        [
+          3100,
+          "LONG"
+        ],
+        [
+          3196,
+          "SHORT"
+        ],
+        [
+          3859,
+          "LONG"
+        ],
+        [
+          3947,
+          "SHORT"
+        ],
+        [
+          4455,
+          "LONG"
+        ],
+        [
+          5800,
+          "SHORT"
+        ],
+        [
+          5825,
+          "LONG"
+        ],
+        [
+          6040,
+          "LONG"
+        ],
+        [
+          6109,
+          "SHORT"
+        ],
+        [
+          6366,
+          "LONG"
+        ],
+        [
+          6537,
+          "SHORT"
+        ],
+        [
+          6991,
+          "LONG"
+        ],
+        [
+          7109,
+          "LONG"
+        ],
+        [
+          7938,
+          "LONG"
+        ],
+        [
+          7964,
+          "LONG"
+        ],
+        [
+          8188,
+          "LONG"
+        ],
+        [
+          8280,
+          "LONG"
+        ],
+        [
+          8596,
+          "SHORT"
+        ]
+      ]
+    },
+    "fixed_period_p75": {
+      "label": "fixed_period_p75",
+      "fixed_period": 114,
+      "trade_count": 27,
+      "win_rate_pct": 70.37037037037037,
+      "total_net_return_pct": 26.34273064108212,
+      "avg_return_per_trade_pct": 0.9756566904104489,
+      "sd_return_pct": 2.4143368021264178,
+      "exit_reason_distribution": {
+        "KDJ RESET EXIT": 9,
+        "TRAILING EXIT (50% RETRACE)": 8,
+        "ATR MOVE EXIT": 8,
+        "HIT STOP LOSS": 2
+      },
+      "entries": [
+        [
+          335,
+          "SHORT"
+        ],
+        [
+          359,
+          "SHORT"
+        ],
+        [
+          673,
+          "LONG"
+        ],
+        [
+          902,
+          "SHORT"
+        ],
+        [
+          1050,
+          "SHORT"
+        ],
+        [
+          1158,
+          "LONG"
+        ],
+        [
+          1913,
+          "SHORT"
+        ],
+        [
+          2624,
+          "SHORT"
+        ],
+        [
+          2859,
+          "LONG"
+        ],
+        [
+          3100,
+          "LONG"
+        ],
+        [
+          3196,
+          "SHORT"
+        ],
+        [
+          3859,
+          "LONG"
+        ],
+        [
+          3947,
+          "SHORT"
+        ],
+        [
+          4455,
+          "LONG"
+        ],
+        [
+          5800,
+          "SHORT"
+        ],
+        [
+          5825,
+          "LONG"
+        ],
+        [
+          6040,
+          "LONG"
+        ],
+        [
+          6109,
+          "SHORT"
+        ],
+        [
+          6366,
+          "LONG"
+        ],
+        [
+          6537,
+          "SHORT"
+        ],
+        [
+          6991,
+          "LONG"
+        ],
+        [
+          7109,
+          "LONG"
+        ],
+        [
+          7938,
+          "LONG"
+        ],
+        [
+          7964,
+          "LONG"
+        ],
+        [
+          8188,
+          "LONG"
+        ],
+        [
+          8280,
+          "LONG"
+        ],
+        [
+          8596,
+          "SHORT"
+        ]
+      ]
+    },
+    "fixed_period_439": {
+      "label": "fixed_period_439",
+      "fixed_period": 439,
+      "trade_count": 27,
+      "win_rate_pct": 62.96296296296296,
+      "total_net_return_pct": 29.51295575020349,
+      "avg_return_per_trade_pct": 1.093072435192722,
+      "sd_return_pct": 2.692459435938415,
+      "exit_reason_distribution": {
+        "ATR MOVE EXIT": 11,
+        "TRAILING EXIT (50% RETRACE)": 8,
+        "KDJ RESET EXIT": 5,
+        "HIT STOP LOSS": 3
+      },
+      "entries": [
+        [
+          335,
+          "SHORT"
+        ],
+        [
+          359,
+          "SHORT"
+        ],
+        [
+          673,
+          "LONG"
+        ],
+        [
+          902,
+          "SHORT"
+        ],
+        [
+          1050,
+          "SHORT"
+        ],
+        [
+          1158,
+          "LONG"
+        ],
+        [
+          1913,
+          "SHORT"
+        ],
+        [
+          2624,
+          "SHORT"
+        ],
+        [
+          2859,
+          "LONG"
+        ],
+        [
+          3100,
+          "LONG"
+        ],
+        [
+          3196,
+          "SHORT"
+        ],
+        [
+          3859,
+          "LONG"
+        ],
+        [
+          3947,
+          "SHORT"
+        ],
+        [
+          4455,
+          "LONG"
+        ],
+        [
+          5800,
+          "SHORT"
+        ],
+        [
+          5825,
+          "LONG"
+        ],
+        [
+          6040,
+          "LONG"
+        ],
+        [
+          6109,
+          "SHORT"
+        ],
+        [
+          6366,
+          "LONG"
+        ],
+        [
+          6537,
+          "SHORT"
+        ],
+        [
+          6991,
+          "LONG"
+        ],
+        [
+          7109,
+          "LONG"
+        ],
+        [
+          7938,
+          "LONG"
+        ],
+        [
+          7964,
+          "LONG"
+        ],
+        [
+          8188,
+          "LONG"
+        ],
+        [
+          8280,
+          "LONG"
+        ],
+        [
+          8596,
+          "SHORT"
+        ]
+      ]
+    }
+  }
+}
