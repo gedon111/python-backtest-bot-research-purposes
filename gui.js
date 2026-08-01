@@ -166,14 +166,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         mainChart = LightweightCharts.createChart(document.getElementById('pane-main'), commonOptions);
         macdChart = LightweightCharts.createChart(document.getElementById('pane-macd'), subChartOptions);
-        kdjChart  = LightweightCharts.createChart(document.getElementById('pane-kdj'),  subChartOptions);
+        kdjStaticChart = LightweightCharts.createChart(document.getElementById('pane-kdj-static'), subChartOptions);
+        kdjAdaptiveChart = LightweightCharts.createChart(document.getElementById('pane-kdj-adaptive'), subChartOptions);
         atrChart  = LightweightCharts.createChart(document.getElementById('pane-atr'),  subChartOptions);
         
-        charts = [mainChart, macdChart, kdjChart, atrChart];
+        charts = [mainChart, macdChart, kdjStaticChart, kdjAdaptiveChart, atrChart];
         
         mainChart.timeScale().applyOptions({ visible: false });
         macdChart.timeScale().applyOptions({ visible: false });
-        kdjChart.timeScale().applyOptions({ visible: false });
+        kdjStaticChart.timeScale().applyOptions({ visible: false });
+        kdjAdaptiveChart.timeScale().applyOptions({ visible: false });
+        atrChart.timeScale().applyOptions({ visible: true });
 
         candleSeries = addCandlestickSeriesCompat(mainChart, {
             upColor: '#ffffff',
@@ -188,9 +191,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         macdLine = addLineSeriesCompat(macdChart, { color: '#475569', lineWidth: 1.5 });
         signalLine = addLineSeriesCompat(macdChart, { color: '#cbd5e1', lineWidth: 1 });
         
-        kLine = addLineSeriesCompat(kdjChart, { color: '#475569', lineWidth: 1.5 });
-        dLine = addLineSeriesCompat(kdjChart, { color: '#94a3b8', lineWidth: 1.2 });
-        jLine = addLineSeriesCompat(kdjChart, { color: '#cbd5e1', lineWidth: 1 });
+        // Static KDJ (Pane A)
+        kLineStatic = addLineSeriesCompat(kdjStaticChart, { color: '#0d9488', lineWidth: 1.5 });
+        dLineStatic = addLineSeriesCompat(kdjStaticChart, { color: '#3b82f6', lineWidth: 1.2 });
+        jLineStatic = addLineSeriesCompat(kdjStaticChart, { color: '#ec4899', lineWidth: 1 });
+
+        // Adaptive KDJ (Pane B)
+        kLineAdaptive = addLineSeriesCompat(kdjAdaptiveChart, { color: '#0d9488', lineWidth: 2 });
+        dLineAdaptive = addLineSeriesCompat(kdjAdaptiveChart, { color: '#3b82f6', lineWidth: 1.5 });
+        jLineAdaptive = addLineSeriesCompat(kdjAdaptiveChart, { color: '#f43f5e', lineWidth: 1.2 });
         
         atrLine = addLineSeriesCompat(atrChart, { color: '#475569', lineWidth: 1.5 });
         atr200Line = addLineSeriesCompat(atrChart, { color: '#cbd5e1', lineWidth: 1.5 });
@@ -203,9 +212,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         macdLine.setData(data.map(d => ({ time: d.time, value: d.MACD })));
         signalLine.setData(data.map(d => ({ time: d.time, value: d.MACD_signal })));
         
-        kLine.setData(data.map(d => ({ time: d.time, value: d.K })));
-        dLine.setData(data.map(d => ({ time: d.time, value: d.D })));
-        jLine.setData(data.map(d => ({ time: d.time, value: d.J })));
+        kLineStatic.setData(data.map(d => ({ time: d.time, value: d.K })));
+        dLineStatic.setData(data.map(d => ({ time: d.time, value: d.D })));
+        jLineStatic.setData(data.map(d => ({ time: d.time, value: d.J })));
         
         atrLine.setData(data.map(d => ({ time: d.time, value: d.ATR })));
         atr200Line.setData(data.map(d => ({ time: d.time, value: d.ATR_200 })));
@@ -272,8 +281,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (sourceChart !== macdChart) {
                         try { macdChart.setCrosshairPosition(row.MACD_hist, time, macdHist); } catch(e) {}
                     }
-                    if (sourceChart !== kdjChart) {
-                        try { kdjChart.setCrosshairPosition(row.K, time, kLine); } catch(e) {}
+                    if (sourceChart !== kdjStaticChart) {
+                        try { kdjStaticChart.setCrosshairPosition(row.K, time, kLineStatic); } catch(e) {}
+                    }
+                    if (sourceChart !== kdjAdaptiveChart) {
+                        try { kdjAdaptiveChart.setCrosshairPosition(row.K, time, kLineAdaptive); } catch(e) {}
                     }
                     if (sourceChart !== atrChart) {
                         try { atrChart.setCrosshairPosition(row.ATR, time, atrLine); } catch(e) {}
@@ -288,7 +300,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Clear crosshair lines on all charts except the source if mouse moved out
                 if (sourceChart !== mainChart) { try { mainChart.clearCrosshairPosition(); } catch(e) {} }
                 if (sourceChart !== macdChart) { try { macdChart.clearCrosshairPosition(); } catch(e) {} }
-                if (sourceChart !== kdjChart) { try { kdjChart.clearCrosshairPosition(); } catch(e) {} }
+                if (sourceChart !== kdjStaticChart) { try { kdjStaticChart.clearCrosshairPosition(); } catch(e) {} }
+                if (sourceChart !== kdjAdaptiveChart) { try { kdjAdaptiveChart.clearCrosshairPosition(); } catch(e) {} }
                 if (sourceChart !== atrChart) { try { atrChart.clearCrosshairPosition(); } catch(e) {} }
             }
 
@@ -297,7 +310,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         mainChart.subscribeCrosshairMove(p => syncCrosshairs(p, mainChart));
         macdChart.subscribeCrosshairMove(p => syncCrosshairs(p, macdChart));
-        kdjChart.subscribeCrosshairMove(p => syncCrosshairs(p, kdjChart));
+        kdjStaticChart.subscribeCrosshairMove(p => syncCrosshairs(p, kdjStaticChart));
+        kdjAdaptiveChart.subscribeCrosshairMove(p => syncCrosshairs(p, kdjAdaptiveChart));
         atrChart.subscribeCrosshairMove(p => syncCrosshairs(p, atrChart));
         function verifyPlotAreaAlignment() {
             setTimeout(() => {
@@ -456,7 +470,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         candleSeries.setData(newCandleData);
         setSeriesMarkersCompat(candleSeries, markers.sort((a,b)=>a.time-b.time));
 
-        // Pre-process Trades
+        // Pre-process Trades & Compute Adaptive KDJ Trajectories
         processedTrades = [];
         (runData.trades || []).forEach(t => {
             if (t.entry_idx == null || t.exit_idx == null || t.entry_idx >= currentData.length) return;
@@ -476,13 +490,50 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
             
+            const obBar = t.entry_ob_bar !== undefined && t.entry_ob_bar !== null ? t.entry_ob_bar : (t.ob_bar !== undefined && t.ob_bar !== null ? t.ob_bar : t.entry_idx);
+            const period = Math.max(1, t.entry_idx - obBar);
+
+            const adaptiveKdjK = [];
+            const adaptiveKdjD = [];
+            const adaptiveKdjJ = [];
+
+            let k = currentData[t.entry_idx].K != null ? currentData[t.entry_idx].K : 50;
+            let d = currentData[t.entry_idx].D != null ? currentData[t.entry_idx].D : 50;
+            const alpha = 1.0 / 3.0;
+
+            for (let i = t.entry_idx; i <= Math.min(t.exit_idx, currentData.length - 1); i++) {
+                if (i > t.entry_idx) {
+                    const windowStart = Math.max(0, i - period + 1);
+                    let highest = -Infinity;
+                    let lowest = Infinity;
+                    for (let w = windowStart; w <= i; w++) {
+                        if (currentData[w].high > highest) highest = currentData[w].high;
+                        if (currentData[w].low < lowest) lowest = currentData[w].low;
+                    }
+                    const denom = highest - lowest;
+                    const rsv = denom > 0 ? ((currentData[i].close - lowest) / denom * 100) : 50.0;
+                    k = k * (1 - alpha) + rsv * alpha;
+                    d = d * (1 - alpha) + k * alpha;
+                }
+                const j = 3 * k - 2 * d;
+                const candleTime = currentData[i].time;
+                adaptiveKdjK.push({ time: candleTime, value: k });
+                adaptiveKdjD.push({ time: candleTime, value: d });
+                adaptiveKdjJ.push({ time: candleTime, value: j });
+            }
+
             processedTrades.push({
                 ...t,
                 tp,
                 sl,
+                obBar,
+                adaptivePeriod: period,
+                adaptiveKdjK,
+                adaptiveKdjD,
+                adaptiveKdjJ,
                 startTime: currentData[t.entry_idx].time,
                 endTime: currentData[t.exit_idx].time,
-                hitTp: t.pnl_pct > 0, // simplified, assumes win hits TP
+                hitTp: t.pnl_pct > 0,
                 hitSl: t.pnl_pct <= 0
             });
         });
@@ -622,7 +673,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 const w = Math.max(1, endX - startX);
                 
-                // Fills
+                // TradingView-Style Fills & Highlights
                 const createFill = (y1, y2, cls) => {
                     const fill = document.createElement('div');
                     fill.className = `trade-fill ${cls}`;
@@ -632,18 +683,49 @@ document.addEventListener('DOMContentLoaded', async () => {
                     fill.style.height = Math.abs(y1 - y2) + 'px';
                     fill.style.pointerEvents = 'all';
                     fill.style.cursor = 'pointer';
-                    fill.addEventListener('mouseenter', () => {
-                        updateKdjModeIndicator(t.entry_idx, null);
-                    });
-                    fill.addEventListener('click', () => {
-                        updateKdjModeIndicator(t.entry_idx, null);
-                    });
+                    fill.addEventListener('mouseenter', () => updateKdjModeIndicator(t.entry_idx, null));
+                    fill.addEventListener('click', () => updateKdjModeIndicator(t.entry_idx, null));
                     container.appendChild(fill);
                 };
                 createFill(entryY, tpY, 'win-zone');
                 createFill(entryY, slY, 'loss-zone');
+
+                // Cross-Indicator Highlight Region on Main Chart (Phase 5)
+                const isTradeActive = (activeHoveredTime && (t.startTime === activeHoveredTime || (t.entry_idx <= timeToIndex.get(activeHoveredTime) && timeToIndex.get(activeHoveredTime) <= t.exit_idx)));
+                if (isTradeActive && t.obBar !== undefined && t.obBar !== null && t.obBar < t.entry_idx) {
+                    const obStartX = timeScale.timeToCoordinate(currentData[t.obBar].time);
+                    if (obStartX !== null && obStartX < startX) {
+                        const obHighlight = document.createElement('div');
+                        obHighlight.className = 'trade-eval-highlight';
+                        obHighlight.style.position = 'absolute';
+                        obHighlight.style.left = obStartX + 'px';
+                        obHighlight.style.width = (startX - obStartX) + 'px';
+                        obHighlight.style.top = '0';
+                        obHighlight.style.height = '100%';
+                        obHighlight.style.backgroundColor = 'rgba(13, 148, 136, 0.12)';
+                        obHighlight.style.borderLeft = '1px dashed #0d9488';
+                        obHighlight.style.borderRight = '1px dashed #0d9488';
+                        obHighlight.style.pointerEvents = 'none';
+                        obHighlight.style.zIndex = '18';
+
+                        const spanTag = document.createElement('div');
+                        spanTag.style.position = 'absolute';
+                        spanTag.style.top = '12px';
+                        spanTag.style.left = '4px';
+                        spanTag.style.fontSize = '10px';
+                        spanTag.style.fontWeight = '600';
+                        spanTag.style.color = '#0d9488';
+                        spanTag.style.background = 'rgba(15, 23, 42, 0.85)';
+                        spanTag.style.padding = '1px 4px';
+                        spanTag.style.borderRadius = '3px';
+                        spanTag.innerText = `OB Span (${t.adaptivePeriod}b)`;
+                        obHighlight.appendChild(spanTag);
+
+                        container.appendChild(obHighlight);
+                    }
+                }
                 
-                // Lines
+                // TradingView-Style Dashed Price Lines & Pinned Right Scale Tags
                 const createLine = (y, type, price, isHit) => {
                     const line = document.createElement('div');
                     line.className = `trade-line ${type} ${isHit ? 'hit' : ''}`;
@@ -652,30 +734,47 @@ document.addEventListener('DOMContentLoaded', async () => {
                     line.style.width = w + 'px';
                     
                     if (type === 'entry') {
-                        // Entry label
-                        const entryLabel = document.createElement('div');
-                        entryLabel.className = 'trade-label';
-                        entryLabel.innerText = `${t.side} entry @ ${price.toFixed(2)}`;
-                        line.appendChild(entryLabel);
+                        // Compact Entry Pill Flag
+                        const entryFlag = document.createElement('div');
+                        entryFlag.className = 'trade-flag entry-flag';
+                        entryFlag.style.position = 'absolute';
+                        entryFlag.style.left = '0';
+                        entryFlag.style.transform = 'translateY(-50%)';
+                        entryFlag.style.background = t.side === 'LONG' ? '#10b981' : '#ef4444';
+                        entryFlag.style.color = '#ffffff';
+                        entryFlag.style.fontSize = '10px';
+                        entryFlag.style.fontWeight = '600';
+                        entryFlag.style.padding = '2px 6px';
+                        entryFlag.style.borderRadius = '4px';
+                        entryFlag.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                        entryFlag.style.zIndex = '22';
+                        entryFlag.innerText = `${t.side === 'LONG' ? '▲' : '▼'} ${t.side} @ ${price.toFixed(2)}`;
+                        line.appendChild(entryFlag);
 
-                        // Exit label
-                        const exitReason = currentData[t.exit_idx]?.Trade_Status || (t.hitTp ? 'HIT TAKE PROFIT' : (t.hitSl ? 'HIT STOP LOSS' : 'CLOSED'));
-                        const exitLabel = document.createElement('div');
-                        exitLabel.className = 'trade-label';
-                        exitLabel.style.position = 'absolute';
-                        exitLabel.style.right = '0';
-                        exitLabel.innerText = exitReason;
-                        line.appendChild(exitLabel);
+                        // Compact Exit Badge
+                        const exitReason = currentData[t.exit_idx]?.Trade_Status || (t.hitTp ? 'TAKE PROFIT' : (t.hitSl ? 'STOP LOSS' : 'CLOSED'));
+                        const exitTag = document.createElement('div');
+                        exitTag.className = 'trade-flag exit-flag';
+                        exitTag.style.position = 'absolute';
+                        exitTag.style.right = '0';
+                        exitTag.style.transform = 'translateY(-50%)';
+                        exitTag.style.background = t.pnl_pct > 0 ? 'rgba(16, 185, 129, 0.9)' : 'rgba(239, 68, 68, 0.9)';
+                        exitTag.style.color = '#ffffff';
+                        exitTag.style.fontSize = '9px';
+                        exitTag.style.fontWeight = '600';
+                        exitTag.style.padding = '1px 5px';
+                        exitTag.style.borderRadius = '3px';
+                        exitTag.style.zIndex = '22';
+                        exitTag.innerText = `✕ ${exitReason} (${t.pnl_pct > 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%)`;
+                        line.appendChild(exitTag);
                     } else {
+                        // Right-aligned SL/TP price tags
                         const label = document.createElement('div');
                         label.className = 'trade-label';
-                        label.innerText = `${type.toUpperCase()} @ ${price.toFixed(2)}`;
-                        
-                        if (isHit) {
-                            const marker = document.createElement('span');
-                            marker.innerText = type === 'tp' ? ' ✓' : ' ✗';
-                            label.appendChild(marker);
-                        }
+                        label.style.position = 'absolute';
+                        label.style.right = '-80px';
+                        label.style.transform = 'translateY(-50%)';
+                        label.innerText = `${type.toUpperCase()} ${price.toFixed(2)}`;
                         line.appendChild(label);
                     }
                     
@@ -722,6 +821,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log(`[Performance] updateActiveHighlight took ${duration.toFixed(2)}ms`);
     }
 
+    function renderAdaptiveKdjPane(activeTrade) {
+        const emptyWatermark = document.getElementById('empty-kdj-adaptive');
+        const hdrEl = document.getElementById('hdr-kdj-adaptive');
+
+        if (activeTrade && activeTrade.adaptiveKdjK && activeTrade.adaptiveKdjK.length > 0) {
+            if (emptyWatermark) emptyWatermark.style.display = 'none';
+            if (hdrEl) {
+                hdrEl.innerHTML = `<span style="color:#0d9488; font-weight:700;">Adaptive KDJ | period = ${activeTrade.adaptivePeriod} bars</span>`;
+            }
+            if (kLineAdaptive) kLineAdaptive.setData(activeTrade.adaptiveKdjK);
+            if (dLineAdaptive) dLineAdaptive.setData(activeTrade.adaptiveKdjD);
+            if (jLineAdaptive) jLineAdaptive.setData(activeTrade.adaptiveKdjJ);
+        } else {
+            if (emptyWatermark) emptyWatermark.style.display = 'flex';
+            if (hdrEl) {
+                hdrEl.innerText = 'Adaptive KDJ (Trade-Active Only)';
+            }
+            if (kLineAdaptive) kLineAdaptive.setData([]);
+            if (dLineAdaptive) dLineAdaptive.setData([]);
+            if (jLineAdaptive) jLineAdaptive.setData([]);
+        }
+    }
+
     function updateKdjModeIndicator(hoveredIdx, foundOb) {
         const titleEl = document.getElementById('kdj-mode-title');
         const badgeEl = document.getElementById('kdj-mode-badge');
@@ -736,6 +858,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!activeTrade && hoveredIdx !== undefined && hoveredIdx !== null) {
             activeTrade = processedTrades.find(t => t.entry_idx <= hoveredIdx && hoveredIdx <= t.exit_idx);
         }
+
+        renderAdaptiveKdjPane(activeTrade);
         
         if (activeTrade) {
             const obBar = activeTrade.ob_bar !== undefined ? activeTrade.ob_bar : (activeTrade.entry_ob_bar !== undefined ? activeTrade.entry_ob_bar : activeTrade.entry_idx);
@@ -813,8 +937,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function setupDragHandles() {
         const MIN_PANE_PX = 60;
-        const STORAGE_KEY = 'pane-heights-v1';
-        const paneIds = ['pane-main', 'pane-macd', 'pane-kdj', 'pane-atr'];
+        const STORAGE_KEY = 'pane-heights-v2';
+        const paneIds = ['pane-main', 'pane-macd', 'pane-kdj-static', 'pane-kdj-adaptive', 'pane-atr'];
         const resizers = document.querySelectorAll('.pane-resizer');
 
         // Restore saved heights

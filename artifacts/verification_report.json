@@ -17,23 +17,23 @@
   },
   "recalculation_hashes_by_threshold": {
     "0": {
-      "orderblocks_hash": "8b0067e3b0ff60261c74110c699bd3ebc952dd3b846cab4b9670364122b036cb",
-      "trades_hash": "6ea0f627a9733af063d01786ef10cdd73fa97b0052034c94d59c7934e2dc34e1",
+      "orderblocks_hash": "e200441771b4cc5843762982f05c0db575fc7ede6f4c443b992b8159c71351ed",
+      "trades_hash": "9cdba56402fb323b8bd2db9962c312ee1ded022e65ff0989e5c46275636c889c",
       "stats_hash": "6a1008ce370a7ee921da2d09b8b03b08ab08862ee5e724246d40f57209376625"
     },
     "1": {
-      "orderblocks_hash": "8b0067e3b0ff60261c74110c699bd3ebc952dd3b846cab4b9670364122b036cb",
-      "trades_hash": "7d1dd179492bbe77a0b448836a6635010e33a7e218a1bfa170d6f8b6742c1708",
-      "stats_hash": "e4772145b53a092a2f3a31744a6dad120e266c20a31e895420e0dfffb6eb0441"
+      "orderblocks_hash": "e200441771b4cc5843762982f05c0db575fc7ede6f4c443b992b8159c71351ed",
+      "trades_hash": "fdedf6b8b03d56126bf6f95893b64a008961fae0660644641607b8b7a966460d",
+      "stats_hash": "0d0cb242f93fa398fcec0ac65f14b59e110cc5fe1dbc74910f841ce62906ca9d"
     },
     "2": {
-      "orderblocks_hash": "8b0067e3b0ff60261c74110c699bd3ebc952dd3b846cab4b9670364122b036cb",
-      "trades_hash": "37b6513a3e123bbf5b7a7d0234592b40e3ae868a4164793652d1c6c51383304d",
-      "stats_hash": "eb91473a45e1c2bd68b7f132efd19343ef6dc4d275a0c5e60ffcdd44d70b823e"
+      "orderblocks_hash": "e200441771b4cc5843762982f05c0db575fc7ede6f4c443b992b8159c71351ed",
+      "trades_hash": "558abdfb1f733890d201861e9f38a77654a23cc924cfc7c08360668da4bbb724",
+      "stats_hash": "0f7b6173737ff5efec036a10cc3763ec62abb36baf69fa6e68370e76426f0f7c"
     },
     "3": {
-      "orderblocks_hash": "8b0067e3b0ff60261c74110c699bd3ebc952dd3b846cab4b9670364122b036cb",
-      "trades_hash": "f80568eca765d41e8e1328ac18a857c8ae1858a7bcdfee0d4b2a6da3f309003c",
+      "orderblocks_hash": "e200441771b4cc5843762982f05c0db575fc7ede6f4c443b992b8159c71351ed",
+      "trades_hash": "c17851539557dbdfeb1fa63e4c942ace7d11c785e37df7394c1fd1cb5f1e6ef1",
       "stats_hash": "05e10220a847e343fd554ad5e3c141b38b1e116d8f37b5f758d512ca04228375"
     }
   }

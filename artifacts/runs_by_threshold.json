@@ -27,10 +27,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 518
       },
       {
@@ -171,10 +171,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 225
       },
       {
@@ -203,10 +203,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 143
       },
       {
@@ -473,12 +473,12 @@
         "ob_bar": 321,
         "level": "internal",
         "structure": "CHoCH",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
         "quality_fvg": true,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 333
       },
       {
@@ -795,10 +795,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4222
       },
       {
@@ -843,10 +843,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 685
       },
       {
@@ -907,10 +907,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 695
       },
       {
@@ -923,10 +923,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4213
       },
       {
@@ -1051,10 +1051,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 972
       },
       {
@@ -1115,10 +1115,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 899
       },
       {
@@ -1147,10 +1147,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 899
       },
       {
@@ -1243,10 +1243,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3965
       },
       {
@@ -1307,10 +1307,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1874
       },
       {
@@ -1387,10 +1387,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 1494
       },
       {
@@ -1435,10 +1435,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1492
       },
       {
@@ -1483,10 +1483,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1252
       },
       {
@@ -1499,10 +1499,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1248
       },
       {
@@ -1627,10 +1627,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 1381
       },
       {
@@ -1675,10 +1675,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2466
       },
       {
@@ -1787,10 +1787,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1507
       },
       {
@@ -1883,10 +1883,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2312
       },
       {
@@ -2059,10 +2059,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1870
       },
       {
@@ -2091,10 +2091,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1785
       },
       {
@@ -2107,10 +2107,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 1870
       },
       {
@@ -2283,10 +2283,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 1998
       },
       {
@@ -2379,10 +2379,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2050
       },
       {
@@ -2395,10 +2395,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2099
       },
       {
@@ -2411,10 +2411,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 2078
       },
       {
@@ -2603,10 +2603,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -2635,10 +2635,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8767
       },
       {
@@ -2795,10 +2795,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2368
       },
       {
@@ -2811,10 +2811,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 2465
       },
       {
@@ -3019,10 +3019,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2556
       },
       {
@@ -3147,10 +3147,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 2788
       },
       {
@@ -3307,10 +3307,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 2854
       },
       {
@@ -3355,10 +3355,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 3231
       },
       {
@@ -3435,10 +3435,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3220
       },
       {
@@ -3467,10 +3467,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2953
       },
       {
@@ -3483,10 +3483,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3219
       },
       {
@@ -3579,10 +3579,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3051
       },
       {
@@ -3611,10 +3611,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 3042
       },
       {
@@ -3675,10 +3675,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 3123
       },
       {
@@ -3723,10 +3723,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3214
       },
       {
@@ -3771,10 +3771,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3190
       },
       {
@@ -3835,10 +3835,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 3382
       },
       {
@@ -3995,10 +3995,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3352
       },
       {
@@ -4139,10 +4139,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3960
       },
       {
@@ -4187,10 +4187,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3462
       },
       {
@@ -4427,10 +4427,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3833
       },
       {
@@ -4571,10 +4571,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 3791
       },
       {
@@ -4779,10 +4779,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -4907,10 +4907,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -4923,10 +4923,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -4987,10 +4987,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 4139
       },
       {
@@ -5179,10 +5179,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 4510
       },
       {
@@ -5371,10 +5371,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4552
       },
       {
@@ -5387,10 +5387,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 4534
       },
       {
@@ -5451,10 +5451,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 4607
       },
       {
@@ -5691,10 +5691,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6240
       },
       {
@@ -5755,10 +5755,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 5025
       },
       {
@@ -5835,10 +5835,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 4970
       },
       {
@@ -5897,12 +5897,12 @@
         "ob_bar": 4993,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 0,
         "mitigated_at": 5225
       },
       {
@@ -5915,10 +5915,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5224
       },
       {
@@ -5995,10 +5995,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5068
       },
       {
@@ -6219,10 +6219,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5224
       },
       {
@@ -6299,10 +6299,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 5316
       },
       {
@@ -6363,10 +6363,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 6195
       },
       {
@@ -6379,10 +6379,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5352
       },
       {
@@ -6395,10 +6395,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6192
       },
       {
@@ -6475,10 +6475,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5584
       },
       {
@@ -6491,10 +6491,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5412
       },
       {
@@ -6859,10 +6859,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 5794
       },
       {
@@ -6923,10 +6923,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5772
       },
       {
@@ -7067,10 +7067,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5921
       },
       {
@@ -7115,10 +7115,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -7163,10 +7163,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5943
       },
       {
@@ -7195,10 +7195,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -7275,10 +7275,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 6107
       },
       {
@@ -7371,10 +7371,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -7561,12 +7561,12 @@
         "ob_bar": 6262,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 1,
         "mitigated_at": 7153
       },
       {
@@ -7579,10 +7579,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 6916
       },
       {
@@ -7691,10 +7691,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6413
       },
       {
@@ -7803,10 +7803,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7419
       },
       {
@@ -7931,10 +7931,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 6616
       },
       {
@@ -7961,12 +7961,12 @@
         "ob_bar": 6648,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 2,
         "mitigated_at": 6656
       },
       {
@@ -7995,10 +7995,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 6774
       },
       {
@@ -8027,10 +8027,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 6691
       },
       {
@@ -8139,10 +8139,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 6826
       },
       {
@@ -8155,10 +8155,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6868
       },
       {
@@ -8187,10 +8187,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6904
       },
       {
@@ -8251,10 +8251,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 7341
       },
       {
@@ -8507,10 +8507,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 7100
       },
       {
@@ -8555,10 +8555,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 7150
       },
       {
@@ -8571,10 +8571,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 7237
       },
       {
@@ -8795,10 +8795,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 8500
       },
       {
@@ -8811,10 +8811,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8482
       },
       {
@@ -8843,10 +8843,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7403
       },
       {
@@ -9019,10 +9019,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7527
       },
       {
@@ -9083,10 +9083,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7672
       },
       {
@@ -9099,10 +9099,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 7600
       },
       {
@@ -9227,10 +9227,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 8034
       },
       {
@@ -9275,10 +9275,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 7997
       },
       {
@@ -9787,10 +9787,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8091
       },
       {
@@ -9819,10 +9819,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8128
       },
       {
@@ -10075,10 +10075,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8392
       },
       {
@@ -10139,10 +10139,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8767
       },
       {
@@ -10171,10 +10171,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8470
       },
       {
@@ -10313,12 +10313,12 @@
         "ob_bar": 8577,
         "level": "internal",
         "structure": "CHoCH",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 2,
         "mitigated_at": 8592
       },
       {
@@ -10379,10 +10379,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8660
       },
       {
@@ -10443,10 +10443,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8708
       },
       {
@@ -12245,10 +12245,10 @@
         "take_profit": 42085.65,
         "pnl_pct": -0.3809249165046062,
         "entry_ob_bar": 643,
-        "entry_ob_quality": 5,
+        "entry_ob_quality": 4,
         "entry_ob_quality_displacement": true,
         "entry_ob_quality_large_bar": true,
-        "entry_ob_quality_fvg": true,
+        "entry_ob_quality_fvg": false,
         "entry_ob_quality_liquidity_sweep": true,
         "entry_ob_quality_volume_expansion": true,
         "entry_ob_created_at": 646,
@@ -12329,10 +12329,10 @@
         "take_profit": 21189.26,
         "pnl_pct": -0.08976218157019918,
         "entry_ob_bar": 1099,
-        "entry_ob_quality": 2,
+        "entry_ob_quality": 1,
         "entry_ob_quality_displacement": false,
         "entry_ob_quality_large_bar": false,
-        "entry_ob_quality_fvg": true,
+        "entry_ob_quality_fvg": false,
         "entry_ob_quality_liquidity_sweep": true,
         "entry_ob_quality_volume_expansion": false,
         "entry_ob_created_at": 1102,
@@ -12441,10 +12441,10 @@
         "take_profit": 27712.19,
         "pnl_pct": 0.7688733961019558,
         "entry_ob_bar": 3069,
-        "entry_ob_quality": 1,
+        "entry_ob_quality": 0,
         "entry_ob_quality_displacement": false,
         "entry_ob_quality_large_bar": false,
-        "entry_ob_quality_fvg": true,
+        "entry_ob_quality_fvg": false,
         "entry_ob_quality_liquidity_sweep": false,
         "entry_ob_quality_volume_expansion": false,
         "entry_ob_created_at": 3071,
@@ -12637,10 +12637,10 @@
         "take_profit": 65314.31,
         "pnl_pct": 1.380595058653915,
         "entry_ob_bar": 5949,
-        "entry_ob_quality": 2,
+        "entry_ob_quality": 1,
         "entry_ob_quality_displacement": true,
         "entry_ob_quality_large_bar": false,
-        "entry_ob_quality_fvg": true,
+        "entry_ob_quality_fvg": false,
         "entry_ob_quality_liquidity_sweep": false,
         "entry_ob_quality_volume_expansion": false,
         "entry_ob_created_at": 5951,
@@ -12676,7 +12676,7 @@
         "entry_ob_type": "SUPPLY",
         "tp_is_structural": true,
         "tp_ob_bar": 6099.0,
-        "tp_ob_quality": 3.0,
+        "tp_ob_quality": 2.0,
         "tp_ob_created_at": 6102.0,
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
@@ -12971,10 +12971,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 518
       },
       {
@@ -13115,10 +13115,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 225
       },
       {
@@ -13147,10 +13147,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 143
       },
       {
@@ -13417,12 +13417,12 @@
         "ob_bar": 321,
         "level": "internal",
         "structure": "CHoCH",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
         "quality_fvg": true,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 333
       },
       {
@@ -13739,10 +13739,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4222
       },
       {
@@ -13787,10 +13787,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 685
       },
       {
@@ -13851,10 +13851,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 695
       },
       {
@@ -13867,10 +13867,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4213
       },
       {
@@ -13995,10 +13995,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 972
       },
       {
@@ -14059,10 +14059,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 899
       },
       {
@@ -14091,10 +14091,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 899
       },
       {
@@ -14187,10 +14187,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3965
       },
       {
@@ -14251,10 +14251,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1874
       },
       {
@@ -14331,10 +14331,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 1494
       },
       {
@@ -14379,10 +14379,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1492
       },
       {
@@ -14427,10 +14427,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1252
       },
       {
@@ -14443,10 +14443,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1248
       },
       {
@@ -14571,10 +14571,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 1381
       },
       {
@@ -14619,10 +14619,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2466
       },
       {
@@ -14731,10 +14731,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1507
       },
       {
@@ -14827,10 +14827,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2312
       },
       {
@@ -15003,10 +15003,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1870
       },
       {
@@ -15035,10 +15035,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1785
       },
       {
@@ -15051,10 +15051,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 1870
       },
       {
@@ -15227,10 +15227,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 1998
       },
       {
@@ -15323,10 +15323,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2050
       },
       {
@@ -15339,10 +15339,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2099
       },
       {
@@ -15355,10 +15355,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 2078
       },
       {
@@ -15547,10 +15547,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -15579,10 +15579,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8767
       },
       {
@@ -15739,10 +15739,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2368
       },
       {
@@ -15755,10 +15755,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 2465
       },
       {
@@ -15963,10 +15963,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2556
       },
       {
@@ -16091,10 +16091,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 2788
       },
       {
@@ -16251,10 +16251,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 2854
       },
       {
@@ -16299,10 +16299,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 3231
       },
       {
@@ -16379,10 +16379,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3220
       },
       {
@@ -16411,10 +16411,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2953
       },
       {
@@ -16427,10 +16427,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3219
       },
       {
@@ -16523,10 +16523,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3051
       },
       {
@@ -16555,10 +16555,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 3042
       },
       {
@@ -16619,10 +16619,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 3123
       },
       {
@@ -16667,10 +16667,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3214
       },
       {
@@ -16715,10 +16715,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3190
       },
       {
@@ -16779,10 +16779,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 3382
       },
       {
@@ -16939,10 +16939,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3352
       },
       {
@@ -17083,10 +17083,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3960
       },
       {
@@ -17131,10 +17131,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3462
       },
       {
@@ -17371,10 +17371,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3833
       },
       {
@@ -17515,10 +17515,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 3791
       },
       {
@@ -17723,10 +17723,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -17851,10 +17851,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -17867,10 +17867,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -17931,10 +17931,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 4139
       },
       {
@@ -18123,10 +18123,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 4510
       },
       {
@@ -18315,10 +18315,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4552
       },
       {
@@ -18331,10 +18331,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 4534
       },
       {
@@ -18395,10 +18395,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 4607
       },
       {
@@ -18635,10 +18635,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6240
       },
       {
@@ -18699,10 +18699,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 5025
       },
       {
@@ -18779,10 +18779,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 4970
       },
       {
@@ -18841,12 +18841,12 @@
         "ob_bar": 4993,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 0,
         "mitigated_at": 5225
       },
       {
@@ -18859,10 +18859,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5224
       },
       {
@@ -18939,10 +18939,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5068
       },
       {
@@ -19163,10 +19163,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5224
       },
       {
@@ -19243,10 +19243,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 5316
       },
       {
@@ -19307,10 +19307,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 6195
       },
       {
@@ -19323,10 +19323,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5352
       },
       {
@@ -19339,10 +19339,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6192
       },
       {
@@ -19419,10 +19419,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5584
       },
       {
@@ -19435,10 +19435,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5412
       },
       {
@@ -19803,10 +19803,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 5794
       },
       {
@@ -19867,10 +19867,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5772
       },
       {
@@ -20011,10 +20011,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5921
       },
       {
@@ -20059,10 +20059,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -20107,10 +20107,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5943
       },
       {
@@ -20139,10 +20139,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -20219,10 +20219,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 6107
       },
       {
@@ -20315,10 +20315,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -20505,12 +20505,12 @@
         "ob_bar": 6262,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 1,
         "mitigated_at": 7153
       },
       {
@@ -20523,10 +20523,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 6916
       },
       {
@@ -20635,10 +20635,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6413
       },
       {
@@ -20747,10 +20747,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7419
       },
       {
@@ -20875,10 +20875,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 6616
       },
       {
@@ -20905,12 +20905,12 @@
         "ob_bar": 6648,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 2,
         "mitigated_at": 6656
       },
       {
@@ -20939,10 +20939,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 6774
       },
       {
@@ -20971,10 +20971,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 6691
       },
       {
@@ -21083,10 +21083,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 6826
       },
       {
@@ -21099,10 +21099,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6868
       },
       {
@@ -21131,10 +21131,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6904
       },
       {
@@ -21195,10 +21195,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 7341
       },
       {
@@ -21451,10 +21451,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 7100
       },
       {
@@ -21499,10 +21499,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 7150
       },
       {
@@ -21515,10 +21515,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 7237
       },
       {
@@ -21739,10 +21739,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 8500
       },
       {
@@ -21755,10 +21755,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8482
       },
       {
@@ -21787,10 +21787,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7403
       },
       {
@@ -21963,10 +21963,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7527
       },
       {
@@ -22027,10 +22027,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7672
       },
       {
@@ -22043,10 +22043,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 7600
       },
       {
@@ -22171,10 +22171,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 8034
       },
       {
@@ -22219,10 +22219,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 7997
       },
       {
@@ -22731,10 +22731,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8091
       },
       {
@@ -22763,10 +22763,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8128
       },
       {
@@ -23019,10 +23019,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8392
       },
       {
@@ -23083,10 +23083,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8767
       },
       {
@@ -23115,10 +23115,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8470
       },
       {
@@ -23257,12 +23257,12 @@
         "ob_bar": 8577,
         "level": "internal",
         "structure": "CHoCH",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 2,
         "mitigated_at": 8592
       },
       {
@@ -23323,10 +23323,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8660
       },
       {
@@ -23387,10 +23387,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8708
       },
       {
@@ -25189,10 +25189,10 @@
         "take_profit": 42085.65,
         "pnl_pct": -0.3809249165046062,
         "entry_ob_bar": 643,
-        "entry_ob_quality": 5,
+        "entry_ob_quality": 4,
         "entry_ob_quality_displacement": true,
         "entry_ob_quality_large_bar": true,
-        "entry_ob_quality_fvg": true,
+        "entry_ob_quality_fvg": false,
         "entry_ob_quality_liquidity_sweep": true,
         "entry_ob_quality_volume_expansion": true,
         "entry_ob_created_at": 646,
@@ -25273,10 +25273,10 @@
         "take_profit": 21189.26,
         "pnl_pct": -0.08976218157019918,
         "entry_ob_bar": 1099,
-        "entry_ob_quality": 2,
+        "entry_ob_quality": 1,
         "entry_ob_quality_displacement": false,
         "entry_ob_quality_large_bar": false,
-        "entry_ob_quality_fvg": true,
+        "entry_ob_quality_fvg": false,
         "entry_ob_quality_liquidity_sweep": true,
         "entry_ob_quality_volume_expansion": false,
         "entry_ob_created_at": 1102,
@@ -25346,34 +25346,6 @@
         "tp_ob_type": "SUPPLY",
         "hold_bars": 3,
         "exit_reason": "KDJ RESET EXIT"
-      },
-      {
-        "side": "LONG",
-        "entry_idx": 3100,
-        "exit_idx": 3113,
-        "entry": 26862.68,
-        "exit": 27069.22,
-        "stop_loss": 26378.546785714287,
-        "take_profit": 27712.19,
-        "pnl_pct": 0.7688733961019558,
-        "entry_ob_bar": 3069,
-        "entry_ob_quality": 1,
-        "entry_ob_quality_displacement": false,
-        "entry_ob_quality_large_bar": false,
-        "entry_ob_quality_fvg": true,
-        "entry_ob_quality_liquidity_sweep": false,
-        "entry_ob_quality_volume_expansion": false,
-        "entry_ob_created_at": 3071,
-        "entry_ob_level": "internal",
-        "entry_ob_type": "DEMAND",
-        "tp_is_structural": true,
-        "tp_ob_bar": 3086,
-        "tp_ob_quality": 1,
-        "tp_ob_created_at": 3091,
-        "tp_ob_level": "internal",
-        "tp_ob_type": "SUPPLY",
-        "hold_bars": 13,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
       },
       {
         "side": "SHORT",
@@ -25553,10 +25525,10 @@
         "take_profit": 65314.31,
         "pnl_pct": 1.380595058653915,
         "entry_ob_bar": 5949,
-        "entry_ob_quality": 2,
+        "entry_ob_quality": 1,
         "entry_ob_quality_displacement": true,
         "entry_ob_quality_large_bar": false,
-        "entry_ob_quality_fvg": true,
+        "entry_ob_quality_fvg": false,
         "entry_ob_quality_liquidity_sweep": false,
         "entry_ob_quality_volume_expansion": false,
         "entry_ob_created_at": 5951,
@@ -25592,7 +25564,7 @@
         "entry_ob_type": "SUPPLY",
         "tp_is_structural": true,
         "tp_ob_bar": 6099,
-        "tp_ob_quality": 3,
+        "tp_ob_quality": 2,
         "tp_ob_created_at": 6102,
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
@@ -25853,10 +25825,10 @@
       }
     ],
     "stats": {
-      "Total Trades": 26,
-      "Total Net Return (%)": 29.075669465412282,
-      "Avg Return/Trade (%)": 1.1182949794389339,
-      "Win Rate (%)": 69.23076923076923
+      "Total Trades": 25,
+      "Total Net Return (%)": 28.306796069310327,
+      "Avg Return/Trade (%)": 1.132271842772413,
+      "Win Rate (%)": 68.0
     }
   },
   "2": {
@@ -25887,10 +25859,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 518
       },
       {
@@ -26031,10 +26003,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 225
       },
       {
@@ -26063,10 +26035,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 143
       },
       {
@@ -26333,12 +26305,12 @@
         "ob_bar": 321,
         "level": "internal",
         "structure": "CHoCH",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
         "quality_fvg": true,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 333
       },
       {
@@ -26655,10 +26627,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4222
       },
       {
@@ -26703,10 +26675,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 685
       },
       {
@@ -26767,10 +26739,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 695
       },
       {
@@ -26783,10 +26755,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4213
       },
       {
@@ -26911,10 +26883,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 972
       },
       {
@@ -26975,10 +26947,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 899
       },
       {
@@ -27007,10 +26979,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 899
       },
       {
@@ -27103,10 +27075,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3965
       },
       {
@@ -27167,10 +27139,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1874
       },
       {
@@ -27247,10 +27219,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 1494
       },
       {
@@ -27295,10 +27267,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1492
       },
       {
@@ -27343,10 +27315,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1252
       },
       {
@@ -27359,10 +27331,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1248
       },
       {
@@ -27487,10 +27459,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 1381
       },
       {
@@ -27535,10 +27507,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2466
       },
       {
@@ -27647,10 +27619,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1507
       },
       {
@@ -27743,10 +27715,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2312
       },
       {
@@ -27919,10 +27891,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1870
       },
       {
@@ -27951,10 +27923,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1785
       },
       {
@@ -27967,10 +27939,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 1870
       },
       {
@@ -28143,10 +28115,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 1998
       },
       {
@@ -28239,10 +28211,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2050
       },
       {
@@ -28255,10 +28227,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2099
       },
       {
@@ -28271,10 +28243,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 2078
       },
       {
@@ -28463,10 +28435,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -28495,10 +28467,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8767
       },
       {
@@ -28655,10 +28627,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2368
       },
       {
@@ -28671,10 +28643,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 2465
       },
       {
@@ -28879,10 +28851,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2556
       },
       {
@@ -29007,10 +28979,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 2788
       },
       {
@@ -29167,10 +29139,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 2854
       },
       {
@@ -29215,10 +29187,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 3231
       },
       {
@@ -29295,10 +29267,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3220
       },
       {
@@ -29327,10 +29299,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2953
       },
       {
@@ -29343,10 +29315,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3219
       },
       {
@@ -29439,10 +29411,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3051
       },
       {
@@ -29471,10 +29443,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 3042
       },
       {
@@ -29535,10 +29507,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 3123
       },
       {
@@ -29583,10 +29555,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3214
       },
       {
@@ -29631,10 +29603,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3190
       },
       {
@@ -29695,10 +29667,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 3382
       },
       {
@@ -29855,10 +29827,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3352
       },
       {
@@ -29999,10 +29971,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3960
       },
       {
@@ -30047,10 +30019,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3462
       },
       {
@@ -30287,10 +30259,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3833
       },
       {
@@ -30431,10 +30403,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 3791
       },
       {
@@ -30639,10 +30611,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -30767,10 +30739,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -30783,10 +30755,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -30847,10 +30819,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 4139
       },
       {
@@ -31039,10 +31011,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 4510
       },
       {
@@ -31231,10 +31203,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4552
       },
       {
@@ -31247,10 +31219,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 4534
       },
       {
@@ -31311,10 +31283,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 4607
       },
       {
@@ -31551,10 +31523,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6240
       },
       {
@@ -31615,10 +31587,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 5025
       },
       {
@@ -31695,10 +31667,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 4970
       },
       {
@@ -31757,12 +31729,12 @@
         "ob_bar": 4993,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 0,
         "mitigated_at": 5225
       },
       {
@@ -31775,10 +31747,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5224
       },
       {
@@ -31855,10 +31827,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5068
       },
       {
@@ -32079,10 +32051,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5224
       },
       {
@@ -32159,10 +32131,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 5316
       },
       {
@@ -32223,10 +32195,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 6195
       },
       {
@@ -32239,10 +32211,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5352
       },
       {
@@ -32255,10 +32227,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6192
       },
       {
@@ -32335,10 +32307,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5584
       },
       {
@@ -32351,10 +32323,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5412
       },
       {
@@ -32719,10 +32691,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 5794
       },
       {
@@ -32783,10 +32755,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5772
       },
       {
@@ -32927,10 +32899,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5921
       },
       {
@@ -32975,10 +32947,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -33023,10 +32995,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5943
       },
       {
@@ -33055,10 +33027,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -33135,10 +33107,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 6107
       },
       {
@@ -33231,10 +33203,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -33421,12 +33393,12 @@
         "ob_bar": 6262,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 1,
         "mitigated_at": 7153
       },
       {
@@ -33439,10 +33411,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 6916
       },
       {
@@ -33551,10 +33523,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6413
       },
       {
@@ -33663,10 +33635,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7419
       },
       {
@@ -33791,10 +33763,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 6616
       },
       {
@@ -33821,12 +33793,12 @@
         "ob_bar": 6648,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 2,
         "mitigated_at": 6656
       },
       {
@@ -33855,10 +33827,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 6774
       },
       {
@@ -33887,10 +33859,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 6691
       },
       {
@@ -33999,10 +33971,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 6826
       },
       {
@@ -34015,10 +33987,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6868
       },
       {
@@ -34047,10 +34019,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6904
       },
       {
@@ -34111,10 +34083,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 7341
       },
       {
@@ -34367,10 +34339,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 7100
       },
       {
@@ -34415,10 +34387,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 7150
       },
       {
@@ -34431,10 +34403,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 7237
       },
       {
@@ -34655,10 +34627,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 8500
       },
       {
@@ -34671,10 +34643,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8482
       },
       {
@@ -34703,10 +34675,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7403
       },
       {
@@ -34879,10 +34851,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7527
       },
       {
@@ -34943,10 +34915,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7672
       },
       {
@@ -34959,10 +34931,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 7600
       },
       {
@@ -35087,10 +35059,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 8034
       },
       {
@@ -35135,10 +35107,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 7997
       },
       {
@@ -35647,10 +35619,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8091
       },
       {
@@ -35679,10 +35651,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8128
       },
       {
@@ -35935,10 +35907,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8392
       },
       {
@@ -35999,10 +35971,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8767
       },
       {
@@ -36031,10 +36003,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8470
       },
       {
@@ -36173,12 +36145,12 @@
         "ob_bar": 8577,
         "level": "internal",
         "structure": "CHoCH",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 2,
         "mitigated_at": 8592
       },
       {
@@ -36239,10 +36211,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8660
       },
       {
@@ -36303,10 +36275,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8708
       },
       {
@@ -38105,10 +38077,10 @@
         "take_profit": 42085.65,
         "pnl_pct": -0.3809249165046062,
         "entry_ob_bar": 643,
-        "entry_ob_quality": 5,
+        "entry_ob_quality": 4,
         "entry_ob_quality_displacement": true,
         "entry_ob_quality_large_bar": true,
-        "entry_ob_quality_fvg": true,
+        "entry_ob_quality_fvg": false,
         "entry_ob_quality_liquidity_sweep": true,
         "entry_ob_quality_volume_expansion": true,
         "entry_ob_created_at": 646,
@@ -38185,18 +38157,18 @@
         "exit_idx": 1161,
         "entry": 19473.68,
         "exit": 19456.2,
-        "stop_loss": 18585.228214285715,
+        "stop_loss": 18560.938214285714,
         "take_profit": 21189.26,
         "pnl_pct": -0.08976218157019918,
-        "entry_ob_bar": 1099,
-        "entry_ob_quality": 2,
-        "entry_ob_quality_displacement": false,
+        "entry_ob_bar": 1083,
+        "entry_ob_quality": 4,
+        "entry_ob_quality_displacement": true,
         "entry_ob_quality_large_bar": false,
         "entry_ob_quality_fvg": true,
         "entry_ob_quality_liquidity_sweep": true,
-        "entry_ob_quality_volume_expansion": false,
-        "entry_ob_created_at": 1102,
-        "entry_ob_level": "internal",
+        "entry_ob_quality_volume_expansion": true,
+        "entry_ob_created_at": 1126,
+        "entry_ob_level": "swing",
         "entry_ob_type": "DEMAND",
         "tp_is_structural": true,
         "tp_ob_bar": 1131,
@@ -38432,34 +38404,6 @@
         "exit_reason": "TRAILING EXIT (50% RETRACE)"
       },
       {
-        "side": "LONG",
-        "entry_idx": 6040,
-        "exit_idx": 6054,
-        "entry": 61036.0,
-        "exit": 61878.66,
-        "stop_loss": 58685.175357142856,
-        "take_profit": 65314.31,
-        "pnl_pct": 1.380595058653915,
-        "entry_ob_bar": 5949,
-        "entry_ob_quality": 2,
-        "entry_ob_quality_displacement": true,
-        "entry_ob_quality_large_bar": false,
-        "entry_ob_quality_fvg": true,
-        "entry_ob_quality_liquidity_sweep": false,
-        "entry_ob_quality_volume_expansion": false,
-        "entry_ob_created_at": 5951,
-        "entry_ob_level": "internal",
-        "entry_ob_type": "DEMAND",
-        "tp_is_structural": true,
-        "tp_ob_bar": 6003,
-        "tp_ob_quality": 3,
-        "tp_ob_created_at": 6028,
-        "tp_ob_level": "swing",
-        "tp_ob_type": "SUPPLY",
-        "hold_bars": 14,
-        "exit_reason": "KDJ RESET EXIT"
-      },
-      {
         "side": "SHORT",
         "entry_idx": 6109,
         "exit_idx": 6112,
@@ -38480,7 +38424,7 @@
         "entry_ob_type": "SUPPLY",
         "tp_is_structural": true,
         "tp_ob_bar": 6099,
-        "tp_ob_quality": 3,
+        "tp_ob_quality": 2,
         "tp_ob_created_at": 6102,
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
@@ -38713,10 +38657,10 @@
       }
     ],
     "stats": {
-      "Total Trades": 24,
-      "Total Net Return (%)": 24.65645437080543,
-      "Avg Return/Trade (%)": 1.0273522654502263,
-      "Win Rate (%)": 66.66666666666666
+      "Total Trades": 23,
+      "Total Net Return (%)": 23.275859312151514,
+      "Avg Return/Trade (%)": 1.0119938831370223,
+      "Win Rate (%)": 65.21739130434783
     }
   },
   "3": {
@@ -38747,10 +38691,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 518
       },
       {
@@ -38891,10 +38835,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 225
       },
       {
@@ -38923,10 +38867,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 143
       },
       {
@@ -39193,12 +39137,12 @@
         "ob_bar": 321,
         "level": "internal",
         "structure": "CHoCH",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
         "quality_fvg": true,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 333
       },
       {
@@ -39515,10 +39459,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4222
       },
       {
@@ -39563,10 +39507,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 685
       },
       {
@@ -39627,10 +39571,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 695
       },
       {
@@ -39643,10 +39587,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4213
       },
       {
@@ -39771,10 +39715,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 972
       },
       {
@@ -39835,10 +39779,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 899
       },
       {
@@ -39867,10 +39811,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 899
       },
       {
@@ -39963,10 +39907,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3965
       },
       {
@@ -40027,10 +39971,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1874
       },
       {
@@ -40107,10 +40051,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 1494
       },
       {
@@ -40155,10 +40099,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1492
       },
       {
@@ -40203,10 +40147,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1252
       },
       {
@@ -40219,10 +40163,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1248
       },
       {
@@ -40347,10 +40291,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 1381
       },
       {
@@ -40395,10 +40339,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2466
       },
       {
@@ -40507,10 +40451,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1507
       },
       {
@@ -40603,10 +40547,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2312
       },
       {
@@ -40779,10 +40723,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 1870
       },
       {
@@ -40811,10 +40755,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 1785
       },
       {
@@ -40827,10 +40771,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 1870
       },
       {
@@ -41003,10 +40947,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 1998
       },
       {
@@ -41099,10 +41043,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2050
       },
       {
@@ -41115,10 +41059,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2099
       },
       {
@@ -41131,10 +41075,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 2078
       },
       {
@@ -41323,10 +41267,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -41355,10 +41299,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8767
       },
       {
@@ -41515,10 +41459,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 2368
       },
       {
@@ -41531,10 +41475,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 2465
       },
       {
@@ -41739,10 +41683,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2556
       },
       {
@@ -41867,10 +41811,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 2788
       },
       {
@@ -42027,10 +41971,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 2854
       },
       {
@@ -42075,10 +42019,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 3231
       },
       {
@@ -42155,10 +42099,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3220
       },
       {
@@ -42187,10 +42131,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 2953
       },
       {
@@ -42203,10 +42147,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3219
       },
       {
@@ -42299,10 +42243,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3051
       },
       {
@@ -42331,10 +42275,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 3042
       },
       {
@@ -42395,10 +42339,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 3123
       },
       {
@@ -42443,10 +42387,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3214
       },
       {
@@ -42491,10 +42435,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3190
       },
       {
@@ -42555,10 +42499,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 3382
       },
       {
@@ -42715,10 +42659,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3352
       },
       {
@@ -42859,10 +42803,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 3960
       },
       {
@@ -42907,10 +42851,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3462
       },
       {
@@ -43147,10 +43091,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 3833
       },
       {
@@ -43291,10 +43235,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 3791
       },
       {
@@ -43499,10 +43443,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -43627,10 +43571,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -43643,10 +43587,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -43707,10 +43651,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 4139
       },
       {
@@ -43899,10 +43843,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 4510
       },
       {
@@ -44091,10 +44035,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 4552
       },
       {
@@ -44107,10 +44051,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 4534
       },
       {
@@ -44171,10 +44115,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 4607
       },
       {
@@ -44411,10 +44355,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6240
       },
       {
@@ -44475,10 +44419,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 5025
       },
       {
@@ -44555,10 +44499,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 4970
       },
       {
@@ -44617,12 +44561,12 @@
         "ob_bar": 4993,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 0,
         "mitigated_at": 5225
       },
       {
@@ -44635,10 +44579,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5224
       },
       {
@@ -44715,10 +44659,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5068
       },
       {
@@ -44939,10 +44883,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5224
       },
       {
@@ -45019,10 +44963,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 5316
       },
       {
@@ -45083,10 +45027,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 6195
       },
       {
@@ -45099,10 +45043,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5352
       },
       {
@@ -45115,10 +45059,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6192
       },
       {
@@ -45195,10 +45139,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5584
       },
       {
@@ -45211,10 +45155,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 5412
       },
       {
@@ -45579,10 +45523,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 5794
       },
       {
@@ -45643,10 +45587,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5772
       },
       {
@@ -45787,10 +45731,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5921
       },
       {
@@ -45835,10 +45779,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -45883,10 +45827,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 5943
       },
       {
@@ -45915,10 +45859,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8767
       },
       {
@@ -45995,10 +45939,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 6107
       },
       {
@@ -46091,10 +46035,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8767
       },
       {
@@ -46281,12 +46225,12 @@
         "ob_bar": 6262,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 1,
         "mitigated_at": 7153
       },
       {
@@ -46299,10 +46243,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 6916
       },
       {
@@ -46411,10 +46355,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6413
       },
       {
@@ -46523,10 +46467,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7419
       },
       {
@@ -46651,10 +46595,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 6616
       },
       {
@@ -46681,12 +46625,12 @@
         "ob_bar": 6648,
         "level": "internal",
         "structure": "BOS",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": false,
-        "quality": 4,
+        "quality": 2,
         "mitigated_at": 6656
       },
       {
@@ -46715,10 +46659,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 6774
       },
       {
@@ -46747,10 +46691,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 6691
       },
       {
@@ -46859,10 +46803,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 6826
       },
       {
@@ -46875,10 +46819,10 @@
         "structure": "BOS",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6868
       },
       {
@@ -46907,10 +46851,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 6904
       },
       {
@@ -46971,10 +46915,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 7341
       },
       {
@@ -47227,10 +47171,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 7100
       },
       {
@@ -47275,10 +47219,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 7150
       },
       {
@@ -47291,10 +47235,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 7237
       },
       {
@@ -47515,10 +47459,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 5,
+        "quality": 4,
         "mitigated_at": 8500
       },
       {
@@ -47531,10 +47475,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 3,
+        "quality": 2,
         "mitigated_at": 8482
       },
       {
@@ -47563,10 +47507,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7403
       },
       {
@@ -47739,10 +47683,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7527
       },
       {
@@ -47803,10 +47747,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 7672
       },
       {
@@ -47819,10 +47763,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 7600
       },
       {
@@ -47947,10 +47891,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 1,
+        "quality": 0,
         "mitigated_at": 8034
       },
       {
@@ -47995,10 +47939,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 7997
       },
       {
@@ -48507,10 +48451,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8091
       },
       {
@@ -48539,10 +48483,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8128
       },
       {
@@ -48795,10 +48739,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8392
       },
       {
@@ -48859,10 +48803,10 @@
         "structure": "CHoCH",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8767
       },
       {
@@ -48891,10 +48835,10 @@
         "structure": "CHoCH",
         "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8470
       },
       {
@@ -49033,12 +48977,12 @@
         "ob_bar": 8577,
         "level": "internal",
         "structure": "CHoCH",
-        "quality_displacement": true,
+        "quality_displacement": false,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": true,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 2,
         "mitigated_at": 8592
       },
       {
@@ -49099,10 +49043,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": false,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": false,
-        "quality": 2,
+        "quality": 1,
         "mitigated_at": 8660
       },
       {
@@ -49163,10 +49107,10 @@
         "structure": "BOS",
         "quality_displacement": true,
         "quality_large_bar": true,
-        "quality_fvg": true,
+        "quality_fvg": false,
         "quality_liquidity_sweep": false,
         "quality_volume_expansion": true,
-        "quality": 4,
+        "quality": 3,
         "mitigated_at": 8708
       },
       {
@@ -50937,10 +50881,10 @@
         "take_profit": 42085.65,
         "pnl_pct": -0.3809249165046062,
         "entry_ob_bar": 643,
-        "entry_ob_quality": 5,
+        "entry_ob_quality": 4,
         "entry_ob_quality_displacement": true,
         "entry_ob_quality_large_bar": true,
-        "entry_ob_quality_fvg": true,
+        "entry_ob_quality_fvg": false,
         "entry_ob_quality_liquidity_sweep": true,
         "entry_ob_quality_volume_expansion": true,
         "entry_ob_created_at": 646,
@@ -51172,7 +51116,7 @@
         "entry_ob_type": "SUPPLY",
         "tp_is_structural": true,
         "tp_ob_bar": 6099,
-        "tp_ob_quality": 3,
+        "tp_ob_quality": 2,
         "tp_ob_created_at": 6102,
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",

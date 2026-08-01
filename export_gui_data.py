@@ -13,11 +13,7 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 import db_manager
-import pickle
 import time
-
-SELECTED_ITERATION_ID = 0
-
 
 DEFAULT_LEVELS = [0, 1, 2, 3]
 SCHEMA_VERSION = "1.0.0"
@@ -679,41 +675,9 @@ def main():
         def handle_push_gsheet(self):
             try:
                 bot = load_bot_module()
-                
-                global SELECTED_ITERATION_ID
-                it_id = SELECTED_ITERATION_ID
-                
+
                 iteration_parameters = None
-                active_model = None
-                
-                if it_id > 0:
-                    engine = db_manager.init_db()
-                    session = db_manager.get_session(engine)
-                    iteration = session.query(db_manager.MLIteration).filter(db_manager.MLIteration.iteration_id == it_id).first()
-                    if iteration:
-                        iteration_params = json.loads(iteration.parameters)
-                        model_path = iteration_params.get("classifier_model_path")
-                        if model_path and os.path.isfile(model_path):
-                            try:
-                                with open(model_path, "rb") as f:
-                                    active_model = pickle.load(f)
-                            except Exception:
-                                pass
-                        
-                        iteration_parameters = {
-                            "sl_ratio_min": iteration_params.get("sl_ratio_min"),
-                            "kdj_j_long_cap": iteration_params.get("kdj_j_long_cap"),
-                            "kdj_k_long_cap": iteration_params.get("kdj_k_long_cap"),
-                            "kdj_k_short_floor": iteration_params.get("kdj_k_short_floor"),
-                            "kdj_j_short_cap": iteration_params.get("kdj_j_short_cap"),
-                            "atr_mult_exit": iteration_params.get("atr_mult_exit"),
-                            "atr_mult_be": iteration_params.get("atr_mult_be"),
-                            "rr_min": iteration_params.get("rr_min"),
-                            "classifier_model": active_model,
-                            "classifier_threshold": iteration_params.get("classifier_threshold", 0.5)
-                        }
-                    session.close()
-                
+
                 cache_path = "artifacts/candles.csv"
                 if os.path.isfile(cache_path):
                     base_df = pd.read_csv(cache_path)

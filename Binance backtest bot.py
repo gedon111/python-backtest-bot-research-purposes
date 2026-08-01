@@ -182,19 +182,6 @@ def compute_indicators(df, kdj_period=9, atr_period=14):
     if 'taker_buy_base' not in df.columns:
         df['taker_buy_base'] = df['volume'] * 0.5
 
-    # ML Feature calculations
-    vol_ma = df['volume'].rolling(20, min_periods=1).mean()
-    df['volume_ma_ratio'] = np.where(vol_ma > 0, df['volume'] / vol_ma, 1.0)
-    df['taker_buy_ratio'] = np.where(df['volume'] > 0, df['taker_buy_base'] / df['volume'], 0.5)
-    
-    body = (df['close'] - df['open']).abs()
-    rng = df['high'] - df['low']
-    df['body_wick_ratio'] = np.where(rng > 0, body / rng, 0.0)
-    
-    open_time_dt = pd.to_datetime(df['open_time'])
-    df['time_hour'] = open_time_dt.dt.hour
-    df['time_day_of_week'] = open_time_dt.dt.dayofweek
-
     return df
 
 
@@ -251,6 +238,12 @@ def compute_smc(df):
         for i in range(size + 1, n):
             pb = i - size   # pivot bar candidate (size bars ago)
 
+            # ── NO-LOOKAHEAD: pivot windows must never read past bar i ────
+            assert pb + 1 <= i + 1 and (i + 1) - (pb + 1) == size, (
+                f"LOOKAHEAD: pivot window at i={i} pb={pb} size={size} "
+                f"spans an unexpected range."
+            )
+
             # ── Pivot HIGH confirmation ───────────────────────────────────
             # high[pb] > max(high[pb+1 .. i])  →  bar pb is a swing high
             right_highs = highs[pb + 1: i + 1]
@@ -289,7 +282,21 @@ def compute_smc(df):
 
                     displacement = False
                     try:
-                        for j in range(ob_idx + 1, min(n, ob_idx + 4)):
+                        # ── NO-LOOKAHEAD FIX: bound the forward search by the
+                        # OB's own confirmation bar i, not by dataset length n.
+                        # If i - ob_idx is too small for any j to satisfy j<=i
+                        # within (ob_idx+1, ob_idx+4), range() is empty and the
+                        # criterion stays False -- frozen at what was knowable
+                        # at confirmation time, not "unknown/skip".
+                        for j in range(ob_idx + 1, min(i + 1, ob_idx + 4)):
+                            # ── NO-LOOKAHEAD: displacement must only use bars
+                            # already closed as of this OB's confirmation bar i.
+                            assert j <= i, (
+                                f"LOOKAHEAD: displacement check for OB at "
+                                f"ob_idx={ob_idx} (type={ob['type']}, level={level_tag}) "
+                                f"reads bar j={j}, but the OB is not confirmed "
+                                f"until created_at=i={i}."
+                            )
                             body = float(df.at[j, 'close']) - float(df.at[j, 'open'])
                             thresh = 1.5 * float(atr200[ob_idx]) if not np.isnan(atr200[ob_idx]) else 0
                             if ob['type'] == 'DEMAND' and body > 0 and abs(body) >= thresh:
@@ -298,6 +305,8 @@ def compute_smc(df):
                             if ob['type'] == 'SUPPLY' and body < 0 and abs(body) >= thresh:
                                 displacement = True
                                 break
+                    except AssertionError:
+                        raise
                     except Exception:
                         displacement = False
 
@@ -309,13 +318,32 @@ def compute_smc(df):
 
                     fvg = False
                     try:
-                        for j in range(ob_idx, min(n - 2, ob_idx + 3)):
+                        # ── NO-LOOKAHEAD FIX: bound the forward search by the
+                        # OB's own confirmation bar i, not by dataset length n.
+                        # min(i-1, ob_idx+3) keeps j+2<=i an invariant for every
+                        # j considered. If i - ob_idx is too small for any valid
+                        # j to exist under that bound, range() is empty and the
+                        # criterion stays False -- frozen at what was knowable
+                        # at confirmation time, not "unknown/skip".
+                        for j in range(ob_idx, min(i - 1, ob_idx + 3)):
+                            # ── NO-LOOKAHEAD: the 3-candle FVG test needs bar
+                            # j+2 to have closed. It must not be consulted to
+                            # score/validate this OB before bar j+2 <= i (the
+                            # OB's own confirmation/created_at bar).
+                            assert j + 2 <= i, (
+                                f"LOOKAHEAD: FVG check for OB at ob_idx={ob_idx} "
+                                f"(type={ob['type']}, level={level_tag}) reads bar "
+                                f"j+2={j+2} (j={j}), but the OB is not confirmed "
+                                f"until created_at=i={i}."
+                            )
                             if ob['type'] == 'DEMAND' and float(lows[j + 2]) > float(highs[j]):
                                 fvg = True
                                 break
                             if ob['type'] == 'SUPPLY' and float(highs[j + 2]) < float(lows[j]):
                                 fvg = True
                                 break
+                    except AssertionError:
+                        raise
                     except Exception:
                         fvg = False
 
@@ -379,7 +407,21 @@ def compute_smc(df):
 
                     displacement = False
                     try:
-                        for j in range(ob_idx + 1, min(n, ob_idx + 4)):
+                        # ── NO-LOOKAHEAD FIX: bound the forward search by the
+                        # OB's own confirmation bar i, not by dataset length n.
+                        # If i - ob_idx is too small for any j to satisfy j<=i
+                        # within (ob_idx+1, ob_idx+4), range() is empty and the
+                        # criterion stays False -- frozen at what was knowable
+                        # at confirmation time, not "unknown/skip".
+                        for j in range(ob_idx + 1, min(i + 1, ob_idx + 4)):
+                            # ── NO-LOOKAHEAD: displacement must only use bars
+                            # already closed as of this OB's confirmation bar i.
+                            assert j <= i, (
+                                f"LOOKAHEAD: displacement check for OB at "
+                                f"ob_idx={ob_idx} (type={ob['type']}, level={level_tag}) "
+                                f"reads bar j={j}, but the OB is not confirmed "
+                                f"until created_at=i={i}."
+                            )
                             body = float(df.at[j, 'close']) - float(df.at[j, 'open'])
                             thresh = 1.5 * float(atr200[ob_idx]) if not np.isnan(atr200[ob_idx]) else 0
                             if ob['type'] == 'DEMAND' and body > 0 and abs(body) >= thresh:
@@ -388,6 +430,8 @@ def compute_smc(df):
                             if ob['type'] == 'SUPPLY' and body < 0 and abs(body) >= thresh:
                                 displacement = True
                                 break
+                    except AssertionError:
+                        raise
                     except Exception:
                         displacement = False
 
@@ -399,13 +443,32 @@ def compute_smc(df):
 
                     fvg = False
                     try:
-                        for j in range(ob_idx, min(n - 2, ob_idx + 3)):
+                        # ── NO-LOOKAHEAD FIX: bound the forward search by the
+                        # OB's own confirmation bar i, not by dataset length n.
+                        # min(i-1, ob_idx+3) keeps j+2<=i an invariant for every
+                        # j considered. If i - ob_idx is too small for any valid
+                        # j to exist under that bound, range() is empty and the
+                        # criterion stays False -- frozen at what was knowable
+                        # at confirmation time, not "unknown/skip".
+                        for j in range(ob_idx, min(i - 1, ob_idx + 3)):
+                            # ── NO-LOOKAHEAD: the 3-candle FVG test needs bar
+                            # j+2 to have closed. It must not be consulted to
+                            # score/validate this OB before bar j+2 <= i (the
+                            # OB's own confirmation/created_at bar).
+                            assert j + 2 <= i, (
+                                f"LOOKAHEAD: FVG check for OB at ob_idx={ob_idx} "
+                                f"(type={ob['type']}, level={level_tag}) reads bar "
+                                f"j+2={j+2} (j={j}), but the OB is not confirmed "
+                                f"until created_at=i={i}."
+                            )
                             if ob['type'] == 'DEMAND' and float(lows[j + 2]) > float(highs[j]):
                                 fvg = True
                                 break
                             if ob['type'] == 'SUPPLY' and float(highs[j + 2]) < float(lows[j]):
                                 fvg = True
                                 break
+                    except AssertionError:
+                        raise
                     except Exception:
                         fvg = False
 
@@ -712,22 +775,6 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
                 tp  = stp if stp else close + risk * 2.0
                 if (tp - close) / risk < rr_min: continue
 
-                # ML Classifier filter
-                classifier = iteration_parameters.get('classifier_model')
-                if classifier is not None:
-                    features = [
-                        float(df.at[i, 'MACD']), float(df.at[i, 'MACD_signal']), float(df.at[i, 'MACD_hist']),
-                        float(df.at[i, 'K']), float(df.at[i, 'D']), float(df.at[i, 'J']),
-                        float(df.at[i, 'ATR']), float(df.at[i, 'ATR_200']),
-                        float(df.at[i, 'volume_ma_ratio']), float(df.at[i, 'taker_buy_ratio']),
-                        float(df.at[i, 'body_wick_ratio']), float(df.at[i, 'time_hour']),
-                        float(df.at[i, 'time_day_of_week']), float(ob['quality'])
-                    ]
-                    prob = classifier.predict_proba([features])[0][1]
-                    threshold = iteration_parameters.get('classifier_threshold', 0.5)
-                    if prob < threshold:
-                        continue
-
                 position          = 'LONG'
                 entry_price       = close
                 stop_loss_price   = sl
@@ -797,22 +844,6 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
                     stp = get_structural_tp(close, 'SHORT', valid_obs_tp)
                     tp  = stp if stp else close - risk * 2.0
                     if (close - tp) / risk < rr_min: continue
-
-                    # ML Classifier filter
-                    classifier = iteration_parameters.get('classifier_model')
-                    if classifier is not None:
-                        features = [
-                            float(df.at[i, 'MACD']), float(df.at[i, 'MACD_signal']), float(df.at[i, 'MACD_hist']),
-                            float(df.at[i, 'K']), float(df.at[i, 'D']), float(df.at[i, 'J']),
-                            float(df.at[i, 'ATR']), float(df.at[i, 'ATR_200']),
-                            float(df.at[i, 'volume_ma_ratio']), float(df.at[i, 'taker_buy_ratio']),
-                            float(df.at[i, 'body_wick_ratio']), float(df.at[i, 'time_hour']),
-                            float(df.at[i, 'time_day_of_week']), float(ob['quality'])
-                        ]
-                        prob = classifier.predict_proba([features])[0][1]
-                        threshold = iteration_parameters.get('classifier_threshold', 0.5)
-                        if prob < threshold:
-                            continue
 
                     position          = 'SHORT'
                     entry_price       = close

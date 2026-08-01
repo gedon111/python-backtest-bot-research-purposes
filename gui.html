@@ -124,15 +124,31 @@
 
                 <div class="chart-layout">
                     <div class="charts-column" id="charts-column">
-                        <div id="pane-main" class="chart-pane" style="flex: 60; position: relative;">
+                        <div id="pane-main" class="chart-pane" style="flex: 48; position: relative;">
                             <div id="html-overlay-container"></div>
+                            <div class="pane-header-overlay">BTCUSDT 4H Main Chart</div>
                         </div>
                         <div class="pane-resizer" data-prev="pane-main" data-next="pane-macd"></div>
-                        <div id="pane-macd" class="chart-pane" style="flex: 15;"></div>
-                        <div class="pane-resizer" data-prev="pane-macd" data-next="pane-kdj"></div>
-                        <div id="pane-kdj" class="chart-pane" style="flex: 15;"></div>
-                        <div class="pane-resizer" data-prev="pane-kdj" data-next="pane-atr"></div>
-                        <div id="pane-atr" class="chart-pane" style="flex: 10;"></div>
+                        <div id="pane-macd" class="chart-pane" style="flex: 13; position: relative;">
+                            <div class="pane-header-overlay">MACD (12, 26, 9)</div>
+                        </div>
+                        <div class="pane-resizer" data-prev="pane-macd" data-next="pane-kdj-static"></div>
+                        <div id="pane-kdj-static" class="chart-pane" style="flex: 13; position: relative;">
+                            <div class="pane-header-overlay">KDJ (9, 3, 3) — Static</div>
+                        </div>
+                        <div class="pane-resizer" data-prev="pane-kdj-static" data-next="pane-kdj-adaptive"></div>
+                        <div id="pane-kdj-adaptive" class="chart-pane" style="flex: 14; position: relative;">
+                            <div class="pane-header-overlay" id="hdr-kdj-adaptive">Adaptive KDJ (Trade-Active Only)</div>
+                            <div id="empty-kdj-adaptive" class="pane-empty-watermark">
+                                <span class="watermark-icon" style="font-size:1.1rem; margin-bottom:0.2rem;">⚡</span>
+                                <span style="font-weight:600; color:var(--text-main);">No Active Trade Selected</span>
+                                <span class="watermark-sub" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.15rem;">Hover or click a trade marker to inspect dynamic adaptive KDJ evaluation</span>
+                            </div>
+                        </div>
+                        <div class="pane-resizer" data-prev="pane-kdj-adaptive" data-next="pane-atr"></div>
+                        <div id="pane-atr" class="chart-pane" style="flex: 12; position: relative;">
+                            <div class="pane-header-overlay">ATR (14 / 200)</div>
+                        </div>
                     </div>
                     
                     <div class="ob-panel">
