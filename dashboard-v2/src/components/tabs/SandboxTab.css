@@ -5,8 +5,8 @@
 }
 
 .sandbox-header h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.1rem;
+  margin: 0 0 0.3rem;
+  font-size: 1.55rem;
 }
 
 .sandbox-header p {
@@ -34,7 +34,10 @@
 
 .calc-card h3 {
   margin: 0 0 0.75rem;
-  font-size: 0.92rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
 }
 
 .calc-subtitle {
