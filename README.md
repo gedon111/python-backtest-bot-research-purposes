@@ -363,6 +363,37 @@ Known Assumptions and Notes
 
 ---
 
+Known Limitations / Future Work
+
+- **Leverage is not modeled; all reported returns are unlevered/notional.**
+  This is a deliberate scope decision, not an oversight. `simulate_trades()`
+  evaluates every exit condition -- hard stop-loss, take-profit, the
+  trailing exit, the ATR-move exit, and the breakeven-stop adjustment -- at
+  bar-close resolution only. Intrabar `high`/`low` prices are present in
+  `artifacts/candles.csv` and are read into the simulation loop, but are
+  used only for order-block touch detection and a subset of the OB quality
+  criteria (Displacement, LargeBar) -- never for any exit or
+  position-sizing decision. The engine has no concept of a margin or
+  liquidation price at any leverage level.
+  A defensible leveraged backtest requires intrabar liquidation tracking: a
+  position can be liquidated by a price excursion that fully reverses
+  within a single 4H bar, which a close-resolution simulation cannot see.
+  Applying a leverage multiplier after the fact to the existing close-basis
+  trade log would not model that risk -- it would silently assume every
+  trade's realized path was free of any intrabar excursion large enough to
+  trigger liquidation, which the data cannot confirm one way or the other.
+  **If leverage modeling is ever revisited**, the exit-evaluation logic
+  would need to check `high`/`low` against a liquidation price intrabar
+  (and a deliberate choice made about execution-order-within-bar
+  assumptions when both a stop and a target are crossable in the same bar)
+  -- a real engine change, not an analysis-layer addition. Until then, this
+  codebase reports unlevered returns only, consistent with common practice
+  in the technical-trading-rule literature (e.g., Svogun & Bazán-Palomino,
+  2022, evaluating moving-average and support/resistance rule profitability
+  on cryptocurrency data net of transaction costs on a notional basis).
+
+---
+
 README Logs (Append-Only)
 
 > **Modification policy for this README**  
@@ -399,5 +430,6 @@ Entries
 - 2026-08-03 | Bootstrap CI / power analysis promoted to `analysis/` (Supplementary Analysis Scripts) | update | Promoted `scratch/bootstrap_power_audit.py` to a permanent, git-tracked, CLI-runnable script (`analysis/bootstrap_power_analysis.py`) on branch `feature/bootstrap-power-analysis`. Provides (a) a nonparametric percentile bootstrap (B=10,000 default) giving a 95% CI on the 27-trade baseline's own total return (+30.31% point estimate, 95% CI [+5.99%, +54.99%], not crossing zero) and average return/trade, and (b) a minimum-detectable-effect (MDE) calculation per orthogonal OB quality criterion: at 80% power / alpha=0.05, the MDE (2.23-2.91 percentage points across the 5 criteria) is roughly 3-10x larger than the actually-observed True/False subgroup gaps (0.23-0.78 pp) -- meaning the criteria-level null results reflect the study being underpowered to detect effects of the size observed, not necessarily a true absence of effect. Promotion verified numerically identical to the scratch predecessor's output (same seed reproduces the same bootstrap CI exactly; only cosmetic label-text formatting differs). | To make the power/CI framing a permanent, reproducible part of the toolchain so the paper's "no significant difference" language can be replaced with the more precise underpowered-vs-null-effect distinction on demand, not just as a one-off scratch finding.
 - 2026-08-03 | Benchmark/DCA-blend analysis promoted to `analysis/` (Supplementary Analysis Scripts) | update | Promoted `scratch/02_benchmark_and_risk.py` and `scratch/dca_blend_audit.py` together to one permanent, git-tracked, CLI-runnable module (`analysis/benchmark_dca_analysis.py`) on branch `feature/benchmark-dca-blend`, since they're the same analysis family. Section 1 (strategy vs. BTC buy-and-hold): Sharpe 1.114 / Sortino 2.727 for the strategy vs. 0.564 / 0.803 for buy-and-hold, at 2.63% time-in-market; Pearson correlation between per-trade strategy return and BTC's return over the same holding window r=-0.3688, p=0.0584 (borderline, not significant at alpha=0.05, but directionally consistent with a complementary/diversifying role). Section 2 (DCA-blend, weekly contributions, configurable split ratios, 90/10/80/20/70/30 by default): Sharpe/Sortino/max-drawdown all improve monotonically as strategy-sleeve allocation increases (e.g. 80/20 split: Sharpe 0.556->0.607, Sortino 0.886->0.978, max drawdown -27.85%->-24.97%, vs. 100%-DCA-only), at the cost of lower absolute final value -- a risk-adjusted-improvement story, not a return-supremacy claim. The scratch predecessor's cumulative-P&L-only drawdown metric produced NaN early in the series (division by a near-zero-or-negative running-max before enough capital had accumulated); fixed in the promoted version by reporting that metric as a peak-to-trough DOLLAR retracement instead of a percentage, which stays well-defined regardless of sign. Promotion verified numerically identical to both scratch predecessors' output (only cosmetic label-text formatting differs). | To make the strategy-vs-benchmark and complementary-sleeve framing a permanent, reproducible, configurable part of the toolchain, with the known NaN bug fixed rather than carried forward silently.
 - 2026-08-03 | Regime breakdown promoted to `analysis/` (Supplementary Analysis Scripts) | update | Promoted `scratch/regime_breakdown_audit.py` to a permanent, git-tracked, CLI-runnable script (`analysis/regime_breakdown_analysis.py`) on branch `feature/regime-breakdown`, keeping BOTH the calendar method (2022 bear / 2023 chop / 2024-25 bull) and the price-drawdown-from-all-time-high method (ATH seeded at $69,000, BTC's actual 2021-11-10 peak, predating this dataset's window; thresholds BEAR<=-40%, CHOP<=-12%) rather than collapsing to one -- the two methods agree on only 13/27 trade assignments (most of calendar-2023 was still 57-64% below the real ATH, i.e. drawdown-method BEAR, despite being sideways/recovering rather than crashing), but both agree BULL is the strongest regime (85.71% win rate under both) and both confirm the 3 concentrated top-return trades (entry_idx 359/6366/8280, together 51.7% of total return) are NOT clustered in a single regime -- calendar gives BEAR/BULL/BULL, drawdown gives CHOP/BULL/BULL, union spans all three labels. Promotion verified numerically identical to the scratch predecessor's output (only a cosmetic calendar-label year-range difference: the promoted version's dynamic label includes the window's final boundary bar, "2024-26" vs. the scratch predecessor's hardcoded "2024-25" -- the underlying year-to-regime logic and all numeric rows are unaffected). | To make the regime robustness check (recommended in the Limitations draft as a substitute for an underpowered calendar holdout) a permanent, reproducible, configurable part of the toolchain.
+- 2026-08-03 | Known Limitations / Future Work (new section) | update | Added a new "Known Limitations / Future Work" section documenting that leverage is not modeled: `simulate_trades()` evaluates all exit conditions at bar-close resolution only, intrabar `high`/`low` (present in the data, read into the loop) are used only for OB-touch detection and two quality criteria, never for exits, and the engine has no margin/liquidation-price concept at all. States plainly that a leveraged backtest is not defensible without adding intrabar liquidation tracking to the exit-evaluation logic, and that this codebase deliberately does not attempt a leverage-multiplier workaround on the existing close-basis trade log, since that would silently hide the exact risk (intrabar liquidation invisible to a close-only simulation) it claims to model. Cites Svogun & Bazán-Palomino (2022) as consistent precedent for reporting unlevered notional returns in the technical-trading-rule literature. No code changes -- documentation only, per this session's investigation finding that the engine "cannot honestly support this." | To make an already-investigated scope decision (not a gap someone might mistake for an oversight) explicit and discoverable, and to record what a future revisit would actually require rather than leaving it unstated.
 
 
