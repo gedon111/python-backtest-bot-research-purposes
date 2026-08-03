@@ -59,6 +59,8 @@ import json
 import numpy as np
 import pandas as pd
 
+from _json_utils import write_json
+
 
 def load_bot():
     spec = importlib.util.spec_from_file_location("bot", "src/Binance backtest bot.py")
@@ -67,7 +69,7 @@ def load_bot():
     return bot
 
 
-def section_1_forward_oos(bot, start_date: str, oos_end_date: str) -> None:
+def section_1_forward_oos(bot, start_date: str, oos_end_date: str) -> dict:
     print("=" * 100)
     print(f"  SECTION 1: FORWARD OUT-OF-SAMPLE TEST -- {start_date} .. {oos_end_date}")
     print("=" * 100)
@@ -103,6 +105,8 @@ def section_1_forward_oos(bot, start_date: str, oos_end_date: str) -> None:
 
     print(f"\nOOS trades (entry_idx >= {n_locked}, entered on data postdating every commit "
           f"to the strategy file): {len(new_trades)}")
+    oos_trade_list = []
+    oos_summary = None
     if not new_trades.empty:
         print(f"\n{'Side':<6} | {'Entry time':<20} | {'Exit time':<20} | {'PnL %':<10} | {'Exit reason'}")
         for _, r in new_trades.iterrows():
@@ -110,17 +114,27 @@ def section_1_forward_oos(bot, start_date: str, oos_end_date: str) -> None:
             exit_time = fresh.iloc[int(r['exit_idx'])]['open_time']
             print(f"{r['side']:<6} | {str(entry_time):<20} | {str(exit_time):<20} | "
                   f"{r['pnl_pct']:>+8.4f}% | {r['exit_reason']}")
+            oos_trade_list.append({"side": r["side"], "entry_time": entry_time, "exit_time": exit_time,
+                                    "pnl_pct": r["pnl_pct"], "exit_reason": r["exit_reason"]})
         wins = int((new_trades['pnl_pct'] > 0).sum())
         print(f"\nOOS summary: n={len(new_trades)}, wins={wins}, "
               f"win_rate={wins / len(new_trades) * 100:.2f}%, "
               f"total_pnl={new_trades['pnl_pct'].sum():+.4f}%, "
               f"avg_pnl={new_trades['pnl_pct'].mean():+.4f}%")
+        oos_summary = {"n": len(new_trades), "wins": wins, "win_rate_pct": wins / len(new_trades) * 100,
+                        "total_pnl_pct": new_trades["pnl_pct"].sum(), "avg_pnl_pct": new_trades["pnl_pct"].mean()}
     else:
         print("No OOS trades triggered in this window.")
     print()
 
+    return {
+        "start_date": start_date, "oos_end_date": oos_end_date,
+        "bars_pulled": len(fresh), "integrity_check": integrity_ok, "regression_check": regression_ok,
+        "oos_trades": oos_trade_list, "oos_summary": oos_summary,
+    }
 
-def section_2_backfill_audit(bot, backfill_start_date: str, oos_end_date: str) -> None:
+
+def section_2_backfill_audit(bot, backfill_start_date: str, oos_end_date: str) -> dict:
     print("=" * 100)
     print(f"  SECTION 2: 8-YEAR BACKFILL AUDIT -- {backfill_start_date} .. {oos_end_date}")
     print("=" * 100)
@@ -166,10 +180,14 @@ def section_2_backfill_audit(bot, backfill_start_date: str, oos_end_date: str) -
     print("  structure was originally formulated against. Reported for completeness only.")
     print("-" * 100)
     print(f"n={len(pre_window)}")
+    pre_window_summary = {"n": len(pre_window)}
     if not pre_window.empty:
         wins = int((pre_window["pnl_pct"] > 0).sum())
         print(f"wins={wins}, win_rate={wins / len(pre_window) * 100:.2f}%, "
               f"total_pnl={pre_window['pnl_pct'].sum():+.4f}%, avg_pnl={pre_window['pnl_pct'].mean():+.4f}%")
+        pre_window_summary.update({"wins": wins, "win_rate_pct": wins / len(pre_window) * 100,
+                                    "total_pnl_pct": pre_window["pnl_pct"].sum(),
+                                    "avg_pnl_pct": pre_window["pnl_pct"].mean()})
 
     print(f"\nCombined full-window stats ({backfill_start_date}..{oos_end_date}, all trades -- MIXES "
           f"formulation-period and OOS data, do not cite as a clean validation figure):")
@@ -178,6 +196,18 @@ def section_2_backfill_audit(bot, backfill_start_date: str, oos_end_date: str) -
     print(f"  Win Rate (%): {stats.get('Win Rate (%)'):.4f}")
     print(f"  Total Net Return (%): {stats.get('Total Net Return (%)'):.4f}")
     print()
+
+    return {
+        "backfill_start_date": backfill_start_date, "oos_end_date": oos_end_date,
+        "bars_pulled": len(full), "methodological_verdict": integrity_verdict,
+        "pre_window_not_oos": pre_window_summary,
+        "combined_full_window": {
+            "caveat": "Mixes formulation-period and OOS data -- do not cite as clean validation",
+            "total_trades": stats.get("Total Trades"),
+            "win_rate_pct": stats.get("Win Rate (%)"),
+            "total_net_return_pct": stats.get("Total Net Return (%)"),
+        },
+    }
 
 
 def main():
@@ -191,14 +221,20 @@ def main():
     parser.add_argument("--oos-end-date", type=str, default="2026-07-31 23:59:59",
                          help="Fixed historical end date for the live pull (default: 2026-07-31, a closed "
                               "historical boundary chosen for safe re-runnability -- see module docstring)")
+    parser.add_argument("--json-out", type=str, default=None,
+                         help="Optional path to write results as JSON (does not change printed output)")
     args = parser.parse_args()
 
     bot = load_bot()
 
+    result = {"oos_end_date": args.oos_end_date}
     if args.section in ("1", "both"):
-        section_1_forward_oos(bot, args.start_date, args.oos_end_date)
+        result["section_1_forward_oos"] = section_1_forward_oos(bot, args.start_date, args.oos_end_date)
     if args.section in ("2", "both"):
-        section_2_backfill_audit(bot, args.backfill_start_date, args.oos_end_date)
+        result["section_2_backfill_audit"] = section_2_backfill_audit(bot, args.backfill_start_date, args.oos_end_date)
+
+    if args.json_out:
+        write_json(result, args.json_out)
 
 
 if __name__ == "__main__":

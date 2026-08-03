@@ -42,6 +42,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats as sstats
 
+from _json_utils import write_json
+
 CRITERIA = {
     "Displacement": "entry_ob_quality_displacement",
     "LargeBar": "entry_ob_quality_large_bar",
@@ -64,7 +66,7 @@ def load_trades(min_ob_quality: int) -> pd.DataFrame:
     return sim.attrs.get("trades_df").copy()
 
 
-def bootstrap_ci(trades: pd.DataFrame, b: int, seed: int) -> None:
+def bootstrap_ci(trades: pd.DataFrame, b: int, seed: int) -> dict:
     pnl = trades["pnl_pct"].values
     n = len(pnl)
 
@@ -99,8 +101,16 @@ def bootstrap_ci(trades: pd.DataFrame, b: int, seed: int) -> None:
     print("  different history.")
     print()
 
+    return {
+        "b": b, "seed": seed, "n": n,
+        "total_return_point_pct": total_point, "total_return_ci_pct": total_ci.tolist(),
+        "avg_return_point_pct": mean_point, "avg_return_ci_pct": mean_ci.tolist(),
+        "pct_resamples_total_le_zero": (boot_totals <= 0).mean() * 100,
+        "pct_resamples_avg_le_zero": (boot_means <= 0).mean() * 100,
+    }
 
-def mde_power(trades: pd.DataFrame, alpha: float, power: float) -> None:
+
+def mde_power(trades: pd.DataFrame, alpha: float, power: float) -> dict:
     z_alpha_2 = sstats.norm.ppf(1 - alpha / 2)
     z_beta = sstats.norm.ppf(power)
 
@@ -110,6 +120,7 @@ def mde_power(trades: pd.DataFrame, alpha: float, power: float) -> None:
     print(f"  {'Criterion':<14} | {'n(True)':<8} | {'SD(True)':<9} | {'n(False)':<9} | {'SD(False)':<10} | "
           f"{'Observed diff':<14} | {'MDE':<14} | {'Diff detectable?':<17}")
 
+    results = {}
     for name, col in CRITERIA.items():
         mask = trades[col].astype(bool)
         true_grp = trades.loc[mask, "pnl_pct"]
@@ -120,10 +131,15 @@ def mde_power(trades: pd.DataFrame, alpha: float, power: float) -> None:
 
         se = np.sqrt(sd1 ** 2 / n1 + sd2 ** 2 / n2)
         mde = (z_alpha_2 + z_beta) * se
-        detectable = "yes" if abs(observed_diff) >= mde else "NO (underpowered)"
+        detectable = abs(observed_diff) >= mde
 
         print(f"  {name:<14} | {n1:<8} | {sd1:<9.4f} | {n2:<9} | {sd2:<10.4f} | "
-              f"{observed_diff:<+14.4f} | {mde:<14.4f} | {detectable:<17}")
+              f"{observed_diff:<+14.4f} | {mde:<14.4f} | {'yes' if detectable else 'NO (underpowered)':<17}")
+
+        results[name] = {
+            "n_true": n1, "sd_true": sd1, "n_false": n2, "sd_false": sd2,
+            "observed_diff_pct": observed_diff, "mde_pct": mde, "detectable": bool(detectable),
+        }
 
     print()
     print("  Interpretation: 'MDE' is the smallest TRUE mean-return gap between a")
@@ -132,6 +148,8 @@ def mde_power(trades: pd.DataFrame, alpha: float, power: float) -> None:
     print("  OBSERVED subgroup SDs. Where the observed difference is smaller than")
     print("  the MDE, the correct reading of a non-significant test is 'underpowered")
     print("  to rule out a gap up to roughly +/-MDE', not 'no gap exists'.")
+
+    return {"alpha": alpha, "power": power, "criteria": results}
 
 
 def main():
@@ -142,6 +160,8 @@ def main():
     parser.add_argument("--seed", type=int, default=42, help="RNG seed for the bootstrap (default: 42)")
     parser.add_argument("--alpha", type=float, default=0.05, help="Significance level for the MDE calc (default: 0.05)")
     parser.add_argument("--power", type=float, default=0.80, help="Target power for the MDE calc (default: 0.80)")
+    parser.add_argument("--json-out", type=str, default=None,
+                         help="Optional path to write results as JSON (does not change printed output)")
     args = parser.parse_args()
 
     trades = load_trades(args.min_ob_quality)
@@ -149,8 +169,12 @@ def main():
     if expected_n is not None:
         assert len(trades) == expected_n, f"expected {expected_n} baseline trades, got {len(trades)}"
 
-    bootstrap_ci(trades, args.bootstrap_n, args.seed)
-    mde_power(trades, args.alpha, args.power)
+    bootstrap_result = bootstrap_ci(trades, args.bootstrap_n, args.seed)
+    mde_result = mde_power(trades, args.alpha, args.power)
+
+    if args.json_out:
+        write_json({"min_ob_quality": args.min_ob_quality, "bootstrap": bootstrap_result, "mde_power": mde_result},
+                    args.json_out)
 
 
 if __name__ == "__main__":

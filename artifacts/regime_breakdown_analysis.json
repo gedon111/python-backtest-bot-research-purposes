@@ -1,0 +1,201 @@
+{
+  "min_ob_quality": 0,
+  "drawdown_method": {
+    "label": "Drawdown-from-ATH method (BEAR<=-40%, CHOP<=-12%, BULL>-12%)",
+    "regimes": {
+      "BEAR": {
+        "n": 12,
+        "wins": 6,
+        "win_rate_pct": 50.0,
+        "total_pnl_pct": -1.6310312087178738,
+        "pct_of_total_return": -5.381794524430592,
+        "avg_pnl_pct": -0.13591926739315616
+      },
+      "CHOP": {
+        "n": 8,
+        "wins": 7,
+        "win_rate_pct": 87.5,
+        "total_pnl_pct": 18.887775309073838,
+        "pct_of_total_return": 62.322612341032,
+        "avg_pnl_pct": 2.3609719136342298
+      },
+      "BULL": {
+        "n": 7,
+        "wins": 6,
+        "win_rate_pct": 85.71428571428571,
+        "total_pnl_pct": 13.049712255675976,
+        "pct_of_total_return": 43.0591821833986,
+        "avg_pnl_pct": 1.864244607953711
+      }
+    }
+  },
+  "calendar_method": {
+    "label": "Calendar method (2022=BEAR, 2023=CHOP, 2024-26=BULL)",
+    "regimes": {
+      "BEAR": {
+        "n": 7,
+        "wins": 4,
+        "win_rate_pct": 57.14285714285714,
+        "total_pnl_pct": 10.452420614593597,
+        "pct_of_total_return": 34.4890887004453,
+        "avg_pnl_pct": 1.4932029449419424
+      },
+      "CHOP": {
+        "n": 6,
+        "wins": 3,
+        "win_rate_pct": 50.0,
+        "total_pnl_pct": -5.394618563516609,
+        "pct_of_total_return": -17.800228770206946,
+        "avg_pnl_pct": -0.8991030939194348
+      },
+      "BULL": {
+        "n": 14,
+        "wins": 12,
+        "win_rate_pct": 85.71428571428571,
+        "total_pnl_pct": 25.248654304954947,
+        "pct_of_total_return": 83.31114006976163,
+        "avg_pnl_pct": 1.803475307496782
+      }
+    }
+  },
+  "method_agreement": {
+    "agree": 13,
+    "n": 27,
+    "disagreements": [
+      {
+        "entry_idx": 359,
+        "entry_time": "2022-03-02T04:00:00",
+        "dd_pct": -35.62144927536232,
+        "dd_regime": "CHOP",
+        "cal_regime": "BEAR"
+      },
+      {
+        "entry_idx": 2624,
+        "entry_time": "2023-03-14T16:00:00",
+        "dd_pct": -64.14052173913043,
+        "dd_regime": "BEAR",
+        "cal_regime": "CHOP"
+      },
+      {
+        "entry_idx": 2859,
+        "entry_time": "2023-04-22T20:00:00",
+        "dd_pct": -60.16097101449276,
+        "dd_regime": "BEAR",
+        "cal_regime": "CHOP"
+      },
+      {
+        "entry_idx": 3100,
+        "entry_time": "2023-06-02T00:00:00",
+        "dd_pct": -61.068579710144924,
+        "dd_regime": "BEAR",
+        "cal_regime": "CHOP"
+      },
+      {
+        "entry_idx": 3196,
+        "entry_time": "2023-06-18T00:00:00",
+        "dd_pct": -61.63000000000001,
+        "dd_regime": "BEAR",
+        "cal_regime": "CHOP"
+      },
+      {
+        "entry_idx": 3859,
+        "entry_time": "2023-10-06T12:00:00",
+        "dd_pct": -59.94417391304347,
+        "dd_regime": "BEAR",
+        "cal_regime": "CHOP"
+      },
+      {
+        "entry_idx": 3947,
+        "entry_time": "2023-10-21T04:00:00",
+        "dd_pct": -57.00139130434783,
+        "dd_regime": "BEAR",
+        "cal_regime": "CHOP"
+      },
+      {
+        "entry_idx": 4455,
+        "entry_time": "2024-01-13T20:00:00",
+        "dd_pct": -37.45727536231883,
+        "dd_regime": "CHOP",
+        "cal_regime": "BULL"
+      },
+      {
+        "entry_idx": 5800,
+        "entry_time": "2024-08-25T00:00:00",
+        "dd_pct": -12.459079330610656,
+        "dd_regime": "CHOP",
+        "cal_regime": "BULL"
+      },
+      {
+        "entry_idx": 5825,
+        "entry_time": "2024-08-29T04:00:00",
+        "dd_pct": -19.515321494810312,
+        "dd_regime": "CHOP",
+        "cal_regime": "BULL"
+      },
+      {
+        "entry_idx": 6040,
+        "entry_time": "2024-10-04T00:00:00",
+        "dd_pct": -16.787140534789458,
+        "dd_regime": "CHOP",
+        "cal_regime": "BULL"
+      },
+      {
+        "entry_idx": 6991,
+        "entry_time": "2025-03-11T12:00:00",
+        "dd_pct": -25.697014177582076,
+        "dd_regime": "CHOP",
+        "cal_regime": "BULL"
+      },
+      {
+        "entry_idx": 7109,
+        "entry_time": "2025-03-31T04:00:00",
+        "dd_pct": -23.88155343734556,
+        "dd_regime": "CHOP",
+        "cal_regime": "BULL"
+      },
+      {
+        "entry_idx": 8596,
+        "entry_time": "2025-12-04T00:00:00",
+        "dd_pct": -25.82378664167785,
+        "dd_regime": "CHOP",
+        "cal_regime": "BULL"
+      }
+    ]
+  },
+  "top_n_winners": {
+    "n": 3,
+    "trades": [
+      {
+        "entry_idx": 359,
+        "entry_time": "2022-03-02T04:00:00",
+        "pnl_pct": 6.688833259794862,
+        "dd_pct": -35.62144927536232,
+        "dd_regime": "CHOP",
+        "cal_regime": "BEAR"
+      },
+      {
+        "entry_idx": 8280,
+        "entry_time": "2025-10-12T08:00:00",
+        "pnl_pct": 4.623260688857563,
+        "dd_pct": -11.749234376207285,
+        "dd_regime": "BULL",
+        "cal_regime": "BULL"
+      },
+      {
+        "entry_idx": 6366,
+        "entry_time": "2024-11-27T08:00:00",
+        "pnl_pct": 4.363405624919001,
+        "dd_pct": -6.64057103849105,
+        "dd_regime": "BULL",
+        "cal_regime": "BULL"
+      }
+    ],
+    "distinct_regimes_union": [
+      "BEAR",
+      "BULL",
+      "CHOP"
+    ],
+    "clustered_drawdown_method": false,
+    "clustered_calendar_method": false
+  }
+}
