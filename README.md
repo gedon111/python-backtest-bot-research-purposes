@@ -295,6 +295,37 @@ Known Assumptions and Notes
 
 ---
 
+Known Limitations / Future Work
+
+- **Leverage is not modeled; all reported returns are unlevered/notional.**
+  This is a deliberate scope decision, not an oversight. `simulate_trades()`
+  evaluates every exit condition -- hard stop-loss, take-profit, the
+  trailing exit, the ATR-move exit, and the breakeven-stop adjustment -- at
+  bar-close resolution only. Intrabar `high`/`low` prices are present in
+  `artifacts/candles.csv` and are read into the simulation loop, but are
+  used only for order-block touch detection and a subset of the OB quality
+  criteria (Displacement, LargeBar) -- never for any exit or
+  position-sizing decision. The engine has no concept of a margin or
+  liquidation price at any leverage level.
+  A defensible leveraged backtest requires intrabar liquidation tracking: a
+  position can be liquidated by a price excursion that fully reverses
+  within a single 4H bar, which a close-resolution simulation cannot see.
+  Applying a leverage multiplier after the fact to the existing close-basis
+  trade log would not model that risk -- it would silently assume every
+  trade's realized path was free of any intrabar excursion large enough to
+  trigger liquidation, which the data cannot confirm one way or the other.
+  **If leverage modeling is ever revisited**, the exit-evaluation logic
+  would need to check `high`/`low` against a liquidation price intrabar
+  (and a deliberate choice made about execution-order-within-bar
+  assumptions when both a stop and a target are crossable in the same bar)
+  -- a real engine change, not an analysis-layer addition. Until then, this
+  codebase reports unlevered returns only, consistent with common practice
+  in the technical-trading-rule literature (e.g., Svogun & Bazán-Palomino,
+  2022, evaluating moving-average and support/resistance rule profitability
+  on cryptocurrency data net of transaction costs on a notional basis).
+
+---
+
 README Logs (Append-Only)
 
 > **Modification policy for this README**  
@@ -327,5 +358,6 @@ Entries
 - 2026-08-01 | Dashboard independence check (`gui.js`) | clarification | Confirmed via full search of `gui.js` for any pivot/swing-high/BOS/CHoCH/SMC-detection logic that the JS dashboard does NOT independently detect Order Blocks, FVG, or displacement -- those fields (`quality_fvg`, `quality_displacement`, `quality`, `ob_bar`, `created_at`, etc.) are read as trusted data straight from the Python-generated `artifacts/runs_by_threshold.json` (via `processData()`'s `{...ob}` spread) and only rendered (checklist pass/fail rows, chart highlight overlays). What `gui.js` DOES independently recompute is the entry-condition/indicator side: its own from-scratch JS reimplementation of the `kdj_reset_init`/`kdj_reset_update` recursion for the adaptive-KDJ chart trajectory (added this session's dashboard work, dual static/adaptive KDJ panes), plus the existing MACD/KDJ/ATR entry-rule checklist. Net effect: the JS cross-check neither caught nor missed the FVG/displacement lookahead bug above -- OB/SMC detection was never part of what "independent" covers in this dashboard, only the entry/indicator layer is. | To determine, once the lookahead bug was found and fixed on the Python side, whether the intentionally-independent JS verification layer (see Security/Data Pipeline sections) had already caught or could have caught this class of bug.
 - 2026-08-01 | Credential tracking status (Security and Credentials) | correction | Read-only check (tracking status only -- file contents never opened, read, or displayed): `SERVICE KEY/python-trading-bot-new-strat-10.json` is currently tracked (`git ls-files`) and was committed in a single commit (`a2db013`, "feat: add docker files and sync 1:1 database/models/credentials", 2026-07-09) that is reachable from essentially every local and `origin` branch, including `main` and `development`. This contradicts the "Recommended for GitHub" guidance further up this file (ignore `SERVICE KEY/*.json`) -- the `.gitignore` rule exists, but this specific file was already committed before the rule could exclude it, and removing it from history was explicitly out of scope for the session that found this. Flagged as a standing credential-exposure finding; left untouched. | The "Security and Credentials" section above describes the intended safe posture; this entry records that the actual repository state currently does not match it, so the gap doesn't go unnoticed.
 - 2026-08-01 | Codebase reorganization (File Scope) | update | Full inventory/reorg pass produced `CODEBASE_MAP.md` at repo root (every file: purpose, what references it, CORE / INFRA / AUDIT EVIDENCE / DASHBOARD / CANDIDATE-DEAD classification, proposed destination). After a two-phase proposal + sign-off, executed in two verified batches: **Batch 1** (commit `76f0efb`) deleted 10 files confirmed orphaned by exhaustive grep across tracked files and `scratch/` -- `data.js` (an unreferenced `window.BOT_DATA` static dump superseded by the live artifacts/API load path) and `artifacts/ml_status.json` + `artifacts/models/model_iter_1..8.pkl` (leftovers from the already-disclosed ML-pipeline removal; nothing imports, reads, or globs any of them). **Batch 2** (commit `7713638`) ran `git mv "Binance backtest bot.py" "src/Binance backtest bot.py"` (history preserved) plus every reference that move would otherwise have broken: `BASE_DIR` inside the moved file now goes up one extra directory level so `SERVICE KEY/` (unmoved, out of scope) still resolves correctly (verified `resolve_google_service_key_path()` still finds the real file post-move, existence check only); `export_gui_data.py` (x2 occurrences), `scratch/regression.py`, `scratch/no_lookahead_atr_kdj_check.py`, `scratch/no_lookahead_fvg_scope_audit.py`, `scratch/kdj_exit_window_counterfactual.py`, `scratch/kdj_exit_window_trade_detail.py`, `scratch/02_benchmark_and_risk.py`, `scratch/calculate_all_qualities.py`, and `scratch/inspect_raw_signals.py` all updated to load from `src/`; this README's own path references (File Scope, Main Execution Defaults, How To Run Safely) updated to match. `scratch/regression.py` plus the full locked-figures snapshot re-verified clean (zero diff) after each batch. Separately, 9 of the `scratch/` audit-evidence scripts behind the Known bugs #3 finding and the KDJ-architecture entries above (previously untracked, since `scratch/` is gitignored by default) were force-added and committed on their own (`8ef4076`) after a content scan confirmed no absolute paths, credentials, or machine-specific artifacts in any of them. `db_manager.py`, `export_gui_data.py`, `Run_All.py`, `Run_Dashboard.py`, `Dockerfile`, `chart_theme.json`, and `backtest_results.db` were deliberately left at repo root rather than also moved, to keep the blast radius of broken relative-path references limited to one file move. All reorg commits pushed to `development` only (`cb4ed93..7713638`); `main` intentionally left at `cb4ed93` pending a separate decision on whether to fast-forward it too. | To make the repository's real vs. superseded/dead files explicit and auditable, and give the core strategy engine a conventional `src/` home, without risking the locked results, the disclosed-bug audit trail, or the intentionally-independent JS dashboard cross-check.
+- 2026-08-03 | Known Limitations / Future Work (new section) | update | Added a new "Known Limitations / Future Work" section documenting that leverage is not modeled: `simulate_trades()` evaluates all exit conditions at bar-close resolution only, intrabar `high`/`low` (present in the data, read into the loop) are used only for OB-touch detection and two quality criteria, never for exits, and the engine has no margin/liquidation-price concept at all. States plainly that a leveraged backtest is not defensible without adding intrabar liquidation tracking to the exit-evaluation logic, and that this codebase deliberately does not attempt a leverage-multiplier workaround on the existing close-basis trade log, since that would silently hide the exact risk (intrabar liquidation invisible to a close-only simulation) it claims to model. Cites Svogun & Bazán-Palomino (2022) as consistent precedent for reporting unlevered notional returns in the technical-trading-rule literature. No code changes -- documentation only, per this session's investigation finding that the engine "cannot honestly support this." | To make an already-investigated scope decision (not a gap someone might mistake for an oversight) explicit and discoverable, and to record what a future revisit would actually require rather than leaving it unstated.
 
 
