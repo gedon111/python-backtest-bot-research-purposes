@@ -1,0 +1,357 @@
+.chart-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chart-tab-loading {
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ---------- Top status bar ---------- */
+
+.chart-top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.symbol-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.verify-pill {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.verify-pill.pass {
+  color: var(--good);
+  border-color: var(--good);
+}
+
+.verify-pill.warn,
+.verify-pill.fail {
+  color: var(--critical);
+  border-color: var(--critical);
+}
+
+.metric-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  flex: 1;
+}
+
+.metric-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.65rem;
+  min-width: 130px;
+}
+
+.metric-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  margin-top: 0.15rem;
+}
+
+.kdj-mode-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.kdj-mode-badge.active {
+  background: rgba(13, 148, 136, 0.15);
+  border-color: var(--demand);
+  color: var(--demand);
+}
+
+/* ---------- Control bar ---------- */
+
+.chart-control-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.control-group label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.control-group select {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+.inline-check {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.35rem !important;
+  color: var(--text-secondary) !important;
+}
+
+.btn-toggle {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.btn-toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ---------- Chart layout ---------- */
+
+.chart-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.charts-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chart-pane {
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+
+.chart-pane:last-child {
+  border-bottom: none;
+}
+
+.pane-header-overlay {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.html-overlay-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.ob-rect {
+  position: absolute;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.ob-label {
+  position: absolute;
+  font-size: 0.62rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.trade-zone {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+.trade-zone.win {
+  background: rgba(12, 163, 12, 0.08);
+}
+
+.trade-zone.loss {
+  background: rgba(208, 59, 59, 0.08);
+}
+
+.trade-zone.active {
+  outline: 1px solid var(--text-muted);
+}
+
+/* ---------- OB inspection panel ---------- */
+
+.ob-panel {
+  width: 260px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--surface-1);
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.ob-panel h3 {
+  font-size: 0.85rem;
+  margin: 0 0 0.25rem;
+}
+
+.ob-panel .subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+}
+
+.ob-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem 0;
+  font-size: 0.8rem;
+}
+
+.ob-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.badge.demand {
+  background: rgba(27, 175, 122, 0.15);
+  color: var(--demand);
+}
+
+.badge.supply {
+  background: rgba(235, 104, 52, 0.15);
+  color: var(--supply);
+}
+
+.ob-price-levels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.ob-price-levels label {
+  color: var(--text-muted);
+  margin-right: 0.3rem;
+}
+
+.rule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.rule-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rule-list .icon::before {
+  content: '✕';
+  color: var(--critical);
+  font-weight: 700;
+}
+
+.rule-list li.pass .icon::before {
+  content: '✓';
+  color: var(--good);
+}
+
+.ob-score {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.ob-kdj-eval {
+  margin-top: 1rem;
+  padding: 0.65rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+}
+
+.ob-kdj-eval-title {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}

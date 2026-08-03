@@ -36,12 +36,15 @@ export interface Candle {
   Trade_Status: string;
 }
 
-/** One Order Block as stored in runs_by_threshold.json's `obs` array. */
+/** One Order Block as stored in runs_by_threshold.json's `obs` array. Field names verified against the real JSON (no `ob_id` -- OBs are identified by position, not an id). */
 export interface OrderBlockRecord {
-  ob_id: number;
   type: 'DEMAND' | 'SUPPLY';
   top: number;
   bottom: number;
+  created_at: number;
+  ob_bar: number;
+  level: 'swing' | 'internal';
+  structure: 'BOS' | 'CHoCH';
   quality: number;
   quality_displacement: boolean;
   quality_large_bar: boolean;
@@ -49,21 +52,32 @@ export interface OrderBlockRecord {
   quality_liquidity_sweep: boolean;
   quality_volume_expansion: boolean;
   mitigated_at?: number | null;
-  [key: string]: unknown; // additional fields exist; only the ones actually consumed are typed strictly
+  [key: string]: unknown;
 }
 
-/** One trade as stored in runs_by_threshold.json's `trades` array (superset of /api/trades' TradeRecord). */
+/**
+ * One trade as stored in runs_by_threshold.json's `trades` array. Field names
+ * verified directly against the real JSON, not against gui.js's usage: gui.js
+ * reads `t.tp`/`t.sl`, which do not exist on any trade record in any threshold
+ * (0/1/2/3) -- only `take_profit`/`stop_loss` do, so gui.js's fallback ATR
+ * approximation fires unconditionally and its chart never draws a trade's real
+ * recorded risk levels. Flagged and fixed per user decision this session; use
+ * take_profit/stop_loss directly here, not an approximation.
+ */
 export interface RunTradeRecord {
-  trade_id: number;
   side: 'LONG' | 'SHORT';
   entry_idx: number;
   exit_idx: number;
   entry: number;
-  tp?: number | null;
-  sl?: number | null;
+  exit: number;
+  stop_loss: number;
+  take_profit: number;
+  pnl_pct: number;
   entry_ob_bar?: number | null;
   ob_bar?: number | null;
-  pnl_pct: number;
+  entry_ob_quality?: number;
+  hold_bars?: number;
+  exit_reason?: string;
   [key: string]: unknown;
 }
 
