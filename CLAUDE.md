@@ -90,6 +90,23 @@ as settled.
   the assertion - stop and report the bar, value, and computation that reached
   forward. That would be a correctness finding, not a regression.
 
+## Git Branching Rules
+
+This applies going forward, to all future sessions, not just the one that
+added it:
+
+- New features (a new analysis capability, a new script, a new metric that
+  didn't exist before) -> a new feature branch, named `feature/<short-desc>`.
+- Development/tweaks on an already-integrated feature (adjusting an
+  existing script's parameters, fixing a bug in a promoted script, refining
+  existing analysis) -> a `dev/<short-desc>` branch, or the shared
+  `development` branch if the change doesn't warrant its own branch. Check
+  whether `development` already exists before creating a new dev branch.
+- Only fully reviewed, finalized work gets merged to `main`.
+- Never commit directly to `main`.
+- Do not merge a branch into `development` or `main` unless explicitly
+  asked to. Leave finished branches open for review.
+
 ## KDJ architecture - two separate systems, by design
 
 - Entry gating (every K/D/J reference in entry conditions) reads the
