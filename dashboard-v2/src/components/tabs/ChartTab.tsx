@@ -4,6 +4,16 @@ import { useCandles, useManifest, useRunsByThreshold, useVerificationReport } fr
 import { useDashboardTheme } from '../../theme/ThemeContext';
 import { MultiPaneChart, type ChartHoverInfo } from '../chart/MultiPaneChart';
 import { processObs, processTrades } from '../chart/chartProcessing';
+import {
+  verifyDisplacement,
+  verifyFvg,
+  verifyLargeBar,
+  verifyLiquiditySweep,
+  verifyVolumeExpansion,
+} from '../chart/obQualityVerification';
+import type { Candle } from '../../types/artifacts';
+import { Latex } from '../common/Latex';
+import { SectionTag } from '../common/SectionTag';
 
 const fmt = (v: number | null | undefined, digits = 2) => (v == null ? '--' : v.toFixed(digits));
 
@@ -69,7 +79,10 @@ export function ChartTab() {
             </span>
           )}
         </div>
-        <div className="metric-cards">
+        <div
+          className="metric-cards"
+          title="Indicator values are precomputed offline by the Python backtest engine's compute_indicators() and read directly from candles.json -- see the Formula Sandbox tab for the MACD/KDJ/ATR formulas."
+        >
           <div className="metric-card">
             <div className="metric-label">OHLC</div>
             <div className="metric-value">
@@ -168,19 +181,65 @@ export function ChartTab() {
           autoFit={autoFit}
           onHoverChange={setHover}
         />
-        <ObInspectionPanel hover={hover} />
+        <ObInspectionPanel hover={hover} candles={candleData} />
       </div>
     </div>
   );
 }
 
-function ObInspectionPanel({ hover }: { hover: ChartHoverInfo }) {
+interface RuleSpec {
+  label: string;
+  tex: string;
+  recorded: boolean;
+  check: () => { pass: boolean; matchesRecorded: boolean; detail: string };
+}
+
+function ObInspectionPanel({ hover, candles }: { hover: ChartHoverInfo; candles: Candle[] }) {
   const ob = hover.ob;
+
+  const rules: RuleSpec[] | null = useMemo(() => {
+    if (!ob) return null;
+    const obIdx = ob.exactIdx;
+    const createdAt = ob.created_at;
+    return [
+      {
+        label: 'Displacement',
+        tex: '|\\text{Close}_j - \\text{Open}_j| \\geq 1.5 \\times \\text{ATR200}',
+        recorded: ob.quality_displacement,
+        check: () => verifyDisplacement(candles, obIdx, createdAt, ob.type, ob.quality_displacement),
+      },
+      {
+        label: 'Large Bar',
+        tex: '\\text{High} - \\text{Low} \\geq \\text{ATR200}',
+        recorded: ob.quality_large_bar,
+        check: () => verifyLargeBar(candles, obIdx, ob.quality_large_bar),
+      },
+      {
+        label: 'Fair Value Gap',
+        tex: '\\text{Low}_{j+2} > \\text{High}_j \\ (\\text{3-candle gap})',
+        recorded: ob.quality_fvg,
+        check: () => verifyFvg(candles, obIdx, createdAt, ob.type, ob.quality_fvg),
+      },
+      {
+        label: 'Liquidity Sweep',
+        tex: '\\text{Low}_{\\text{ob}} \\leq \\min(\\text{Low}_{[i-10,\\,i)})',
+        recorded: ob.quality_liquidity_sweep,
+        check: () => verifyLiquiditySweep(candles, obIdx, ob.type, ob.quality_liquidity_sweep),
+      },
+      {
+        label: 'Volume Expansion',
+        tex: '\\text{vol} \\geq 1.25 \\times \\overline{\\text{vol}}_{20} \\ \\text{OR} \\ \\dfrac{|\\text{body}|}{\\text{range}} > 0.6',
+        recorded: ob.quality_volume_expansion,
+        check: () => verifyVolumeExpansion(candles, obIdx, ob.quality_volume_expansion),
+      },
+    ];
+  }, [ob, candles]);
+
   return (
     <div className="ob-panel">
       <h3>Order Block Inspection</h3>
       <p className="subtitle">Hover over a marker on the chart to inspect the order block.</p>
-      {!ob ? (
+      {!ob || !rules ? (
         <div className="ob-empty-state">
           <p>No Order Block Selected</p>
         </div>
@@ -201,32 +260,45 @@ function ObInspectionPanel({ hover }: { hover: ChartHoverInfo }) {
             </div>
           </div>
           <div>
-            <h4 style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-              Validation Rules
+            <h4 className="ob-section-title">
+              Validation Rules <SectionTag kind="live" />
             </h4>
+            <p className="ob-section-note">
+              Independently re-derived in your browser from the raw candles, per{' '}
+              <code>Binance backtest bot.py</code> -- not just read from the record.
+            </p>
             <ul className="rule-list">
-              <li className={ob.quality_displacement ? 'pass' : ''}>
-                <span className="icon" /> Displacement
-              </li>
-              <li className={ob.quality_large_bar ? 'pass' : ''}>
-                <span className="icon" /> Large Bar (&gt; 2x ATR200)
-              </li>
-              <li className={ob.quality_fvg ? 'pass' : ''}>
-                <span className="icon" /> Fair Value Gap
-              </li>
-              <li className={ob.quality_liquidity_sweep ? 'pass' : ''}>
-                <span className="icon" /> Liquidity Sweep
-              </li>
-              <li className={ob.quality_volume_expansion ? 'pass' : ''}>
-                <span className="icon" /> Volume Expansion
-              </li>
+              {rules.map((rule) => {
+                const result = rule.check();
+                return (
+                  <li key={rule.label} className={rule.recorded ? 'pass' : ''}>
+                    <div className="rule-row">
+                      <span className="icon" /> {rule.label}
+                      {!result.matchesRecorded && <span className="rule-mismatch">⚠ mismatch</span>}
+                    </div>
+                    <Latex block className="rule-formula" tex={rule.tex} />
+                    <div className="rule-detail">{result.detail}</div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <div className="ob-score">
             Quality Score: <strong>{ob.quality}</strong> / 5
           </div>
+          <div className="ob-section-title" style={{ marginTop: '1rem' }}>
+            Zone Extent <SectionTag kind="live" />
+          </div>
+          <div className="ob-zone-extent">
+            Drawn from bar <strong>{ob.exactIdx}</strong> to <strong>{ob.endIdx}</strong> (
+            {ob.endIdx - ob.exactIdx} bars). Extends until price closes back through the zone
+            {ob.mitigated_at != null ? `, or the recorded mitigation bar (${ob.mitigated_at})` : ''}, whichever comes
+            first -- capped at 500 bars.
+          </div>
           <div className="ob-kdj-eval">
-            <div className="ob-kdj-eval-title">KDJ Evaluation Mode</div>
+            <div className="ob-kdj-eval-title">
+              KDJ Evaluation Mode {hover.trade && <SectionTag kind="live" />}
+            </div>
             {hover.trade ? (
               <>
                 <div style={{ fontWeight: 700, color: 'var(--demand)' }}>
@@ -237,12 +309,19 @@ function ObInspectionPanel({ hover }: { hover: ChartHoverInfo }) {
                   <strong>{hover.trade.entry_idx}</strong>. Trade evaluation used a dynamic{' '}
                   {hover.trade.adaptivePeriod}-bar RSV lookback window.
                 </div>
+                <Latex
+                  block
+                  className="rule-formula"
+                  tex={`K_i = K_{i-1} \\times \\tfrac{2}{3} + \\text{RSV}_i \\times \\tfrac{1}{3}, \\quad p = ${hover.trade.adaptivePeriod}`}
+                />
               </>
             ) : (
               <>
                 <div style={{ fontWeight: 700 }}>Static KDJ (9, 3, 3)</div>
                 <div style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  Default chart view using static 9-period RSV lookback.
+                  Default chart view using static 9-period RSV lookback, precomputed offline (see{' '}
+                  <code>compute_indicators()</code>) -- same recursion as the Formula Sandbox's KDJ calculator, with
+                  p = 9 fixed instead of a per-trade adaptive period.
                 </div>
               </>
             )}

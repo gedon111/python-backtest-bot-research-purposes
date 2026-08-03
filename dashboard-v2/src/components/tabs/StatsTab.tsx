@@ -11,10 +11,7 @@ import {
 } from '../stats/statsCompute';
 import { binomialTestGreater, runDistributionSelfChecks } from '../stats/statMath';
 import { Latex } from '../common/Latex';
-
-function SectionTag({ kind }: { kind: 'live' | 'reference' }) {
-  return <span className={`section-tag ${kind}`}>{kind === 'live' ? 'Live' : 'Reference'}</span>;
-}
+import { SectionTag } from '../common/SectionTag';
 
 const pct = (v: number, digits = 2) => `${v.toFixed(digits)}%`;
 const signedPct = (v: number, digits = 2) => `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`;
