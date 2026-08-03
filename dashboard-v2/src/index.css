@@ -1,0 +1,10 @@
+/* Minimal reset. No visual design yet — real styling arrives in Phase 1. */
+
+:root {
+  color-scheme: light dark;
+  font: 16px/1.4 system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+}

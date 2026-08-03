@@ -1,0 +1,99 @@
+import type {
+  Candle,
+  DashboardTheme,
+  IterationsResponse,
+  Manifest,
+  RunsByThreshold,
+  TradeRecord,
+  VerificationReport,
+} from '../types/artifacts';
+
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, init);
+  if (!response.ok) {
+    throw new Error(`${path} -> HTTP ${response.status}`);
+  }
+  return (await response.json()) as T;
+}
+
+// artifacts/*.json — served statically by export_gui_data.py's embedded HTTP server.
+export const getManifest = () => fetchJson<Manifest>('/artifacts/manifest.json');
+export const getCandles = () => fetchJson<Candle[]>('/artifacts/candles.json');
+export const getRunsByThreshold = () =>
+  fetchJson<RunsByThreshold>('/artifacts/runs_by_threshold.json');
+export const getVerificationReport = () =>
+  fetchJson<VerificationReport>('/artifacts/verification_report.json');
+
+// /api/* routes — export_gui_data.py's SilentHandler (do_GET/do_POST).
+export const getTrades = (minObQuality?: number) => {
+  const qs = minObQuality != null ? `?min_ob_quality=${minObQuality}` : '';
+  return fetchJson<TradeRecord[]>(`/api/trades${qs}`);
+};
+
+export const getTheme = () => fetchJson<DashboardTheme>('/api/get_theme');
+
+export const saveTheme = (theme: DashboardTheme) =>
+  fetchJson<{ status: string }>('/api/save_theme', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(theme),
+  });
+
+export const pushGsheet = () => fetchJson<unknown>('/api/push_gsheet', { method: 'POST' });
+
+/**
+ * Exists server-side (export_gui_data.py:557-624) but unused by the current
+ * gui.js — a leftover from the removed ML classifier pipeline. Typed and wired
+ * here so carrying it forward (or not) is a deliberate decision in a later phase,
+ * not a silent drop.
+ */
+export const getIterations = () => fetchJson<IterationsResponse>('/api/iterations');
+
+/**
+ * Raw Binance kline tuple shape, per
+ * https://api.binance.com/api/v3/klines — only the first 5 fields are used by the
+ * existing Date Range Tester (gui.js:1533-1543).
+ */
+export type BinanceKline = [
+  openTime: number,
+  open: string,
+  high: string,
+  low: string,
+  close: string,
+  ...rest: unknown[],
+];
+
+export interface LiveCandle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+/**
+ * Live call to a third-party API (api.binance.com), NOT one of the dashboard's own
+ * artifact/API contracts. Kept as a separate function so it's never confused with
+ * the "same artifacts and routes" data the rest of this module reads. Backs the
+ * Sandbox tab's "Date Range Indicator Tester" (gui.js:1515-1543).
+ */
+export async function fetchLiveKlines(
+  startTimeMs: number,
+  endTimeMs: number,
+): Promise<LiveCandle[]> {
+  const url =
+    `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=4h` +
+    `&startTime=${startTimeMs}&endTime=${endTimeMs}&limit=1000`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Binance API fetch failed. CORS or rate limit?');
+  }
+  const klines = (await response.json()) as BinanceKline[];
+  return klines.map((k) => ({
+    time: k[0] / 1000,
+    open: parseFloat(k[1]),
+    high: parseFloat(k[2]),
+    low: parseFloat(k[3]),
+    close: parseFloat(k[4]),
+  }));
+}

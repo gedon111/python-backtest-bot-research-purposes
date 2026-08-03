@@ -1,0 +1,31 @@
+/* No visual design yet — real styling arrives in Phase 1 from the separate
+   Claude Design pass. Just enough structure to prove the nav/tab shell works. */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-right: 1px solid #ccc;
+  min-width: 200px;
+}
+
+.nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nav-item.active {
+  font-weight: 700;
+}
+
+main {
+  flex: 1;
+  padding: 1rem;
+}
