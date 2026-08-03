@@ -1,38 +1,9 @@
 export type TabId = 'chart' | 'sandbox' | 'stats';
 
-const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  {
-    id: 'chart',
-    label: 'Chart View',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M3 3v18h18" />
-        <path d="m19 9-5 5-4-4-3 3" />
-      </svg>
-    ),
-  },
-  {
-    id: 'sandbox',
-    label: 'Formula Sandbox',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-      </svg>
-    ),
-  },
-  {
-    id: 'stats',
-    label: 'Research Statistics',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <line x1="9" y1="3" x2="9" y2="21" />
-        <line x1="15" y1="3" x2="15" y2="21" />
-        <line x1="3" y1="9" x2="21" y2="9" />
-        <line x1="3" y1="15" x2="21" y2="15" />
-      </svg>
-    ),
-  },
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'chart', label: 'Chart View' },
+  { id: 'sandbox', label: 'Formula Sandbox' },
+  { id: 'stats', label: 'Research Statistics' },
 ];
 
 interface SidebarProps {
@@ -44,13 +15,6 @@ interface SidebarProps {
 export function Sidebar({ activeTab, onSelectTab, onOpenSettings }: SidebarProps) {
   return (
     <nav className="sidebar" aria-label="Dashboard sections">
-      <div className="sidebar-brand">
-        <span className="sidebar-brand-mark" aria-hidden="true" />
-        <div>
-          <div className="sidebar-brand-title">Backtest Bot</div>
-          <div className="sidebar-brand-sub">BTCUSDT · 4H</div>
-        </div>
-      </div>
       <div className="sidebar-nav">
         {TABS.map((tab) => (
           <button
@@ -59,7 +23,6 @@ export function Sidebar({ activeTab, onSelectTab, onOpenSettings }: SidebarProps
             className={`sidebar-nav-item${activeTab === tab.id ? ' active' : ''}`}
             onClick={() => onSelectTab(tab.id)}
           >
-            <span className="sidebar-nav-icon">{tab.icon}</span>
             {tab.label}
           </button>
         ))}
