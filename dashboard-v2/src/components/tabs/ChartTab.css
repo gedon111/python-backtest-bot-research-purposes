@@ -315,20 +315,76 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
   font-size: 0.8rem;
 }
 
 .rule-list li {
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.rule-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-weight: 600;
 }
 
 .rule-list .icon::before {
   content: '✕';
   color: var(--critical);
   font-weight: 700;
+}
+
+.rule-mismatch {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--warning);
+}
+
+.rule-formula {
+  margin: 0.3rem 0 0.15rem;
+  overflow-x: auto;
+}
+
+.rule-formula .katex {
+  font-size: 0.78em;
+  color: var(--text-secondary);
+}
+
+.rule-detail {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.ob-section-title {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ob-section-note {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+  line-height: 1.4;
+}
+
+.ob-zone-extent {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem;
+  line-height: 1.5;
 }
 
 .rule-list li.pass .icon::before {
