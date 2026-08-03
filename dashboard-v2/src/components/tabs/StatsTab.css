@@ -38,6 +38,31 @@
   font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.section-tag.live {
+  color: var(--good);
+  background: rgba(12, 163, 12, 0.12);
+}
+
+.section-tag.reference {
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
 }
 
 .stat-desc {
@@ -181,6 +206,72 @@
   margin-bottom: 1rem;
   overflow-x: auto;
   white-space: nowrap;
+}
+
+.method-block {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.78rem;
+}
+
+.method-label {
+  font-size: 0.63rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.method-line {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  overflow-x: auto;
+}
+
+.method-line strong {
+  color: var(--text-primary);
+}
+
+.method-latex {
+  margin-bottom: 0.5rem;
+  overflow-x: auto;
+}
+
+.method-latex .katex-display {
+  margin: 0.2rem 0;
+  text-align: left;
+}
+
+.method-latex .katex {
+  color: var(--text-secondary);
+  font-size: 0.95em;
+}
+
+.provenance-note {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+.provenance-note .provenance-tag {
+  flex-shrink: 0;
+  font-size: 0.63rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: var(--text-secondary);
 }
 
 .prose p {

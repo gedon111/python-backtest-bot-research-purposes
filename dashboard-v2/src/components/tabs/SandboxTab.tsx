@@ -2,6 +2,7 @@ import { useState } from 'react';
 import './SandboxTab.css';
 import { calculateATR, calculateEMA, calculateKDJ, calculateMACDSandbox } from '../sandbox/calculators';
 import { DateRangeTester } from '../sandbox/DateRangeTester';
+import { Latex } from '../common/Latex';
 
 export function SandboxTab() {
   return (
@@ -31,9 +32,8 @@ function EmaCard() {
     <div className="calc-card">
       <h3>EMA (Exponential Moving Average)</h3>
       <div className="formula-block">
-        Multiplier = 2 / (n + 1)
-        <br />
-        EMA(n) = (Close − EMA(n−1)) × Multiplier + EMA(n−1)
+        <Latex block tex="\text{Multiplier} = \dfrac{2}{n + 1}" />
+        <Latex block tex="\text{EMA}_n = (\text{Close} - \text{EMA}_{n-1}) \times \text{Multiplier} + \text{EMA}_{n-1}" />
       </div>
       <div className="input-group">
         <label>
@@ -64,11 +64,9 @@ function MacdCard() {
     <div className="calc-card">
       <h3>MACD</h3>
       <div className="formula-block">
-        MACD Line = EMA(12) − EMA(26)
-        <br />
-        Signal Line = EMA(9) of MACD Line
-        <br />
-        Histogram = MACD Line − Signal Line
+        <Latex block tex="\text{MACD Line} = \text{EMA}_{12} - \text{EMA}_{26}" />
+        <Latex block tex="\text{Signal Line} = \text{EMA}_{9}(\text{MACD Line})" />
+        <Latex block tex="\text{Histogram} = \text{MACD Line} - \text{Signal Line}" />
       </div>
       <div className="input-group">
         <label>
@@ -104,9 +102,9 @@ function AtrCard() {
     <div className="calc-card">
       <h3>ATR (Simple Moving Average)</h3>
       <div className="formula-block">
-        TR = max(High − Low, |High − Close(n−1)|, |Low − Close(n−1)|)
-        <br />
-        ATR(n) = (1/n) × Σ TR(i)
+        <Latex block tex="\text{TR} = \max(\,|H - L|,\ |H - C_{n-1}|,\ |L - C_{n-1}|\,)" />
+        <Latex block tex="\text{ATR}_n = \dfrac{1}{n} \sum_{i=1}^{n} \text{TR}_i" />
+        <div className="formula-note">H = High, L = Low, C = Close</div>
       </div>
       <div className="input-group">
         <label>
@@ -137,13 +135,13 @@ function KdjCard() {
     <div className="calc-card">
       <h3>KDJ (Stochastic)</h3>
       <div className="formula-block">
-        RSV = (Close − LowestLow) / (HighestHigh − LowestLow) × 100
-        <br />
-        K(n) = K(n−1) × 2/3 + RSV × 1/3
-        <br />
-        D(n) = D(n−1) × 2/3 + K(n) × 1/3
-        <br />
-        J(n) = 3 × K(n) − 2 × D(n)
+        <Latex
+          block
+          tex="\text{RSV} = \left[ \dfrac{\text{Close}_n - \text{Lowest Low}_n}{\text{Highest High}_n - \text{Lowest Low}_n} \right] \times 100"
+        />
+        <Latex block tex="K_n = K_{n-1} \times \dfrac{2}{3} + \text{RSV} \times \dfrac{1}{3}" />
+        <Latex block tex="D_n = D_{n-1} \times \dfrac{2}{3} + K_n \times \dfrac{1}{3}" />
+        <Latex block tex="J_n = 3 \times K_n - 2 \times D_n" />
       </div>
       <div className="input-group">
         <label>

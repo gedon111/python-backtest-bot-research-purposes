@@ -9,7 +9,12 @@ import {
   computeLongShort,
   computeOrthogonalCriteria,
 } from '../stats/statsCompute';
-import { runDistributionSelfChecks } from '../stats/statMath';
+import { binomialTestGreater, runDistributionSelfChecks } from '../stats/statMath';
+import { Latex } from '../common/Latex';
+
+function SectionTag({ kind }: { kind: 'live' | 'reference' }) {
+  return <span className={`section-tag ${kind}`}>{kind === 'live' ? 'Live' : 'Reference'}</span>;
+}
 
 const pct = (v: number, digits = 2) => `${v.toFixed(digits)}%`;
 const signedPct = (v: number, digits = 2) => `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`;
@@ -42,6 +47,10 @@ export function StatsTab() {
   const fullBaseline = overview[0];
   const top3Combined = overview[overview.length - 1];
 
+  const baseWins = base.filter((t) => t.pnl_pct > 0).length;
+  const binomP = base.length > 0 ? binomialTestGreater(base.length, baseWins, 0.5) : NaN;
+  const baseSqSum = fullBaseline?.stdDev != null ? fullBaseline.stdDev ** 2 * (base.length - 1) : 0;
+
   if (trades.loading || runs.loading) {
     return <div className="stats-tab">Loading trade data...</div>;
   }
@@ -57,12 +66,19 @@ export function StatsTab() {
     <div className="stats-tab">
       <div className="stats-header">
         <h2>Research Statistics & Methodology Synthesis</h2>
-        <p>Live statistical test validation compiled directly from the BTCUSDT 4H backtest dataset (2022–2026).</p>
+        <p>
+          Every figure below shows its formula and inputs. <span className="section-tag live">Live</span> sections
+          are computed in your browser from /api/trades; <span className="section-tag reference">Reference</span>{' '}
+          sections come from separate offline backtest runs whose per-trade data isn't exposed via the API, cited
+          in each card.
+        </p>
       </div>
 
       <div className="stats-grid">
         <div className="stat-card full-width">
-          <h3>Orthogonal Analysis: Independent 5-Criterion Breakdown</h3>
+          <h3>
+            Orthogonal Analysis: Independent 5-Criterion Breakdown <SectionTag kind="live" />
+          </h3>
           <p className="stat-desc">
             Evaluating trade performance and return contribution for each of the 5 criteria independently across the
             N={base.length} baseline trade dataset.
@@ -88,6 +104,23 @@ export function StatsTab() {
               <span className="stat-metric-sig">
                 {top3Combined ? signedPct(top3Combined.totalPnl) : '--'} from Top 3 Winners
               </span>
+            </div>
+            <div className="stat-metric-badge">
+              <span className="stat-metric-label">Statistical Significance</span>
+              <span className="stat-metric-val">p = {isNaN(binomP) ? '--' : binomP.toFixed(4)}</span>
+              <span className="stat-metric-sig">One-sided binomial, H0: p=0.5</span>
+            </div>
+          </div>
+          <div className="method-block">
+            <span className="method-label">Method — one-sided exact binomial test</span>
+            <Latex
+              block
+              className="method-latex"
+              tex="P(X \geq k) = \sum_{x=k}^{n} \binom{n}{x} 0.5^{x} \, 0.5^{\,n-x}"
+            />
+            <div className="method-line">
+              n = {base.length} trades, k = {baseWins} wins → P(X ≥ {baseWins}) ={' '}
+              <strong>{isNaN(binomP) ? '--' : binomP.toFixed(4)}</strong>
             </div>
           </div>
           <div className="table-container">
@@ -129,11 +162,34 @@ export function StatsTab() {
         </div>
 
         <div className="stat-card full-width">
-          <h3>1. Baseline Strategy Overview & Return Concentration</h3>
+          <h3>
+            1. Baseline Strategy Overview & Return Concentration <SectionTag kind="live" />
+          </h3>
           <p className="stat-desc">
             Single-dataset baseline performance summary (N = {base.length}) and concentration analysis of top
             historical winning trades.
           </p>
+          <div className="method-block">
+            <span className="method-label">Method</span>
+            <Latex block className="method-latex" tex="\text{Win Rate} = \dfrac{\text{wins}}{N} \times 100" />
+            <div className="method-line">
+              = {baseWins} / {base.length} × 100 = <strong>{fullBaseline ? pct(fullBaseline.winRate) : '--'}</strong>
+            </div>
+            <Latex
+              block
+              className="method-latex"
+              tex="\sigma = \sqrt{\dfrac{\sum (\text{pnl}_i - \overline{\text{pnl}})^2}{N-1}}"
+            />
+            <div className="method-line">
+              = √({baseSqSum.toFixed(2)} / {base.length - 1}) ={' '}
+              <strong>{fullBaseline?.stdDev != null ? pct(fullBaseline.stdDev) : '--'}</strong>
+            </div>
+            <Latex
+              block
+              className="method-latex"
+              tex="\text{Share of Return} = \dfrac{\text{trade PnL}}{\text{total PnL}} \times 100"
+            />
+          </div>
           <div className="table-container">
             <table className="stats-table">
               <thead>
@@ -169,14 +225,39 @@ export function StatsTab() {
         <BootstrapAudit />
 
         <div className="stat-card">
-          <h3>5. Hold Duration vs. PnL Return Correlation</h3>
+          <h3>
+            5. Hold Duration vs. PnL Return Correlation <SectionTag kind="live" />
+          </h3>
           <p className="stat-desc">
             Evaluating linear and monotonic relationships between trade hold duration (in 4H bars) and PnL percentage
             return.
           </p>
-          <div className="math-block">
-            r = (N·ΣXY − ΣX·ΣY) / √([N·ΣX² − (ΣX)²][N·ΣY² − (ΣY)²]) = {signedNum(correlations.pearson.r)}
-            {correlations.pearson.p < 0.001 ? ' (p < 0.001)' : ` (p = ${correlations.pearson.p.toFixed(4)})`}
+          <div className="method-block">
+            <span className="method-label">Method — Pearson product-moment correlation</span>
+            <Latex
+              block
+              className="method-latex"
+              tex="r = \dfrac{N\sum XY - \sum X \sum Y}{\sqrt{[N\sum X^2 - (\sum X)^2][N\sum Y^2 - (\sum Y)^2]}}"
+            />
+            <div className="method-line">
+              = <strong>{signedNum(correlations.pearson.r)}</strong>,{' '}
+              t = r·√((N−2)/(1−r²)) = {correlations.pearson.t.toFixed(3)} →{' '}
+              {correlations.pearson.p < 0.001 ? 'p < 0.001' : `p = ${correlations.pearson.p.toFixed(4)}`} (Student-t,
+              df = {correlations.n - 2})
+            </div>
+            <span className="method-label" style={{ marginTop: '0.6rem', display: 'block' }}>
+              Method — Spearman rank correlation
+            </span>
+            <Latex
+              block
+              className="method-latex"
+              tex="\rho = r_{\text{Pearson}}(\operatorname{rank}(X), \operatorname{rank}(Y))"
+            />
+            <div className="method-line">
+              Average ranks assigned for ties, then Pearson r computed on the rank-transformed series. ={' '}
+              <strong>{signedNum(correlations.spearman.rho)}</strong>,{' '}
+              {correlations.spearman.p < 0.001 ? 'p < 0.001' : `p = ${correlations.spearman.p.toFixed(4)}`}
+            </div>
           </div>
           <div className="stat-metrics-flex">
             <div className="stat-metric-badge">
@@ -198,11 +279,21 @@ export function StatsTab() {
         </div>
 
         <div className="stat-card">
-          <h3>6. Exit Reason Distribution (Baseline Dataset N = {base.length})</h3>
+          <h3>
+            6. Exit Reason Distribution (Baseline Dataset N = {base.length}) <SectionTag kind="live" />
+          </h3>
           <p className="stat-desc">
             Summary of hold times and trade performance grouped by closing event triggers across the full baseline
             dataset.
           </p>
+          <div className="method-block">
+            <span className="method-label">Method — grouped by exit_reason</span>
+            <Latex
+              block
+              className="method-latex"
+              tex="\overline{\text{PnL}}_r = \dfrac{\sum_{t \,\in\, r} \text{pnl}_t}{N_r}, \quad \text{WinRate}_r = \dfrac{\text{wins}_r}{N_r} \times 100"
+            />
+          </div>
           <div className="table-container">
             <table className="stats-table">
               <thead>
@@ -230,8 +321,18 @@ export function StatsTab() {
         </div>
 
         <div className="stat-card full-width">
-          <h3>7. Directional Long vs. Short Breakdown</h3>
+          <h3>
+            7. Directional Long vs. Short Breakdown <SectionTag kind="live" />
+          </h3>
           <p className="stat-desc">Comparison of long versus short trade performance across the baseline backtest history.</p>
+          <div className="method-block">
+            <span className="method-label">Method — same Win Rate / Std Dev formulas as section 1, grouped by side</span>
+            <Latex
+              block
+              className="method-latex"
+              tex="\text{WinRate}_{\text{side}} = \dfrac{\text{wins}_{\text{side}}}{N_{\text{side}}} \times 100, \quad \sigma_{\text{side}} = \sqrt{\dfrac{\sum (\text{pnl}_i - \overline{\text{pnl}})^2}{N_{\text{side}}-1}}"
+            />
+          </div>
           <div className="table-container">
             <table className="stats-table">
               <thead>
@@ -275,7 +376,9 @@ export function StatsTab() {
 function QualityEquivalence() {
   return (
     <div className="stat-card full-width">
-      <h3>2. Order Block Quality Equivalence & Methodological Caution</h3>
+      <h3>
+        2. Order Block Quality Equivalence & Methodological Caution <SectionTag kind="reference" />
+      </h3>
       <p className="stat-desc">
         Methodological analysis evaluating trade quality score equivalence between top winners and losses, and
         co-occurrence multi-counting cautions.
@@ -313,6 +416,13 @@ function QualityEquivalence() {
           PnL at Bar 2624) sharing the exact same 4-criterion footprint.
         </div>
       </div>
+      <div className="provenance-note">
+        <span className="provenance-tag">Source</span>
+        <span>
+          Entry Bar 359 / 2624 details are read directly from their trade and Order Block records, not derived from a
+          formula -- this card is a factual lookup, not a live statistical computation.
+        </span>
+      </div>
     </div>
   );
 }
@@ -325,7 +435,9 @@ function AblationStudy() {
   ];
   return (
     <div className="stat-card full-width">
-      <h3>3. 3-Arm Controlled Ablation Study (Isolating the Order Block Structural Gate)</h3>
+      <h3>
+        3. 3-Arm Controlled Ablation Study (Isolating the Order Block Structural Gate) <SectionTag kind="reference" />
+      </h3>
       <p className="stat-desc">
         Comparing the full OB-gated strategy against indicator-only entry triggers (flat ATR stop vs. 5-bar
         swing-pivot stop) to test whether the OB gate adds measurable value independent of indicators.
@@ -358,6 +470,14 @@ function AblationStudy() {
           </tbody>
         </table>
       </div>
+      <div className="provenance-note">
+        <span className="provenance-tag">Source</span>
+        <span>
+          Arms 2 and 3 are separate backtest runs (indicator-only entry logic, ATR/swing-pivot stop placement) with
+          their own trade sets -- see the analysis/ scripts. Not recomputable in-browser from the OB-gated baseline's
+          /api/trades records shown elsewhere on this page, since only Arm 1's trades are exposed via that endpoint.
+        </span>
+      </div>
     </div>
   );
 }
@@ -365,7 +485,9 @@ function AblationStudy() {
 function BootstrapAudit() {
   return (
     <div className="stat-card full-width">
-      <h3>4. Bootstrap Resampling Audit (B = 2,000) & Entry-Bar Overlap Audit</h3>
+      <h3>
+        4. Bootstrap Resampling Audit (B = 2,000) & Entry-Bar Overlap Audit <SectionTag kind="reference" />
+      </h3>
       <p className="stat-desc">
         Resampling n=27 trades from the 138-trade indicators-only pool over 2,000 iterations to control for sample
         size disparity, alongside entry-bar overlap analysis.
@@ -393,6 +515,15 @@ function BootstrapAudit() {
           </div>
         </div>
       </div>
+      <div className="provenance-note">
+        <span className="provenance-tag">Source</span>
+        <span>
+          Bootstrap: 2,000 resamples with replacement of n=27 from the 138-trade indicators-only pool (Ablation Arm
+          3's trade set), computed offline -- see analysis/ scripts. That pool isn't exposed via /api/trades, so this
+          can't be recomputed in-browser. Entry-bar overlap: precomputed comparison against the indicators-only
+          ablation's own entry triggers, same source.
+        </span>
+      </div>
     </div>
   );
 }
@@ -400,7 +531,9 @@ function BootstrapAudit() {
 function MethodologySynthesis() {
   return (
     <div className="stat-card full-width">
-      <h3>8. Research Methodology Synthesis & Conclusions</h3>
+      <h3>
+        8. Research Methodology Synthesis & Conclusions <SectionTag kind="reference" />
+      </h3>
       <p className="stat-desc">
         Summary of structural revisions, collinearity resolution, and key takeaways from the backtest evaluation.
       </p>
