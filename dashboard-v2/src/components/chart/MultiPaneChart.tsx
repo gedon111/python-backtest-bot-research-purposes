@@ -114,7 +114,11 @@ export function MultiPaneChart({
     }
 
     const commonOptions = {
-      layout: { textColor: '#475569', fontFamily: 'Inter, sans-serif', fontSize: 11 },
+      layout: {
+        textColor: '#475569',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif',
+        fontSize: 11,
+      },
       grid: { vertLines: { color: '#f1f5f9' }, horzLines: { color: '#f1f5f9' } },
       rightPriceScale: { borderColor: '#e2e8f0', minimumWidth: 100 },
       timeScale: { borderColor: '#e2e8f0', timeVisible: true },
