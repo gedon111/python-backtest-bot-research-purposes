@@ -439,6 +439,26 @@ def parse_args():
     return args
 
 
+def run_paper_sync_report(bot, output_dir):
+    """
+    Final pipeline step: regenerate artifacts/paper_sync_report.md, the
+    live cross-check of CLAUDE.md's locked results against a fresh
+    recomputation. Non-fatal to the dashboard export on failure -- a
+    mismatch here is a paper/codebase correctness finding for a human to
+    review (see analysis/paper_sync_report.py's own STOP banner), not a
+    reason to block dashboard artifact generation.
+    """
+    try:
+        from analysis.paper_sync_report import generate_report
+        out_path = os.path.join(output_dir, "paper_sync_report.md")
+        _, mismatches, _ = generate_report(bot=bot, out_path=out_path)
+        if mismatches:
+            print(f"\n[WARNING] paper_sync_report.md found {len(mismatches)} mismatch(es) "
+                  f"against CLAUDE.md's locked results -- see {out_path}.")
+    except Exception as e:
+        print(f"\n[WARNING] Skipping paper_sync_report.md: failed to generate ({e}).")
+
+
 def main():
     args = parse_args()
     print("Loading Binance backtest bot module...")
@@ -450,6 +470,8 @@ def main():
     print(f"Thresholds: {', '.join([str(x['min_quality']) for x in threshold_runs])}")
     print(f"Verification: {verification_report['status']}")
     print(f"Artifacts directory: {args.output_dir}")
+
+    run_paper_sync_report(bot, args.output_dir)
 
     if getattr(args, 'no_server', False):
         print("\nSkipping local dashboard web server (--no-server was set).")
