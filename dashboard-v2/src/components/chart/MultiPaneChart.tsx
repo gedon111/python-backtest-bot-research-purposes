@@ -3,6 +3,7 @@ import {
   CandlestickSeries,
   createChart,
   createSeriesMarkers,
+  CrosshairMode,
   HistogramSeries,
   LineSeries,
   LineStyle,
@@ -85,6 +86,7 @@ export function MultiPaneChart({
   const columnRef = useRef<HTMLDivElement>(null);
   const bundleRef = useRef<ChartBundle | null>(null);
   const hoveredTimeRef = useRef<number | null>(null);
+  const lastHoveredIdxRef = useRef<number | null>(null);
 
   // Latest prop values, readable from event handlers set up once on mount.
   const propsRef = useRef({
@@ -122,6 +124,7 @@ export function MultiPaneChart({
       grid: { vertLines: { color: '#f1f5f9' }, horzLines: { color: '#f1f5f9' } },
       rightPriceScale: { borderColor: '#e2e8f0', minimumWidth: 100 },
       timeScale: { borderColor: '#e2e8f0', timeVisible: true },
+      crosshair: { mode: CrosshairMode.Normal },
     };
 
     const mainChart = createChart(mainRef.current, commonOptions);
@@ -196,7 +199,13 @@ export function MultiPaneChart({
         charts.forEach((c, i) => {
           if (i !== idx) c.timeScale().setVisibleLogicalRange(range);
         });
-        isSyncing = false;
+        // Defer clearing the guard to the next frame: the other charts' own
+        // range-change notifications can land a frame late, and if the guard
+        // is already false by then, that late echo re-triggers the sync loop
+        // unguarded -- which is what caused the pan-to-start teleport.
+        requestAnimationFrame(() => {
+          isSyncing = false;
+        });
         clearTimeout(overlayTimer);
         overlayTimer = setTimeout(() => redrawOverlays(bundle, hoveredTimeRef.current), 60);
       });
@@ -224,12 +233,21 @@ export function MultiPaneChart({
         const idx = timeToIndex.get(time as number);
         if (idx !== undefined) {
           const row = candles[idx];
-          const trade = findActiveTrade(idx);
-          const ob = findObAtTime(time as number);
           hoveredTimeRef.current = time as number;
 
-          renderAdaptiveKdjPane(bundle, trade);
-          propsRef.current.onHoverChange({ time: time as number, idx, row, ob, trade });
+          // Only redo the expensive per-bar work (adaptive-KDJ series rebuild,
+          // React state update) when the hovered bar actually changes -- a drag
+          // fires many mousemoves per bar-width, and rebuilding the adaptive
+          // series on every one of them was both the source of the pan lag and,
+          // because that series briefly holds a trade's own (often far-off)
+          // time window, the trigger for the synced panes jumping to it.
+          if (idx !== lastHoveredIdxRef.current) {
+            lastHoveredIdxRef.current = idx;
+            const trade = findActiveTrade(idx);
+            const ob = findObAtTime(time as number);
+            renderAdaptiveKdjPane(bundle, trade);
+            propsRef.current.onHoverChange({ time: time as number, idx, row, ob, trade });
+          }
 
           for (const [chart, target] of seriesBySourceChart) {
             if (chart !== sourceChart) {
@@ -244,6 +262,7 @@ export function MultiPaneChart({
         }
       } else {
         hoveredTimeRef.current = null;
+        lastHoveredIdxRef.current = null;
         renderAdaptiveKdjPane(bundle, null);
         propsRef.current.onHoverChange({ time: null, idx: null, row: null, ob: null, trade: null });
         for (const [chart] of seriesBySourceChart) {
@@ -403,6 +422,14 @@ export function MultiPaneChart({
   }
 
   function renderAdaptiveKdjPane(bundle: ChartBundle, trade: ProcessedTrade | null) {
+    // setData() on this pane's series re-fits its own time scale to the new
+    // data's range -- and a trade's adaptive-KDJ window can sit anywhere in
+    // the dataset's history. Since this pane's time scale is synced to the
+    // other four, an unguarded re-fit here drags every pane's view along
+    // with it. Snapshot and restore the visible range around the mutation.
+    const adaptiveTimeScale = bundle.kdjAdaptiveChart.timeScale();
+    const preservedRange = adaptiveTimeScale.getVisibleLogicalRange();
+
     if (trade && trade.adaptiveKdjK.length > 0) {
       bundle.kAdaptive.setData(trade.adaptiveKdjK.map((p) => ({ time: p.time as Time, value: p.value })));
       bundle.dAdaptive.setData(trade.adaptiveKdjD.map((p) => ({ time: p.time as Time, value: p.value })));
@@ -412,6 +439,8 @@ export function MultiPaneChart({
       bundle.dAdaptive.setData([]);
       bundle.jAdaptive.setData([]);
     }
+
+    if (preservedRange) adaptiveTimeScale.setVisibleLogicalRange(preservedRange);
     if (propsRef.current.showTradeLines) setActiveTradeLines(bundle, trade);
   }
 
