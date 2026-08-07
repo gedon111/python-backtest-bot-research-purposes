@@ -4,6 +4,7 @@ import { useDashboardTheme } from './theme/ThemeContext';
 import { ChartTab } from './components/tabs/ChartTab';
 import { SandboxTab } from './components/tabs/SandboxTab';
 import { StatsTab } from './components/tabs/StatsTab';
+import { SettingsPanel } from './components/SettingsPanel';
 
 type TabId = 'chart' | 'sandbox' | 'stats';
 
@@ -15,6 +16,7 @@ const TABS: { id: TabId; label: string }[] = [
 
 export function App() {
   const [tab, setTab] = useState<TabId>('chart');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { pageTheme, toggleTheme } = useDashboardTheme();
 
   return (
@@ -40,6 +42,9 @@ export function App() {
           <button type="button" className="topbar-btn" onClick={toggleTheme}>
             {pageTheme === 'dark' ? 'Light' : 'Dark'}
           </button>
+          <button type="button" className="topbar-btn" onClick={() => setSettingsOpen(true)}>
+            Settings
+          </button>
         </div>
       </header>
       <main className="app-content">
@@ -47,6 +52,7 @@ export function App() {
         {tab === 'sandbox' && <SandboxTab />}
         {tab === 'stats' && <StatsTab />}
       </main>
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

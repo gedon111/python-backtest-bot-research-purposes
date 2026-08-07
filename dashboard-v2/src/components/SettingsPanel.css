@@ -1,0 +1,74 @@
+.settings-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+}
+
+.settings-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  z-index: 41;
+  overflow-y: auto;
+  padding: var(--space-3);
+  border-radius: 0;
+  border-top: none;
+  border-bottom: none;
+  border-right: none;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.8rem;
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: var(--space-3);
+}
+
+.settings-section-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: var(--space-2);
+}
+
+.settings-colors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.settings-color-field {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.76rem;
+}
+
+.settings-color-field input[type='color'] {
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.settings-color-field code {
+  font-size: 0.68rem;
+}
