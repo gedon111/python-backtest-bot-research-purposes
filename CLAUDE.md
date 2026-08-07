@@ -90,6 +90,20 @@ as settled.
   the assertion - stop and report the bar, value, and computation that reached
   forward. That would be a correctness finding, not a regression.
 
+## Session memory - always maintain
+
+- At the start of every session, check memory for existing entries about this
+  repo before starting work, and verify anything load-bearing (branch names,
+  commit hashes, file paths) against current git state before relying on it -
+  memory can go stale.
+- Keep a running project memory of what the current session is actually doing:
+  which branch/commit, what's been done, what's still open, and why. Update it
+  as the work materially changes, not just at the end - if the session gets
+  interrupted, the memory should still reflect real state.
+- Update the existing memory entry for a piece of work rather than creating a
+  new one each session; only start a new entry when the topic genuinely
+  changes (e.g. a different feature or investigation).
+
 ## Git Branching Rules
 
 This applies going forward, to all future sessions, not just the one that

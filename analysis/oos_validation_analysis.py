@@ -58,6 +58,7 @@ import json
 
 import numpy as np
 import pandas as pd
+from scipy import stats as sstats
 
 from _json_utils import write_json
 
@@ -117,12 +118,15 @@ def section_1_forward_oos(bot, start_date: str, oos_end_date: str) -> dict:
             oos_trade_list.append({"side": r["side"], "entry_time": entry_time, "exit_time": exit_time,
                                     "pnl_pct": r["pnl_pct"], "exit_reason": r["exit_reason"]})
         wins = int((new_trades['pnl_pct'] > 0).sum())
+        binom_p = sstats.binomtest(wins, len(new_trades), 0.5, alternative='greater').pvalue
         print(f"\nOOS summary: n={len(new_trades)}, wins={wins}, "
               f"win_rate={wins / len(new_trades) * 100:.2f}%, "
               f"total_pnl={new_trades['pnl_pct'].sum():+.4f}%, "
-              f"avg_pnl={new_trades['pnl_pct'].mean():+.4f}%")
+              f"avg_pnl={new_trades['pnl_pct'].mean():+.4f}%, "
+              f"binomial_p_one_sided={binom_p:.4f}")
         oos_summary = {"n": len(new_trades), "wins": wins, "win_rate_pct": wins / len(new_trades) * 100,
-                        "total_pnl_pct": new_trades["pnl_pct"].sum(), "avg_pnl_pct": new_trades["pnl_pct"].mean()}
+                        "total_pnl_pct": new_trades["pnl_pct"].sum(), "avg_pnl_pct": new_trades["pnl_pct"].mean(),
+                        "binomial_p_one_sided": binom_p}
     else:
         print("No OOS trades triggered in this window.")
     print()
@@ -183,18 +187,25 @@ def section_2_backfill_audit(bot, backfill_start_date: str, oos_end_date: str) -
     pre_window_summary = {"n": len(pre_window)}
     if not pre_window.empty:
         wins = int((pre_window["pnl_pct"] > 0).sum())
+        binom_p = sstats.binomtest(wins, len(pre_window), 0.5, alternative='greater').pvalue
         print(f"wins={wins}, win_rate={wins / len(pre_window) * 100:.2f}%, "
-              f"total_pnl={pre_window['pnl_pct'].sum():+.4f}%, avg_pnl={pre_window['pnl_pct'].mean():+.4f}%")
+              f"total_pnl={pre_window['pnl_pct'].sum():+.4f}%, avg_pnl={pre_window['pnl_pct'].mean():+.4f}%, "
+              f"binomial_p_one_sided={binom_p:.4f}")
         pre_window_summary.update({"wins": wins, "win_rate_pct": wins / len(pre_window) * 100,
                                     "total_pnl_pct": pre_window["pnl_pct"].sum(),
-                                    "avg_pnl_pct": pre_window["pnl_pct"].mean()})
+                                    "avg_pnl_pct": pre_window["pnl_pct"].mean(),
+                                    "binomial_p_one_sided": binom_p})
 
     print(f"\nCombined full-window stats ({backfill_start_date}..{oos_end_date}, all trades -- MIXES "
           f"formulation-period and OOS data, do not cite as a clean validation figure):")
     stats = sim_full.attrs.get("trade_stats", {})
+    combined_wins = int((trades_full["pnl_pct"] > 0).sum())
+    combined_binom_p = (sstats.binomtest(combined_wins, len(trades_full), 0.5, alternative='greater').pvalue
+                         if len(trades_full) else None)
     print(f"  Total Trades: {stats.get('Total Trades')}")
     print(f"  Win Rate (%): {stats.get('Win Rate (%)'):.4f}")
     print(f"  Total Net Return (%): {stats.get('Total Net Return (%)'):.4f}")
+    print(f"  Binomial p (one-sided): {combined_binom_p:.4f}" if combined_binom_p is not None else "")
     print()
 
     return {
@@ -206,6 +217,7 @@ def section_2_backfill_audit(bot, backfill_start_date: str, oos_end_date: str) -
             "total_trades": stats.get("Total Trades"),
             "win_rate_pct": stats.get("Win Rate (%)"),
             "total_net_return_pct": stats.get("Total Net Return (%)"),
+            "binomial_p_one_sided": combined_binom_p,
         },
     }
 
