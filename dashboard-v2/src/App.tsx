@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import './App.css';
 import { useDashboardTheme } from './theme/ThemeContext';
+import { ChartTab } from './components/tabs/ChartTab';
 
 type TabId = 'chart' | 'sandbox' | 'stats';
 
@@ -40,7 +41,7 @@ export function App() {
         </div>
       </header>
       <main className="app-content">
-        {tab === 'chart' && <div className="tab-placeholder">Chart tab -- Stage 4</div>}
+        {tab === 'chart' && <ChartTab />}
         {tab === 'sandbox' && <div className="tab-placeholder">Sandbox tab -- Stage 5</div>}
         {tab === 'stats' && <div className="tab-placeholder">Stats tab -- Stage 6</div>}
       </main>
