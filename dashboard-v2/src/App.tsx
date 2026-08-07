@@ -2,6 +2,8 @@ import { useState } from 'react';
 import './App.css';
 import { useDashboardTheme } from './theme/ThemeContext';
 import { ChartTab } from './components/tabs/ChartTab';
+import { SandboxTab } from './components/tabs/SandboxTab';
+import { StatsTab } from './components/tabs/StatsTab';
 
 type TabId = 'chart' | 'sandbox' | 'stats';
 
@@ -42,8 +44,8 @@ export function App() {
       </header>
       <main className="app-content">
         {tab === 'chart' && <ChartTab />}
-        {tab === 'sandbox' && <div className="tab-placeholder">Sandbox tab -- Stage 5</div>}
-        {tab === 'stats' && <div className="tab-placeholder">Stats tab -- Stage 6</div>}
+        {tab === 'sandbox' && <SandboxTab />}
+        {tab === 'stats' && <StatsTab />}
       </main>
     </div>
   );

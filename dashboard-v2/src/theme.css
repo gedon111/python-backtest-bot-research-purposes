@@ -227,3 +227,8 @@ input {
 .text-accent { color: var(--accent); }
 .text-muted { color: var(--text-muted); }
 .text-secondary { color: var(--text-secondary); }
+
+/* Plain semantic text color for trade PnL, not a "colored rectangle" -- no
+   background, no border, just the number itself in green/red. */
+.pnl-pos { color: var(--good); }
+.pnl-neg { color: var(--critical); }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  getAblationReconstruction,
   getCandles,
   getIterations,
   getManifest,
@@ -45,3 +46,4 @@ export const useTrades = (minObQuality?: number) =>
   useAsync(() => getTrades(minObQuality), [minObQuality]);
 export const useTheme = () => useAsync(getTheme);
 export const useIterations = () => useAsync(getIterations);
+export const useAblationReconstruction = () => useAsync(getAblationReconstruction);

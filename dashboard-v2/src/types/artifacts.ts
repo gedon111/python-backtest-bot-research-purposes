@@ -198,3 +198,46 @@ export interface Iteration {
 }
 
 export type IterationsResponse = Iteration[];
+
+/**
+ * artifacts/ablation_reconstruction.json, produced by
+ * analysis/ablation_reconstruction.py --json-out. Not recomputable in-browser
+ * (the 140/138-trade indicators-only pools aren't exposed via /api/trades) --
+ * this is genuinely Reference data, read as-is, never presented as a live
+ * recomputation. See that script's docstring: this is a best-faith
+ * reconstruction from the documented ablation design, not the original
+ * (never-committed) generating script, and its win rate diverges from the
+ * locked figures even though its trade counts match exactly.
+ */
+export interface AblationArmSummary {
+  n: number;
+  wins?: number;
+  win_rate: number;
+  total_return: number;
+  avg_return?: number;
+  sd?: number | null;
+}
+
+export interface AblationArm {
+  label: string;
+  reconstructed: AblationArmSummary;
+  locked: { n: number; win_rate: number; total_return: number };
+  status_vs_locked: 'MATCH' | 'DIVERGE';
+  bootstrap_vs_baseline: {
+    b: number;
+    seed: number;
+    n: number;
+    win_rate_percentiles: { p2_5: number; p50: number; p97_5: number };
+    avg_return_percentiles: { p2_5: number; p50: number; p97_5: number };
+    empirical_p_win_rate_ge_baseline: number;
+    empirical_p_avg_return_ge_baseline: number;
+  } | null;
+}
+
+export interface AblationReconstructionReport {
+  baseline: AblationArmSummary;
+  arms: {
+    flat_atr: AblationArm;
+    swing_pivot: AblationArm;
+  };
+}

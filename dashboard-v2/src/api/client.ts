@@ -1,4 +1,5 @@
 import type {
+  AblationReconstructionReport,
   Candle,
   DashboardTheme,
   IterationsResponse,
@@ -23,6 +24,8 @@ export const getRunsByThreshold = () =>
   fetchJson<RunsByThreshold>('/artifacts/runs_by_threshold.json');
 export const getVerificationReport = () =>
   fetchJson<VerificationReport>('/artifacts/verification_report.json');
+export const getAblationReconstruction = () =>
+  fetchJson<AblationReconstructionReport>('/artifacts/ablation_reconstruction.json');
 
 // /api/* routes — export_gui_data.py's SilentHandler (do_GET/do_POST).
 export const getTrades = (minObQuality?: number) => {
