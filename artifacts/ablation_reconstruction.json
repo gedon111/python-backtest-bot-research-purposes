@@ -1,0 +1,80 @@
+{
+  "baseline": {
+    "n": 27,
+    "wins": 19,
+    "win_rate": 70.37037037037037,
+    "total_return": 30.306456356031937,
+    "avg_return": 1.1224613465197013,
+    "sd": 2.4101357189345545
+  },
+  "arms": {
+    "flat_atr": {
+      "label": "Arm 2 (flat-ATR stop)",
+      "reconstructed": {
+        "n": 140,
+        "wins": 66,
+        "win_rate": 47.14285714285714,
+        "total_return": -13.721407990552564,
+        "avg_return": -0.09801005707537545,
+        "sd": 2.805870932197686
+      },
+      "locked": {
+        "n": 140,
+        "win_rate": 60.0,
+        "total_return": -14.63
+      },
+      "status_vs_locked": "DIVERGE",
+      "bootstrap_vs_baseline": {
+        "b": 2000,
+        "seed": 42,
+        "n": 27,
+        "win_rate_percentiles": {
+          "p2_5": 29.629629629629626,
+          "p50": 48.148148148148145,
+          "p97_5": 66.66666666666666
+        },
+        "avg_return_percentiles": {
+          "p2_5": -1.2218393183983756,
+          "p50": -0.09808784419460088,
+          "p97_5": 1.0178332372525494
+        },
+        "empirical_p_win_rate_ge_baseline": 0.0145,
+        "empirical_p_avg_return_ge_baseline": 0.0135
+      }
+    },
+    "swing_pivot": {
+      "label": "Arm 3 (swing-pivot stop)",
+      "reconstructed": {
+        "n": 138,
+        "wins": 60,
+        "win_rate": 43.47826086956522,
+        "total_return": -23.846135398804147,
+        "avg_return": -0.17279808260003005,
+        "sd": 2.7961685497615267
+      },
+      "locked": {
+        "n": 138,
+        "win_rate": 55.07,
+        "total_return": -25.5
+      },
+      "status_vs_locked": "DIVERGE",
+      "bootstrap_vs_baseline": {
+        "b": 2000,
+        "seed": 42,
+        "n": 27,
+        "win_rate_percentiles": {
+          "p2_5": 25.925925925925924,
+          "p50": 44.44444444444444,
+          "p97_5": 62.96296296296296
+        },
+        "avg_return_percentiles": {
+          "p2_5": -1.2632754165855642,
+          "p50": -0.18175916196228536,
+          "p97_5": 0.891787581595466
+        },
+        "empirical_p_win_rate_ge_baseline": 0.004,
+        "empirical_p_avg_return_ge_baseline": 0.009
+      }
+    }
+  }
+}

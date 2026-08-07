@@ -1,6 +1,6 @@
 # Paper/codebase sync report
 
-Generated: 2026-08-05T13:58:22.380762+00:00
+Generated: 2026-08-07T03:24:25.892010+00:00
 
 Recomputed live from `artifacts/candles.csv` and the current `src/Binance backtest bot.py`, then cross-checked against the figures parsed out of `CLAUDE.md`'s "Locked results" section. A MISMATCH row is a correctness finding, not something this script resolves automatically -- see `CLAUDE.md`'s rule on newly found bugs.
 
