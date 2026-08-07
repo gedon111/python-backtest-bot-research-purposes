@@ -19,6 +19,24 @@ export interface ProcessedTrade extends RunTradeRecord {
 }
 
 /**
+ * Bar indices of Order Blocks that were the actual entry trigger for a
+ * trade -- used to default the chart's OB rendering to "relevant only"
+ * instead of every detected OB. Deliberately does NOT fall back to
+ * `entry_idx` the way `processTrades`'s internal `obBar` does below: that
+ * fallback is a UI convenience for the adaptive-period window math, not a
+ * real claim that a trade came from a specific OB, and using it here would
+ * wrongly mark unrelated OBs as "used."
+ */
+export function usedObBars(trades: RunTradeRecord[]): Set<number> {
+  const set = new Set<number>();
+  for (const t of trades) {
+    const bar = t.entry_ob_bar ?? t.ob_bar;
+    if (bar != null) set.add(bar);
+  }
+  return set;
+}
+
+/**
  * Ported from gui.js's processData (gui.js:416-469) OB half. Finds where an OB
  * zone visually ends: scan forward up to 500 bars until price closes back
  * through the zone, or the OB's own recorded mitigation bar, whichever first.
@@ -28,11 +46,13 @@ export function processObs(
   obs: OrderBlockRecord[],
   levelFilter: string,
   structureFilter: string,
+  usedBars: Set<number> | null = null,
 ): ProcessedOb[] {
   const filtered = obs.filter(
     (ob) =>
       (levelFilter === 'all' || ob.level === levelFilter) &&
-      (structureFilter === 'all' || ob.structure === structureFilter),
+      (structureFilter === 'all' || ob.structure === structureFilter) &&
+      (usedBars === null || usedBars.has(ob.ob_bar ?? ob.created_at)),
   );
 
   const processed: ProcessedOb[] = [];

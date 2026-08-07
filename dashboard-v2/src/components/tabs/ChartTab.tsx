@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import './ChartTab.css';
-import { useCandles, useManifest, useRunsByThreshold, useVerificationReport } from '../../api/hooks';
+import { useCandles, useExtendedCandles, useManifest, useRunsByThreshold, useVerificationReport } from '../../api/hooks';
+import type { Time } from 'lightweight-charts';
 import { useDashboardTheme } from '../../theme/ThemeContext';
 import { MultiPaneChart, type ChartHoverInfo } from '../chart/MultiPaneChart';
-import { processObs, processTrades } from '../chart/chartProcessing';
+import { processObs, processTrades, usedObBars } from '../chart/chartProcessing';
 import {
   verifyDisplacement,
   verifyFvg,
@@ -26,22 +27,51 @@ export function ChartTab() {
   const [quality, setQuality] = useState('0');
   const [obLevel, setObLevel] = useState('all');
   const [obStructure, setObStructure] = useState('all');
+  const [obUsedOnly, setObUsedOnly] = useState(true);
   const [showObZones, setShowObZones] = useState(true);
   const [showTradeZones, setShowTradeZones] = useState(true);
   const [autoFit, setAutoFit] = useState(true);
   const [hover, setHover] = useState<ChartHoverInfo>({ time: null, idx: null, row: null, ob: null, trade: null });
 
+  // 'locked' = the paper's 2022-2026 backtest window (default, unchanged
+  // behavior). 'extended' = 2018-today, fetched lazily -- see useExtendedCandles.
+  const [viewMode, setViewMode] = useState<'locked' | 'extended'>('locked');
+  const [rangeStart, setRangeStart] = useState('');
+  const [rangeEnd, setRangeEnd] = useState('');
+  const [appliedRange, setAppliedRange] = useState<{ from: Time; to: Time } | null>(null);
+  const extendedCandles = useExtendedCandles(viewMode === 'extended');
+
+  // The LOCKED candle set -- OBs/trades are always processed against this,
+  // never the extended set, so their bar indices stay valid (see
+  // MultiPaneChart's timeToIndex-based lookups, which resolve position by
+  // timestamp for whichever array actually ends up mounted).
   const candleData = candles.data ?? [];
+  const chartCandles = viewMode === 'extended' && extendedCandles.data ? extendedCandles.data : candleData;
   const run = runs.data?.[quality];
 
+  const usedBars = useMemo(() => (run ? usedObBars(run.trades) : new Set<number>()), [run]);
+
   const processedObs = useMemo(
-    () => (run && candleData.length ? processObs(candleData, run.obs, obLevel, obStructure) : []),
-    [candleData, run, obLevel, obStructure],
+    () =>
+      run && candleData.length
+        ? processObs(candleData, run.obs, obLevel, obStructure, obUsedOnly ? usedBars : null)
+        : [],
+    [candleData, run, obLevel, obStructure, obUsedOnly, usedBars],
   );
   const processedTrades = useMemo(
     () => (run && candleData.length ? processTrades(candleData, run.trades) : []),
     [candleData, run],
   );
+
+  const lockedWindowStart = candleData[0]?.time ?? null;
+  const lockedWindowEnd = candleData[candleData.length - 1]?.time ?? null;
+
+  const applyDateRange = () => {
+    if (!rangeStart || !rangeEnd) return;
+    const from = Math.floor(new Date(`${rangeStart}T00:00:00Z`).getTime() / 1000);
+    const to = Math.floor(new Date(`${rangeEnd}T23:59:59Z`).getTime() / 1000);
+    setAppliedRange({ from: from as Time, to: to as Time });
+  };
 
   const thresholdKeys = useMemo(
     () => (runs.data ? Object.keys(runs.data).sort((a, b) => Number(a) - Number(b)) : []),
@@ -152,6 +182,9 @@ export function ChartTab() {
           <button type="button" className={`btn-toggle${showObZones ? ' active' : ''}`} onClick={() => setShowObZones((v) => !v)}>
             OB Zones: {showObZones ? 'ON' : 'OFF'}
           </button>
+          <button type="button" className={`btn-toggle${obUsedOnly ? ' active' : ''}`} onClick={() => setObUsedOnly((v) => !v)}>
+            OB Filter: {obUsedOnly ? 'USED ONLY' : 'ALL'}
+          </button>
           <button
             type="button"
             className={`btn-toggle${showTradeZones ? ' active' : ''}`}
@@ -163,11 +196,37 @@ export function ChartTab() {
             Auto Fit: {autoFit ? 'ON' : 'OFF'}
           </button>
         </div>
+        <div className="control-group">
+          <button
+            type="button"
+            className={`btn-toggle${viewMode === 'extended' ? ' active' : ''}`}
+            onClick={() => setViewMode((v) => (v === 'extended' ? 'locked' : 'extended'))}
+          >
+            Full History: {viewMode === 'extended' ? 'ON (2018-today)' : 'OFF (2022-2026 locked)'}
+          </button>
+          {viewMode === 'extended' && (
+            <>
+              <label className="control-field">
+                <span>From</span>
+                <input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} />
+              </label>
+              <label className="control-field">
+                <span>To</span>
+                <input type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} />
+              </label>
+              <button type="button" className="btn-toggle" onClick={applyDateRange} disabled={extendedCandles.loading}>
+                Apply Range
+              </button>
+              {extendedCandles.loading && <span className="text-muted">Loading extended history...</span>}
+              {extendedCandles.error && <span className="tag tag-critical">Failed to load extended history</span>}
+            </>
+          )}
+        </div>
       </div>
 
       <div className="chart-layout">
         <MultiPaneChart
-          candles={candleData}
+          candles={chartCandles}
           processedObs={processedObs}
           processedTrades={processedTrades}
           dataColors={dataColors}
@@ -176,8 +235,11 @@ export function ChartTab() {
           showTradeZones={showTradeZones}
           autoFit={autoFit}
           onHoverChange={setHover}
+          visibleRange={viewMode === 'extended' ? appliedRange : null}
+          lockedWindowStart={viewMode === 'extended' ? lockedWindowStart : null}
+          lockedWindowEnd={viewMode === 'extended' ? lockedWindowEnd : null}
         />
-        <ObInspectionPanel hover={hover} candles={candleData} />
+        <InspectionPanel hover={hover} candles={candleData} />
       </div>
     </div>
   );
@@ -190,8 +252,9 @@ interface RuleSpec {
   check: () => { pass: boolean; matchesRecorded: boolean; detail: string };
 }
 
-function ObInspectionPanel({ hover, candles }: { hover: ChartHoverInfo; candles: Candle[] }) {
+function InspectionPanel({ hover, candles }: { hover: ChartHoverInfo; candles: Candle[] }) {
   const ob = hover.ob;
+  const trade = hover.trade;
 
   const rules: RuleSpec[] | null = useMemo(() => {
     if (!ob) return null;
@@ -233,64 +296,105 @@ function ObInspectionPanel({ hover, candles }: { hover: ChartHoverInfo; candles:
 
   return (
     <div className="ob-panel panel">
-      <h3>Order Block Inspection</h3>
-      {!ob || !rules ? (
-        <p className="ob-empty-state text-muted">Hover a chart bar inside an OB zone to inspect it.</p>
+      <h3>Inspection</h3>
+      {!trade && !ob ? (
+        <p className="ob-empty-state text-muted">Hover a chart bar to inspect trade and Order Block data.</p>
       ) : (
         <div>
-          <div className="ob-header">
-            <span className={`tag ${ob.type === 'DEMAND' ? 'tag-good' : 'tag-critical'}`}>{ob.type}</span>
-            <span className="text-muted">{new Date(ob.startTime * 1000).toLocaleString()}</span>
-          </div>
-          <div className="ob-price-levels">
-            <div>
-              <span className="text-muted">Top</span> {ob.top.toFixed(2)}
+          {trade && (
+            <div className="inspection-block">
+              <h4 className="ob-section-title">
+                Trade <span className="tag tag-live">LIVE</span>
+              </h4>
+              <div className="ob-header">
+                <span className={`tag ${trade.side === 'LONG' ? 'tag-good' : 'tag-critical'}`}>{trade.side}</span>
+                <span className={trade.pnl_pct >= 0 ? 'pnl-pos' : 'pnl-neg'}>
+                  {trade.pnl_pct >= 0 ? '+' : ''}
+                  {fmt(trade.pnl_pct)}%
+                </span>
+              </div>
+              <div className="ob-price-levels">
+                <div>
+                  <span className="text-muted">Entry</span> {fmt(trade.entry)}
+                </div>
+                <div>
+                  <span className="text-muted">Exit</span> {fmt(trade.exit)}
+                </div>
+                <div>
+                  <span className="text-muted">Stop Loss</span> {fmt(trade.stop_loss)}
+                </div>
+                <div>
+                  <span className="text-muted">Take Profit</span> {fmt(trade.take_profit)}
+                </div>
+              </div>
+              <div className="ob-price-levels">
+                <div>
+                  <span className="text-muted">Hold Bars</span> {trade.hold_bars ?? trade.exit_idx - trade.entry_idx}
+                </div>
+                <div>
+                  <span className="text-muted">Exit Reason</span> {trade.exit_reason ?? '--'}
+                </div>
+                <div>
+                  <span className="text-muted">Entry OB Quality</span> {trade.entry_ob_quality ?? '--'}
+                </div>
+              </div>
+              <div className="ob-zone-extent text-muted">
+                Adaptive KDJ, period = {trade.adaptivePeriod} bars. OB origin bar {trade.obBar}, entry bar {trade.entry_idx},
+                exit bar {trade.exit_idx}.
+              </div>
             </div>
-            <div>
-              <span className="text-muted">Bottom</span> {ob.bottom.toFixed(2)}
-            </div>
-            <div>
-              <span className="text-muted">Score</span> {ob.quality}/5
-            </div>
-          </div>
+          )}
 
-          <h4 className="ob-section-title">
-            Validation <span className="tag tag-live">LIVE</span>
-          </h4>
-          <p className="ob-section-note text-muted">Independently re-derived in-browser from raw candles, not read from the record.</p>
-          <ul className="rule-list">
-            {rules.map((rule) => {
-              const result = rule.check();
-              return (
-                <li key={rule.label} className={`rail ${rule.recorded ? 'rail-good' : ''}`}>
-                  <div className="rule-row">
-                    <span>{rule.label}</span>
-                    <span className={`tag ${rule.recorded ? 'tag-good' : 'tag-ref'}`}>{rule.recorded ? 'PASS' : 'FALSE'}</span>
-                    {!result.matchesRecorded && <span className="tag tag-warning">MISMATCH</span>}
-                  </div>
-                  <Latex block className="rule-formula" tex={rule.tex} />
-                  <div className="rule-detail text-muted">{result.detail}</div>
-                </li>
-              );
-            })}
-          </ul>
+          {ob && rules && (
+            <div className="inspection-block">
+              <h4 className="ob-section-title">Order Block Inspection</h4>
+              <div className="ob-header">
+                <span className={`tag ${ob.type === 'DEMAND' ? 'tag-good' : 'tag-critical'}`}>{ob.type}</span>
+                <span className="text-muted">{new Date(ob.startTime * 1000).toLocaleString()}</span>
+              </div>
+              <div className="ob-price-levels">
+                <div>
+                  <span className="text-muted">Top</span> {ob.top.toFixed(2)}
+                </div>
+                <div>
+                  <span className="text-muted">Bottom</span> {ob.bottom.toFixed(2)}
+                </div>
+                <div>
+                  <span className="text-muted">Score</span> {ob.quality}/5
+                </div>
+              </div>
 
-          <h4 className="ob-section-title">Zone Extent</h4>
-          <div className="ob-zone-extent text-muted">
-            Bar {ob.exactIdx} to {ob.endIdx} ({ob.endIdx - ob.exactIdx} bars)
-            {ob.mitigated_at != null ? `, mitigated at bar ${ob.mitigated_at}` : ', not yet mitigated'}.
-          </div>
+              <h4 className="ob-section-title">
+                Validation <span className="tag tag-live">LIVE</span>
+              </h4>
+              <p className="ob-section-note text-muted">
+                Independently re-derived in-browser from raw candles, not read from the record.
+              </p>
+              <ul className="rule-list">
+                {rules.map((rule) => {
+                  const result = rule.check();
+                  return (
+                    <li key={rule.label} className={`rail ${rule.recorded ? 'rail-good' : ''}`}>
+                      <div className="rule-row">
+                        <span>{rule.label}</span>
+                        <span className={`tag ${rule.recorded ? 'tag-good' : 'tag-ref'}`}>
+                          {rule.recorded ? 'PASS' : 'FALSE'}
+                        </span>
+                        {!result.matchesRecorded && <span className="tag tag-warning">MISMATCH</span>}
+                      </div>
+                      <Latex block className="rule-formula" tex={rule.tex} />
+                      <div className="rule-detail text-muted">{result.detail}</div>
+                    </li>
+                  );
+                })}
+              </ul>
 
-          <h4 className="ob-section-title">
-            KDJ Mode {hover.trade && <span className="tag tag-live">LIVE</span>}
-          </h4>
-          {hover.trade ? (
-            <div className="text-muted">
-              Adaptive, period = {hover.trade.adaptivePeriod} bars. OB origin bar {hover.trade.obBar} to entry bar{' '}
-              {hover.trade.entry_idx}.
+              <h4 className="ob-section-title">Zone Extent</h4>
+              <div className="ob-zone-extent text-muted">
+                Bar {ob.exactIdx} to {ob.endIdx} ({ob.endIdx - ob.exactIdx} bars)
+                {ob.mitigated_at != null ? `, mitigated at bar ${ob.mitigated_at}` : ', not yet mitigated'}.
+              </div>
             </div>
-          ) : (
-            <div className="text-muted">Static, 9-period RSV lookback (no active trade at this bar).</div>
           )}
         </div>
       )}

@@ -101,20 +101,9 @@
 }
 
 .charts-column {
-  display: flex;
-  flex-direction: column;
   height: 100%;
   min-width: 0;
   border: 1px solid var(--border);
-}
-
-.chart-pane {
-  min-height: 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.chart-pane:last-child {
-  border-bottom: none;
 }
 
 .pane-header-overlay {
@@ -139,6 +128,37 @@
 .ob-rect {
   position: absolute;
   box-sizing: border-box;
+}
+
+.formulation-band {
+  position: absolute;
+  box-sizing: border-box;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(128, 128, 128, 0.06),
+    rgba(128, 128, 128, 0.06) 6px,
+    rgba(128, 128, 128, 0.11) 6px,
+    rgba(128, 128, 128, 0.11) 12px
+  );
+}
+
+.formulation-boundary-line {
+  position: absolute;
+  width: 1px;
+  border-left: 1px dashed var(--text-muted);
+}
+
+.formulation-boundary-label {
+  position: absolute;
+  top: var(--space-1);
+  transform: translateX(4px);
+  font-size: 0.62rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  background: var(--surface-1);
+  padding: 0 var(--space-1);
 }
 
 .trade-zone {
@@ -174,6 +194,12 @@
 
 .ob-empty-state {
   font-size: 0.8rem;
+}
+
+.inspection-block + .inspection-block {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
 }
 
 .ob-header {
