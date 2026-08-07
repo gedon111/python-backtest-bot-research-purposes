@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import threading
 import http.server
@@ -459,6 +460,37 @@ def run_paper_sync_report(bot, output_dir):
         print(f"\n[WARNING] Skipping paper_sync_report.md: failed to generate ({e}).")
 
 
+def run_statistical_artifacts(output_dir):
+    """
+    Regenerates the bootstrap/power, fee-slippage, and ablation-reconstruction
+    JSON artifacts alongside paper_sync_report.md, so a single Run_All.py run
+    produces every statistical figure the dashboard and paper checklist read.
+    Each script is independent and non-fatal to the rest of the pipeline --
+    a failure in one is reported and skipped, not a reason to abort export.
+    Run as a subprocess (not imported) to keep these analysis scripts'
+    argparse-based CLI contract as the one interface this pipeline depends on.
+    """
+    scripts = [
+        ("analysis/bootstrap_power_analysis.py", "bootstrap_power_analysis.json"),
+        ("analysis/fee_slippage_analysis.py", "fee_slippage_analysis.json"),
+        ("analysis/ablation_reconstruction.py", "ablation_reconstruction.json"),
+    ]
+    for script, out_name in scripts:
+        out_path = os.path.join(output_dir, out_name)
+        try:
+            subprocess.run(
+                [sys.executable, script, "--json-out", out_path],
+                check=True, capture_output=True, text=True,
+            )
+            print(f"[statistical-artifacts] wrote {out_path}")
+        except subprocess.CalledProcessError as e:
+            print(f"\n[WARNING] Skipping {out_name}: {script} failed (exit {e.returncode}).")
+            if e.stdout:
+                print(e.stdout[-1500:])
+            if e.stderr:
+                print(e.stderr[-1500:])
+
+
 def main():
     args = parse_args()
     print("Loading Binance backtest bot module...")
@@ -472,6 +504,7 @@ def main():
     print(f"Artifacts directory: {args.output_dir}")
 
     run_paper_sync_report(bot, args.output_dir)
+    run_statistical_artifacts(args.output_dir)
 
     if getattr(args, 'no_server', False):
         print("\nSkipping local dashboard web server (--no-server was set).")
