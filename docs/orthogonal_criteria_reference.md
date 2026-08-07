@@ -1,6 +1,6 @@
 # Orthogonal Order Block Criteria Reference & Magnitude Contribution Analysis
 
-> **Superseded 2026-08-01:** The FVG lookahead fix (`CLAUDE.md` Known bugs #3, commit `cb4ed93`) changed this file's Section 3 FVG Welch's t-test result; corrected below. See `STUDY_REFERENCE.md` §6.3 for the source of truth and independent live re-derivation.
+> **Superseded 2026-08-01:** The FVG lookahead fix (`CLAUDE.md` Known bugs #3, commit `cb4ed93`) changed this file's Section 3 FVG Welch's t-test result; corrected below. See `STUDY_REFERENCE.md` §6.3 for the source of truth and independent live re-derivation, or `artifacts/paper_sync_report.md` / `analysis/fee_slippage_analysis.py` for a currently-regenerable live recomputation of the same per-criterion Fisher's exact + Welch's t-test table (including Section 1's magnitude table, whose True/False N counts predate this fix and should not be cited without cross-checking against a live run).
 
 > **Paper Title:** *Harnessing Bitcoin Volatility: Backtesting an Integrated Algorithmic Strategy Combining KDJ, MACD, and Smart Money Concepts*  
 > **Repository Context:** Binance Backtest Bot Research Package (`BTCUSDT` 4H Dataset, 2022–2026)  
