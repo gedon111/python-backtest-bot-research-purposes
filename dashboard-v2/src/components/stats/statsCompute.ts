@@ -86,6 +86,10 @@ export interface CriterionTestRow {
   fisherP: number;
   welch: WelchResult;
   mde: MdeResult;
+  // Additive: raw pnl_pct values behind trueN/falseN, so the Solutions tab can
+  // show how welch.m1/v1 etc. were actually computed, not just state them.
+  trueValues: number[];
+  falseValues: number[];
 }
 
 /**
@@ -111,7 +115,18 @@ export function computeCriteriaTests(trades: TradeRecord[]): CriterionTestRow[] 
       trueList.map((t) => t.pnl_pct),
       falseList.map((t) => t.pnl_pct)
     );
-    return { label: criterion.label, trueN: trueList.length, trueWins, falseN: falseList.length, falseWins, fisherP, welch, mde };
+    return {
+      label: criterion.label,
+      trueN: trueList.length,
+      trueWins,
+      falseN: falseList.length,
+      falseWins,
+      fisherP,
+      welch,
+      mde,
+      trueValues: trueList.map((t) => t.pnl_pct),
+      falseValues: falseList.map((t) => t.pnl_pct),
+    };
   });
 }
 

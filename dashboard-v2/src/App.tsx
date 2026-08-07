@@ -4,14 +4,16 @@ import { useDashboardTheme } from './theme/ThemeContext';
 import { ChartTab } from './components/tabs/ChartTab';
 import { SandboxTab } from './components/tabs/SandboxTab';
 import { StatsTab } from './components/tabs/StatsTab';
+import { SolutionsTab } from './components/tabs/SolutionsTab';
 import { SettingsPanel } from './components/SettingsPanel';
 
-type TabId = 'chart' | 'sandbox' | 'stats';
+type TabId = 'chart' | 'sandbox' | 'stats' | 'solutions';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'chart', label: 'Chart' },
   { id: 'sandbox', label: 'Sandbox' },
   { id: 'stats', label: 'Stats' },
+  { id: 'solutions', label: 'Solutions' },
 ];
 
 export function App() {
@@ -51,6 +53,7 @@ export function App() {
         {tab === 'chart' && <ChartTab />}
         {tab === 'sandbox' && <SandboxTab />}
         {tab === 'stats' && <StatsTab />}
+        {tab === 'solutions' && <SolutionsTab />}
       </main>
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
     </div>

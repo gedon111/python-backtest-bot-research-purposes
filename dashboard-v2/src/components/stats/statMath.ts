@@ -207,6 +207,16 @@ export interface WelchResult {
   t: number;
   df: number;
   p: number;
+  // Additive (non-breaking) fields beyond what StatsTab.tsx reads (t/p) --
+  // exposed so the Solutions tab can show the full mean/variance
+  // substitution step without recomputing it separately from a different
+  // code path than what StatsTab itself displays.
+  n1: number;
+  n2: number;
+  m1: number;
+  m2: number;
+  v1: number;
+  v2: number;
 }
 
 /** Welch's unequal-variance two-sample t-test (two-sided), same formula as scipy.stats.ttest_ind(equal_var=False). */
@@ -220,11 +230,11 @@ export function welchTTest(a: number[], b: number[]): WelchResult {
   const v1 = variance(a, m1);
   const v2 = variance(b, m2);
   const se2 = v1 / n1 + v2 / n2;
-  if (se2 <= 0 || n1 < 2 || n2 < 2) return { t: NaN, df: NaN, p: NaN };
+  if (se2 <= 0 || n1 < 2 || n2 < 2) return { t: NaN, df: NaN, p: NaN, n1, n2, m1, m2, v1, v2 };
   const t = (m1 - m2) / Math.sqrt(se2);
   const df = se2 ** 2 / ((v1 / n1) ** 2 / (n1 - 1) + (v2 / n2) ** 2 / (n2 - 1));
   const p = studentTPValue(t, df);
-  return { t, df, p };
+  return { t, df, p, n1, n2, m1, m2, v1, v2 };
 }
 
 /**
