@@ -1,0 +1,419 @@
+{
+  "min_ob_quality": 0,
+  "scenarios": [
+    {
+      "label": "GROSS (no fees, no slippage -- as currently reported)",
+      "drag_pct": 0.0,
+      "total_return_pct": 30.306456356031937,
+      "avg_return_pct": 1.1224613465197013,
+      "sd_return_pct": 2.4101357189345545,
+      "wins": 19,
+      "n": 27,
+      "win_rate_pct": 70.37037037037037,
+      "binomial_p_one_sided": 0.026119492948055267,
+      "binomial_p_two_sided": 0.052238985896110535,
+      "flipped_trades": [],
+      "criteria": {
+        "Displacement": {
+          "true_n": 4,
+          "true_wins": 2,
+          "false_n": 23,
+          "false_wins": 17,
+          "fisher_p": 0.5582905982905983,
+          "welch_t": -0.9277407057967489,
+          "welch_p": 0.37748725822553686
+        },
+        "LargeBar": {
+          "true_n": 20,
+          "true_wins": 14,
+          "false_n": 7,
+          "false_wins": 5,
+          "fisher_p": 1.0,
+          "welch_t": 0.28946114348376056,
+          "welch_p": 0.7750848933181457
+        },
+        "FVG": {
+          "true_n": 11,
+          "true_wins": 8,
+          "false_n": 16,
+          "false_wins": 11,
+          "fisher_p": 1.0,
+          "welch_t": 0.5360041045524748,
+          "welch_p": 0.5996081607452887
+        },
+        "LiqSweep": {
+          "true_n": 15,
+          "true_wins": 10,
+          "false_n": 12,
+          "false_wins": 9,
+          "fisher_p": 0.6956521739130435,
+          "welch_t": -0.8195077075041867,
+          "welch_p": 0.4203607917800148
+        },
+        "VolExpansion": {
+          "true_n": 15,
+          "true_wins": 9,
+          "false_n": 12,
+          "false_wins": 10,
+          "fisher_p": 0.2357487922705314,
+          "welch_t": -0.8834662553425664,
+          "welch_p": 0.3864488435621503
+        }
+      }
+    },
+    {
+      "label": "FEE ONLY (confirmed 5.00bps/side taker, no slippage, round trip)",
+      "drag_pct": 0.1,
+      "total_return_pct": 27.606456356031938,
+      "avg_return_pct": 1.0224613465197014,
+      "sd_return_pct": 2.4101357189345545,
+      "wins": 19,
+      "n": 27,
+      "win_rate_pct": 70.37037037037037,
+      "binomial_p_one_sided": 0.026119492948055267,
+      "binomial_p_two_sided": 0.052238985896110535,
+      "flipped_trades": [],
+      "criteria": {
+        "Displacement": {
+          "true_n": 4,
+          "true_wins": 2,
+          "false_n": 23,
+          "false_wins": 17,
+          "fisher_p": 0.5582905982905983,
+          "welch_t": -0.9277407057967492,
+          "welch_p": 0.37748725822553686
+        },
+        "LargeBar": {
+          "true_n": 20,
+          "true_wins": 14,
+          "false_n": 7,
+          "false_wins": 5,
+          "fisher_p": 1.0,
+          "welch_t": 0.2894611434837613,
+          "welch_p": 0.7750848933181451
+        },
+        "FVG": {
+          "true_n": 11,
+          "true_wins": 8,
+          "false_n": 16,
+          "false_wins": 11,
+          "fisher_p": 1.0,
+          "welch_t": 0.5360041045524748,
+          "welch_p": 0.5996081607452887
+        },
+        "LiqSweep": {
+          "true_n": 15,
+          "true_wins": 10,
+          "false_n": 12,
+          "false_wins": 9,
+          "fisher_p": 0.6956521739130435,
+          "welch_t": -0.819507707504187,
+          "welch_p": 0.4203607917800146
+        },
+        "VolExpansion": {
+          "true_n": 15,
+          "true_wins": 9,
+          "false_n": 12,
+          "false_wins": 10,
+          "fisher_p": 0.2357487922705314,
+          "welch_t": -0.8834662553425666,
+          "welch_p": 0.38644884356215015
+        }
+      }
+    },
+    {
+      "label": "PRIMARY: FEE (confirmed) + CONSERVATIVE SLIPPAGE (5.00+5.00bps/side, round trip)",
+      "drag_pct": 0.2,
+      "total_return_pct": 24.906456356031935,
+      "avg_return_pct": 0.9224613465197012,
+      "sd_return_pct": 2.4101357189345545,
+      "wins": 17,
+      "n": 27,
+      "win_rate_pct": 62.96296296296296,
+      "binomial_p_one_sided": 0.12389428168535233,
+      "binomial_p_two_sided": 0.24778856337070465,
+      "flipped_trades": [
+        {
+          "entry_idx": 7938,
+          "gross_pnl_pct": 0.11959502895478961,
+          "net_pnl_pct": -0.0804049710452104
+        },
+        {
+          "entry_idx": 8188,
+          "gross_pnl_pct": 0.12641496644751074,
+          "net_pnl_pct": -0.07358503355248927
+        }
+      ],
+      "criteria": {
+        "Displacement": {
+          "true_n": 4,
+          "true_wins": 2,
+          "false_n": 23,
+          "false_wins": 15,
+          "fisher_p": 0.6125356125356125,
+          "welch_t": -0.9277407057967489,
+          "welch_p": 0.37748725822553686
+        },
+        "LargeBar": {
+          "true_n": 20,
+          "true_wins": 12,
+          "false_n": 7,
+          "false_wins": 5,
+          "fisher_p": 0.678389243606635,
+          "welch_t": 0.28946114348376056,
+          "welch_p": 0.7750848933181457
+        },
+        "FVG": {
+          "true_n": 11,
+          "true_wins": 8,
+          "false_n": 16,
+          "false_wins": 9,
+          "fisher_p": 0.44754640223747777,
+          "welch_t": 0.5360041045524748,
+          "welch_p": 0.5996081607452887
+        },
+        "LiqSweep": {
+          "true_n": 15,
+          "true_wins": 9,
+          "false_n": 12,
+          "false_wins": 8,
+          "fisher_p": 1.0,
+          "welch_t": -0.8195077075041871,
+          "welch_p": 0.42036079178001456
+        },
+        "VolExpansion": {
+          "true_n": 15,
+          "true_wins": 7,
+          "false_n": 12,
+          "false_wins": 10,
+          "fisher_p": 0.10709382151029746,
+          "welch_t": -0.8834662553425667,
+          "welch_p": 0.3864488435621497
+        }
+      }
+    },
+    {
+      "label": "[sensitivity band, pre-confirmation] LOW  (4bps taker + 3bps slip, round trip)",
+      "drag_pct": 0.14,
+      "total_return_pct": 26.526456356031936,
+      "avg_return_pct": 0.9824613465197013,
+      "sd_return_pct": 2.4101357189345545,
+      "wins": 17,
+      "n": 27,
+      "win_rate_pct": 62.96296296296296,
+      "binomial_p_one_sided": 0.12389428168535233,
+      "binomial_p_two_sided": 0.24778856337070465,
+      "flipped_trades": [
+        {
+          "entry_idx": 7938,
+          "gross_pnl_pct": 0.11959502895478961,
+          "net_pnl_pct": -0.0204049710452104
+        },
+        {
+          "entry_idx": 8188,
+          "gross_pnl_pct": 0.12641496644751074,
+          "net_pnl_pct": -0.013585033552489273
+        }
+      ],
+      "criteria": {
+        "Displacement": {
+          "true_n": 4,
+          "true_wins": 2,
+          "false_n": 23,
+          "false_wins": 15,
+          "fisher_p": 0.6125356125356125,
+          "welch_t": -0.9277407057967496,
+          "welch_p": 0.3774872582255367
+        },
+        "LargeBar": {
+          "true_n": 20,
+          "true_wins": 12,
+          "false_n": 7,
+          "false_wins": 5,
+          "fisher_p": 0.678389243606635,
+          "welch_t": 0.2894611434837611,
+          "welch_p": 0.7750848933181453
+        },
+        "FVG": {
+          "true_n": 11,
+          "true_wins": 8,
+          "false_n": 16,
+          "false_wins": 9,
+          "fisher_p": 0.44754640223747777,
+          "welch_t": 0.5360041045524748,
+          "welch_p": 0.5996081607452887
+        },
+        "LiqSweep": {
+          "true_n": 15,
+          "true_wins": 9,
+          "false_n": 12,
+          "false_wins": 8,
+          "fisher_p": 1.0,
+          "welch_t": -0.819507707504187,
+          "welch_p": 0.4203607917800145
+        },
+        "VolExpansion": {
+          "true_n": 15,
+          "true_wins": 7,
+          "false_n": 12,
+          "false_wins": 10,
+          "fisher_p": 0.10709382151029746,
+          "welch_t": -0.883466255342567,
+          "welch_p": 0.38644884356215004
+        }
+      }
+    },
+    {
+      "label": "[sensitivity band, pre-confirmation] MID  (7bps taker + 5bps slip, round trip)",
+      "drag_pct": 0.24,
+      "total_return_pct": 23.826456356031937,
+      "avg_return_pct": 0.8824613465197013,
+      "sd_return_pct": 2.4101357189345545,
+      "wins": 17,
+      "n": 27,
+      "win_rate_pct": 62.96296296296296,
+      "binomial_p_one_sided": 0.12389428168535233,
+      "binomial_p_two_sided": 0.24778856337070465,
+      "flipped_trades": [
+        {
+          "entry_idx": 7938,
+          "gross_pnl_pct": 0.11959502895478961,
+          "net_pnl_pct": -0.12040497104521038
+        },
+        {
+          "entry_idx": 8188,
+          "gross_pnl_pct": 0.12641496644751074,
+          "net_pnl_pct": -0.11358503355248925
+        }
+      ],
+      "criteria": {
+        "Displacement": {
+          "true_n": 4,
+          "true_wins": 2,
+          "false_n": 23,
+          "false_wins": 15,
+          "fisher_p": 0.6125356125356125,
+          "welch_t": -0.9277407057967489,
+          "welch_p": 0.37748725822553686
+        },
+        "LargeBar": {
+          "true_n": 20,
+          "true_wins": 12,
+          "false_n": 7,
+          "false_wins": 5,
+          "fisher_p": 0.678389243606635,
+          "welch_t": 0.28946114348376056,
+          "welch_p": 0.7750848933181457
+        },
+        "FVG": {
+          "true_n": 11,
+          "true_wins": 8,
+          "false_n": 16,
+          "false_wins": 9,
+          "fisher_p": 0.44754640223747777,
+          "welch_t": 0.5360041045524749,
+          "welch_p": 0.5996081607452886
+        },
+        "LiqSweep": {
+          "true_n": 15,
+          "true_wins": 9,
+          "false_n": 12,
+          "false_wins": 8,
+          "fisher_p": 1.0,
+          "welch_t": -0.8195077075041867,
+          "welch_p": 0.4203607917800147
+        },
+        "VolExpansion": {
+          "true_n": 15,
+          "true_wins": 7,
+          "false_n": 12,
+          "false_wins": 10,
+          "fisher_p": 0.10709382151029746,
+          "welch_t": -0.883466255342567,
+          "welch_p": 0.3864488435621497
+        }
+      }
+    },
+    {
+      "label": "[sensitivity band, pre-confirmation] HIGH (10bps taker + 10bps slip, round trip)",
+      "drag_pct": 0.4,
+      "total_return_pct": 19.50645635603194,
+      "avg_return_pct": 0.7224613465197015,
+      "sd_return_pct": 2.4101357189345545,
+      "wins": 15,
+      "n": 27,
+      "win_rate_pct": 55.55555555555556,
+      "binomial_p_one_sided": 0.3505540192127228,
+      "binomial_p_two_sided": 0.7011080384254456,
+      "flipped_trades": [
+        {
+          "entry_idx": 2859,
+          "gross_pnl_pct": 0.25068272937506064,
+          "net_pnl_pct": -0.14931727062493938
+        },
+        {
+          "entry_idx": 5825,
+          "gross_pnl_pct": 0.3779120486356351,
+          "net_pnl_pct": -0.02208795136436492
+        },
+        {
+          "entry_idx": 7938,
+          "gross_pnl_pct": 0.11959502895478961,
+          "net_pnl_pct": -0.2804049710452104
+        },
+        {
+          "entry_idx": 8188,
+          "gross_pnl_pct": 0.12641496644751074,
+          "net_pnl_pct": -0.2735850335524893
+        }
+      ],
+      "criteria": {
+        "Displacement": {
+          "true_n": 4,
+          "true_wins": 2,
+          "false_n": 23,
+          "false_wins": 13,
+          "fisher_p": 1.0,
+          "welch_t": -0.927740705796749,
+          "welch_p": 0.3774872582255369
+        },
+        "LargeBar": {
+          "true_n": 20,
+          "true_wins": 11,
+          "false_n": 7,
+          "false_wins": 4,
+          "fisher_p": 1.0,
+          "welch_t": 0.28946114348376073,
+          "welch_p": 0.7750848933181456
+        },
+        "FVG": {
+          "true_n": 11,
+          "true_wins": 7,
+          "false_n": 16,
+          "false_wins": 8,
+          "fisher_p": 0.69596625835689,
+          "welch_t": 0.5360041045524748,
+          "welch_p": 0.5996081607452887
+        },
+        "LiqSweep": {
+          "true_n": 15,
+          "true_wins": 7,
+          "false_n": 12,
+          "false_wins": 8,
+          "fisher_p": 0.44079508233499354,
+          "welch_t": -0.819507707504187,
+          "welch_p": 0.4203607917800145
+        },
+        "VolExpansion": {
+          "true_n": 15,
+          "true_wins": 5,
+          "false_n": 12,
+          "false_wins": 10,
+          "fisher_p": 0.01853696474776028,
+          "welch_t": -0.8834662553425666,
+          "welch_p": 0.38644884356214987
+        }
+      }
+    }
+  ]
+}

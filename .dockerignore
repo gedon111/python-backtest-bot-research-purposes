@@ -4,3 +4,5 @@ __pycache__/
 *.pyd
 .git
 .gitignore
+dashboard-v2/node_modules
+dashboard-v2/dist

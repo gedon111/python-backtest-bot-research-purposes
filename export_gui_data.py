@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import threading
 import http.server
@@ -439,6 +440,57 @@ def parse_args():
     return args
 
 
+def run_paper_sync_report(bot, output_dir):
+    """
+    Final pipeline step: regenerate artifacts/paper_sync_report.md, the
+    live cross-check of CLAUDE.md's locked results against a fresh
+    recomputation. Non-fatal to the dashboard export on failure -- a
+    mismatch here is a paper/codebase correctness finding for a human to
+    review (see analysis/paper_sync_report.py's own STOP banner), not a
+    reason to block dashboard artifact generation.
+    """
+    try:
+        from analysis.paper_sync_report import generate_report
+        out_path = os.path.join(output_dir, "paper_sync_report.md")
+        _, mismatches, _ = generate_report(bot=bot, out_path=out_path)
+        if mismatches:
+            print(f"\n[WARNING] paper_sync_report.md found {len(mismatches)} mismatch(es) "
+                  f"against CLAUDE.md's locked results -- see {out_path}.")
+    except Exception as e:
+        print(f"\n[WARNING] Skipping paper_sync_report.md: failed to generate ({e}).")
+
+
+def run_statistical_artifacts(output_dir):
+    """
+    Regenerates the bootstrap/power, fee-slippage, and ablation-reconstruction
+    JSON artifacts alongside paper_sync_report.md, so a single Run_All.py run
+    produces every statistical figure the dashboard and paper checklist read.
+    Each script is independent and non-fatal to the rest of the pipeline --
+    a failure in one is reported and skipped, not a reason to abort export.
+    Run as a subprocess (not imported) to keep these analysis scripts'
+    argparse-based CLI contract as the one interface this pipeline depends on.
+    """
+    scripts = [
+        ("analysis/bootstrap_power_analysis.py", "bootstrap_power_analysis.json"),
+        ("analysis/fee_slippage_analysis.py", "fee_slippage_analysis.json"),
+        ("analysis/ablation_reconstruction.py", "ablation_reconstruction.json"),
+    ]
+    for script, out_name in scripts:
+        out_path = os.path.join(output_dir, out_name)
+        try:
+            subprocess.run(
+                [sys.executable, script, "--json-out", out_path],
+                check=True, capture_output=True, text=True,
+            )
+            print(f"[statistical-artifacts] wrote {out_path}")
+        except subprocess.CalledProcessError as e:
+            print(f"\n[WARNING] Skipping {out_name}: {script} failed (exit {e.returncode}).")
+            if e.stdout:
+                print(e.stdout[-1500:])
+            if e.stderr:
+                print(e.stderr[-1500:])
+
+
 def main():
     args = parse_args()
     print("Loading Binance backtest bot module...")
@@ -451,6 +503,9 @@ def main():
     print(f"Verification: {verification_report['status']}")
     print(f"Artifacts directory: {args.output_dir}")
 
+    run_paper_sync_report(bot, args.output_dir)
+    run_statistical_artifacts(args.output_dir)
+
     if getattr(args, 'no_server', False):
         print("\nSkipping local dashboard web server (--no-server was set).")
         return
@@ -462,9 +517,28 @@ def main():
     class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         daemon_threads = True
 
+    DASHBOARD_DIST_DIR = os.path.join("dashboard-v2", "dist")
+
     class SilentHandler(http.server.SimpleHTTPRequestHandler):
         def log_message(self, format, *args):
             pass
+
+        def translate_path(self, path):
+            import urllib.parse
+            parsed_path = urllib.parse.urlparse(path).path
+            if parsed_path == "/dashboard" or parsed_path == "/dashboard/":
+                return os.path.join(os.getcwd(), DASHBOARD_DIST_DIR, "index.html")
+            if parsed_path.startswith("/dashboard/"):
+                rel = parsed_path[len("/dashboard/"):]
+                candidate = os.path.join(os.getcwd(), DASHBOARD_DIST_DIR, rel)
+                if os.path.isfile(candidate):
+                    return candidate
+                # Bare/unknown sub-path under /dashboard/ -- this app has no
+                # client-side routing today (tabs are React state, not URL
+                # paths), but falling back to index.html here is the standard,
+                # harmless SPA convention rather than a 404 on a hard reload.
+                return os.path.join(os.getcwd(), DASHBOARD_DIST_DIR, "index.html")
+            return super().translate_path(path)
 
         def do_GET(self):
             if self.path == "/api/iterations":
@@ -714,9 +788,20 @@ def main():
     server_thread = threading.Thread(target=serve, daemon=True)
     server_thread.start()
 
-    url = f"http://{HOST}:{PORT}/gui.html"
-    print(f"[Dashboard] Opening dashboard in browser: {url}")
-    webbrowser.open(url)
+    dashboard_index = os.path.join(DASHBOARD_DIST_DIR, "index.html")
+    if not os.path.isfile(dashboard_index):
+        print(
+            f"\n[ERROR] {dashboard_index} not found -- the dashboard hasn't been built.\n"
+            f"  Run: cd dashboard-v2 && npm run build\n"
+            f"  (Run_All.py / Run_Dashboard.py do this automatically; running "
+            f"export_gui_data.py directly does not.)\n"
+            f"  The API server is still running on http://{HOST}:{PORT}/ for debugging, "
+            f"but no browser window will open."
+        )
+    else:
+        url = f"http://{HOST}:{PORT}/dashboard/"
+        print(f"[Dashboard] Opening dashboard in browser: {url}")
+        webbrowser.open(url)
     
     print("\nPress Ctrl+C to stop the server and exit.")
     try:

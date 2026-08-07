@@ -1,0 +1,234 @@
+/*
+ * Design tokens -- rebuilt from nothing (see git history for the prior,
+ * deleted version). Direction: a data-dense trading-terminal instrument, not
+ * a SaaS dashboard. Dark is the native/default mode, not an afterthought --
+ * true near-black surfaces, amber as the primary accent (the color most
+ * associated with professional terminal UIs), cyan as a secondary/interactive
+ * accent, monospace for everything (data AND labels/headers -- one typeface,
+ * not three). Light mode is supported through the same custom-property
+ * mechanism for accessibility, but every design decision below is made for
+ * dark first.
+ *
+ * No filled colored badges/pills anywhere in this system -- status and
+ * severity are conveyed by the .tag (bracket-text) and .rail-* (left-border
+ * stripe on an otherwise neutral panel) utilities defined at the bottom of
+ * this file. Every component built on top of these tokens must use those,
+ * not introduce a new colored-background pattern.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Layered near-black surfaces -- texture without shadows or gradients. */
+  --surface-0: #060606; /* page background */
+  --surface-1: #0e0f12; /* panel background */
+  --surface-2: #16181d; /* nested/raised panel, table header row */
+  --surface-3: #1e2129; /* hover / active row */
+
+  --border: #26282f;
+  --border-strong: #383b45;
+
+  --text-primary: #e8e6de;
+  --text-secondary: #a3a6b0;
+  --text-muted: #62656f;
+
+  /* Amber: the primary accent -- the color terminal UIs are built around. */
+  --accent: #ff9f0a;
+  --accent-strong: #ffb84d;
+  /* Cyan: secondary/interactive accent -- links, live-state, selection. */
+  --accent-2: #2dd9d9;
+
+  --good: #2ecc71;
+  --critical: #ff4d4f;
+  --warning: #ffcc33;
+
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius: 2px;
+  --topbar-height: 44px;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --surface-0: #f4f4f0;
+  --surface-1: #ffffff;
+  --surface-2: #eae9e3;
+  --surface-3: #dedcd3;
+
+  --border: #d3d1c7;
+  --border-strong: #b6b3a5;
+
+  --text-primary: #14140f;
+  --text-secondary: #4c4b43;
+  --text-muted: #83816f;
+
+  --accent: #b5650a;
+  --accent-strong: #8a4c06;
+  --accent-2: #067a7a;
+
+  --good: #1a8a44;
+  --critical: #c4302b;
+  --warning: #a6720a;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+
+    --surface-0: #f4f4f0;
+    --surface-1: #ffffff;
+    --surface-2: #eae9e3;
+    --surface-3: #dedcd3;
+
+    --border: #d3d1c7;
+    --border-strong: #b6b3a5;
+
+    --text-primary: #14140f;
+    --text-secondary: #4c4b43;
+    --text-muted: #83816f;
+
+    --accent: #b5650a;
+    --accent-strong: #8a4c06;
+    --accent-2: #067a7a;
+
+    --good: #1a8a44;
+    --critical: #c4302b;
+    --warning: #a6720a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100vh;
+}
+
+table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+}
+
+th {
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-strong);
+  padding: var(--space-2) var(--space-3);
+}
+
+td {
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-2) var(--space-3);
+}
+
+code {
+  font-family: var(--font-mono);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+button,
+select,
+input {
+  font-family: var(--font-mono);
+  font-size: inherit;
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+/* ---------------------------------------------------------------------
+ * Shared primitives
+ * ------------------------------------------------------------------- */
+
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* Severity/status rail -- a colored left border on an otherwise neutral
+   panel, replacing filled colored backgrounds entirely. */
+.rail {
+  border-left: 3px solid var(--border-strong);
+  padding-left: var(--space-3);
+}
+.rail-accent { border-left-color: var(--accent); }
+.rail-good { border-left-color: var(--good); }
+.rail-critical { border-left-color: var(--critical); }
+.rail-warning { border-left-color: var(--warning); }
+
+/* Bracket-tag: the sole status/provenance indicator across the app.
+   Rendered as inline monospace text, e.g. <span class="tag tag-live">LIVE</span>
+   -> "[LIVE]" -- brackets are added via ::before/::after so callers never
+   have to type them, and can't accidentally add a colored background. */
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.tag::before { content: '['; }
+.tag::after { content: ']'; }
+
+.tag-live { color: var(--accent-2); }
+.tag-ref { color: var(--text-muted); }
+.tag-good { color: var(--good); }
+.tag-critical { color: var(--critical); }
+.tag-warning { color: var(--warning); }
+.tag-accent { color: var(--accent); }
+
+/* Centralized semantic text-color utilities -- replaces one-off
+   style={{color: 'var(--x)'}} overrides scattered through components. */
+.text-good { color: var(--good); }
+.text-critical { color: var(--critical); }
+.text-warning { color: var(--warning); }
+.text-accent { color: var(--accent); }
+.text-muted { color: var(--text-muted); }
+.text-secondary { color: var(--text-secondary); }
+
+/* Plain semantic text color for trade PnL, not a "colored rectangle" -- no
+   background, no border, just the number itself in green/red. */
+.pnl-pos { color: var(--good); }
+.pnl-neg { color: var(--critical); }

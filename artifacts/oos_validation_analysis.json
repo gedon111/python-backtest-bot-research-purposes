@@ -1,0 +1,66 @@
+{
+  "oos_end_date": "2026-07-31 23:59:59",
+  "section_1_forward_oos": {
+    "start_date": "2022-01-01 00:00:00",
+    "oos_end_date": "2026-07-31 23:59:59",
+    "bars_pulled": 10038,
+    "integrity_check": true,
+    "regression_check": "True",
+    "oos_trades": [
+      {
+        "side": "LONG",
+        "entry_time": "2026-03-07T16:00:00",
+        "exit_time": "2026-03-09T04:00:00",
+        "pnl_pct": -2.997808704924463,
+        "exit_reason": "KDJ RESET EXIT"
+      },
+      {
+        "side": "LONG",
+        "entry_time": "2026-03-28T12:00:00",
+        "exit_time": "2026-03-31T00:00:00",
+        "pnl_pct": -0.01717209413010801,
+        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+      },
+      {
+        "side": "SHORT",
+        "entry_time": "2026-05-02T20:00:00",
+        "exit_time": "2026-05-04T08:00:00",
+        "pnl_pct": -2.3298436556977666,
+        "exit_reason": "HIT STOP LOSS"
+      },
+      {
+        "side": "LONG",
+        "entry_time": "2026-07-25T20:00:00",
+        "exit_time": "2026-07-27T04:00:00",
+        "pnl_pct": 1.8977127543548005,
+        "exit_reason": "ATR MOVE EXIT"
+      }
+    ],
+    "oos_summary": {
+      "n": 4,
+      "wins": 1,
+      "win_rate_pct": 25.0,
+      "total_pnl_pct": -3.447111700397538,
+      "avg_pnl_pct": -0.8617779250993844
+    }
+  },
+  "section_2_backfill_audit": {
+    "backfill_start_date": "2018-01-01 00:00:00",
+    "oos_end_date": "2026-07-31 23:59:59",
+    "bars_pulled": 18788,
+    "methodological_verdict": true,
+    "pre_window_not_oos": {
+      "n": 25,
+      "wins": 15,
+      "win_rate_pct": 60.0,
+      "total_pnl_pct": 21.824580932541252,
+      "avg_pnl_pct": 0.8729832373016501
+    },
+    "combined_full_window": {
+      "caveat": "Mixes formulation-period and OOS data -- do not cite as clean validation",
+      "total_trades": 56,
+      "win_rate_pct": 62.5,
+      "total_net_return_pct": 48.683925588175654
+    }
+  }
+}

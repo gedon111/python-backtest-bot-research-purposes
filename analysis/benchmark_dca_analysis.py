@@ -49,6 +49,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats as sstats
 
+from _json_utils import write_json
+
 PERIODS_PER_YEAR_4H = 6 * 365.25  # 4H bars/year, leap-year-averaged
 PERIODS_PER_YEAR_WEEKLY = 52
 
@@ -87,7 +89,7 @@ def sharpe_sortino(bar_returns, periods_per_year: float):
 # Section 1: strategy vs. BTC buy-and-hold
 # ─────────────────────────────────────────────────────────────────────────
 
-def section_1_benchmark(df: pd.DataFrame, trades: pd.DataFrame) -> None:
+def section_1_benchmark(df: pd.DataFrame, trades: pd.DataFrame) -> dict:
     n_bars = len(df)
     close = df["close"]
 
@@ -149,12 +151,27 @@ def section_1_benchmark(df: pd.DataFrame, trades: pd.DataFrame) -> None:
     print("=" * 100)
     print()
 
+    return {
+        "n_bars": n_bars,
+        "strategy": {
+            "total_return_pct": total_net_return, "time_in_market_pct": strat_time_in_market * 100,
+            "bars_of_exposure": int(hold_bars_sum), "return_per_bar_pct": strat_return_per_bar,
+            "max_drawdown_pct": strat_max_dd, "sharpe": strat_sharpe, "sortino": strat_sortino,
+        },
+        "buy_and_hold": {
+            "total_return_pct": bh_total_return, "time_in_market_pct": 100.0,
+            "bars_of_exposure": bh_exposure_bars, "return_per_bar_pct": bh_return_per_bar,
+            "max_drawdown_pct": bh_max_dd, "sharpe": bh_sharpe, "sortino": bh_sortino,
+        },
+        "correlation": {"pearson_r": r, "n": n_corr, "p": p_corr},
+    }
+
 
 # ─────────────────────────────────────────────────────────────────────────
 # Section 2: DCA-blend complementary-sleeve model
 # ─────────────────────────────────────────────────────────────────────────
 
-def section_2_dca_blend(df: pd.DataFrame, trades: pd.DataFrame, contribution: float, splits) -> None:
+def section_2_dca_blend(df: pd.DataFrame, trades: pd.DataFrame, contribution: float, splits) -> dict:
     n_bars = len(df)
     close = df["close"].values
     open_time = df["open_time"]
@@ -166,7 +183,7 @@ def section_2_dca_blend(df: pd.DataFrame, trades: pd.DataFrame, contribution: fl
     contribution_bars = df.groupby(week_key).apply(lambda g: g.index.min()).sort_values().values
     contribution_bars = np.array(sorted(set(int(x) for x in contribution_bars)))
 
-    def run_split(s: float, label: str) -> None:
+    def run_split(s: float, label: str) -> dict:
         dca_only_units = 0.0
         btc_sub_units = 0.0
         strat_cash = 0.0
@@ -234,14 +251,34 @@ def section_2_dca_blend(df: pd.DataFrame, trades: pd.DataFrame, contribution: fl
         print(f"  {'Max peak-to-trough P&L retracement ($)':<42} | {max_dd_dollars(pnl_dca):>20.2f}  | {max_dd_dollars(pnl_comb):>20.2f}")
         print()
 
+        return {
+            "split_label": label, "strategy_sleeve_fraction": s,
+            "dca_only": {
+                "final_value": float(V_dca[-1]), "total_contributed": float(cum_contrib[-1]),
+                "final_pnl": float(pnl_dca[-1]), "sharpe": sh_dca, "sortino": so_dca,
+                "max_drawdown_principal_inclusive_pct": max_dd_pct(V_dca),
+                "max_pnl_retracement_dollars": max_dd_dollars(pnl_dca),
+            },
+            "combined": {
+                "final_value": float(V_comb[-1]), "total_contributed": float(cum_contrib[-1]),
+                "final_pnl": float(pnl_comb[-1]), "sharpe": sh_comb, "sortino": so_comb,
+                "max_drawdown_principal_inclusive_pct": max_dd_pct(V_comb),
+                "max_pnl_retracement_dollars": max_dd_dollars(pnl_comb),
+            },
+        }
+
     print("=" * 100)
     print("  SECTION 2: DCA-INTO-BTC + INDEPENDENTLY-CAPITALIZED STRATEGY SLEEVE, vs. 100%-DCA-ONLY BASELINE")
     print(f"  {len(contribution_bars)} weekly {contribution}-unit contributions, "
           f"{open_time.iloc[0].date()} .. {open_time.iloc[-1].date()}")
     print("=" * 100)
+    split_results = []
     for s in splits:
         label = f"{int(round((1 - s) * 100))}/{int(round(s * 100))}"
-        run_split(s, label)
+        split_results.append(run_split(s, label))
+
+    return {"contribution_amount": contribution, "n_contribution_periods": len(contribution_bars),
+            "splits": split_results}
 
 
 def main():
@@ -255,6 +292,8 @@ def main():
                               "(default: 0.10,0.20,0.30 -> 90/10, 80/20, 70/30)")
     parser.add_argument("--section", choices=["1", "2", "both"], default="both",
                          help="Which section(s) to run (default: both)")
+    parser.add_argument("--json-out", type=str, default=None,
+                         help="Optional path to write results as JSON (does not change printed output)")
     args = parser.parse_args()
 
     splits = [float(x) for x in args.splits.split(",")]
@@ -264,10 +303,14 @@ def main():
     if expected_n is not None:
         assert len(trades) == expected_n, f"expected {expected_n} baseline trades, got {len(trades)}"
 
+    result = {"min_ob_quality": args.min_ob_quality}
     if args.section in ("1", "both"):
-        section_1_benchmark(df, trades)
+        result["section_1_benchmark"] = section_1_benchmark(df, trades)
     if args.section in ("2", "both"):
-        section_2_dca_blend(df, trades, args.contribution_amount, splits)
+        result["section_2_dca_blend"] = section_2_dca_blend(df, trades, args.contribution_amount, splits)
+
+    if args.json_out:
+        write_json(result, args.json_out)
 
 
 if __name__ == "__main__":

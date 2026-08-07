@@ -1,0 +1,101 @@
+{
+  "min_ob_quality": 0,
+  "section_1_benchmark": {
+    "n_bars": 8767,
+    "strategy": {
+      "total_return_pct": 30.306456356031937,
+      "time_in_market_pct": 2.6348808030112925,
+      "bars_of_exposure": 231,
+      "return_per_bar_pct": 0.13119678076204302,
+      "max_drawdown_pct": -6.461921868617994,
+      "sharpe": 1.1142026628047461,
+      "sortino": 2.727301737432356
+    },
+    "buy_and_hold": {
+      "total_return_pct": 87.65224338434462,
+      "time_in_market_pct": 100.0,
+      "bars_of_exposure": 8766,
+      "return_per_bar_pct": 0.009999115147655101,
+      "max_drawdown_pct": -67.21392902034938,
+      "sharpe": 0.5641861993674259,
+      "sortino": 0.8033811346047249
+    },
+    "correlation": {
+      "pearson_r": -0.3687534550814802,
+      "n": 27,
+      "p": 0.058390751604365465
+    }
+  },
+  "section_2_dca_blend": {
+    "contribution_amount": 1.0,
+    "n_contribution_periods": 210,
+    "splits": [
+      {
+        "split_label": "90/10",
+        "strategy_sleeve_fraction": 0.1,
+        "dca_only": {
+          "final_value": 468.5717064018728,
+          "total_contributed": 210.0,
+          "final_pnl": 258.5717064018728,
+          "sharpe": 0.5559171811376189,
+          "sortino": 0.8857284119313539,
+          "max_drawdown_principal_inclusive_pct": -27.849260681789023,
+          "max_pnl_retracement_dollars": -185.57467048037046
+        },
+        "combined": {
+          "final_value": 447.4226424759638,
+          "total_contributed": 210.0,
+          "final_pnl": 237.4226424759638,
+          "sharpe": 0.5805071307006285,
+          "sortino": 0.9298579305529012,
+          "max_drawdown_principal_inclusive_pct": -26.509635264750752,
+          "max_pnl_retracement_dollars": -165.96916695023896
+        }
+      },
+      {
+        "split_label": "80/20",
+        "strategy_sleeve_fraction": 0.2,
+        "dca_only": {
+          "final_value": 468.5717064018728,
+          "total_contributed": 210.0,
+          "final_pnl": 258.5717064018728,
+          "sharpe": 0.5559171811376189,
+          "sortino": 0.8857284119313539,
+          "max_drawdown_principal_inclusive_pct": -27.849260681789023,
+          "max_pnl_retracement_dollars": -185.57467048037046
+        },
+        "combined": {
+          "final_value": 426.27357855005533,
+          "total_contributed": 210.0,
+          "final_pnl": 216.27357855005533,
+          "sharpe": 0.6073868324486804,
+          "sortino": 0.9782652355811342,
+          "max_drawdown_principal_inclusive_pct": -24.970531840895184,
+          "max_pnl_retracement_dollars": -146.36366342010786
+        }
+      },
+      {
+        "split_label": "70/30",
+        "strategy_sleeve_fraction": 0.3,
+        "dca_only": {
+          "final_value": 468.5717064018728,
+          "total_contributed": 210.0,
+          "final_pnl": 258.5717064018728,
+          "sharpe": 0.5559171811376189,
+          "sortino": 0.8857284119313539,
+          "max_drawdown_principal_inclusive_pct": -27.849260681789023,
+          "max_pnl_retracement_dollars": -185.57467048037046
+        },
+        "combined": {
+          "final_value": 405.12451462414526,
+          "total_contributed": 210.0,
+          "final_pnl": 195.12451462414526,
+          "sharpe": 0.6373015420494242,
+          "sortino": 1.032267235577308,
+          "max_drawdown_principal_inclusive_pct": -23.183811151537295,
+          "max_pnl_retracement_dollars": -126.75815988997613
+        }
+      }
+    ]
+  }
+}

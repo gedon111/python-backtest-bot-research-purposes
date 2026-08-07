@@ -51,6 +51,8 @@ import importlib.util
 import pandas as pd
 from scipy import stats as sstats
 
+from _json_utils import write_json
+
 CRITERIA = {
     "Displacement": "entry_ob_quality_displacement",
     "LargeBar": "entry_ob_quality_large_bar",
@@ -83,7 +85,7 @@ def load_trades(min_ob_quality: int) -> pd.DataFrame:
     return trades
 
 
-def run_scenario(trades: pd.DataFrame, label: str, drag_pct: float) -> None:
+def run_scenario(trades: pd.DataFrame, label: str, drag_pct: float) -> dict:
     t = trades.copy()
     t["pnl_pct_adj"] = t["pnl_pct"] - drag_pct
 
@@ -116,6 +118,7 @@ def run_scenario(trades: pd.DataFrame, label: str, drag_pct: float) -> None:
 
     print(f"\n  Per-criterion Fisher's exact (win/loss) and Welch's t-test (pnl_pct), fee-adjusted:")
     print(f"  {'Criterion':<14} | {'True n(w)':<10} | {'False n(w)':<11} | {'Fisher p':<10} | {'Welch t':<10} | {'Welch p':<10}")
+    criteria_results = {}
     for name, col in CRITERIA.items():
         mask = t[col].astype(bool)
         true_grp = t.loc[mask, "pnl_pct_adj"]
@@ -129,7 +132,30 @@ def run_scenario(trades: pd.DataFrame, label: str, drag_pct: float) -> None:
         print(f"  {name:<14} | {len(true_grp)} ({true_wins})".ljust(24) +
               f"| {len(false_grp)} ({false_wins})".ljust(15) +
               f"| {fisher_p:<10.4f} | {t_stat:<+10.4f} | {welch_p:<10.4f}")
+        criteria_results[name] = {
+            "true_n": len(true_grp), "true_wins": true_wins,
+            "false_n": len(false_grp), "false_wins": false_wins,
+            "fisher_p": fisher_p, "welch_t": t_stat, "welch_p": welch_p,
+        }
     print()
+
+    return {
+        "label": label,
+        "drag_pct": drag_pct,
+        "total_return_pct": total_return,
+        "avg_return_pct": avg_return,
+        "sd_return_pct": sd_return,
+        "wins": wins,
+        "n": n,
+        "win_rate_pct": wins / n * 100,
+        "binomial_p_one_sided": bt.pvalue,
+        "binomial_p_two_sided": bt_two.pvalue,
+        "flipped_trades": [
+            {"entry_idx": int(r["entry_idx"]), "gross_pnl_pct": r["pnl_pct"], "net_pnl_pct": r["pnl_pct_adj"]}
+            for _, r in flipped.iterrows()
+        ],
+        "criteria": criteria_results,
+    }
 
 
 def main():
@@ -142,6 +168,8 @@ def main():
                          help="Conservative slippage estimate in bps per side (default: 5.0)")
     parser.add_argument("--no-sensitivity-band", action="store_true",
                          help="Skip the legacy pre-confirmation LOW/MID/HIGH sensitivity band")
+    parser.add_argument("--json-out", type=str, default=None,
+                         help="Optional path to write results as JSON (does not change printed output)")
     args = parser.parse_args()
 
     trades = load_trades(args.min_ob_quality)
@@ -162,8 +190,10 @@ def main():
     if not args.no_sensitivity_band:
         scenarios += LEGACY_SENSITIVITY_BAND
 
-    for label, drag in scenarios:
-        run_scenario(trades, label, drag)
+    results = [run_scenario(trades, label, drag) for label, drag in scenarios]
+
+    if args.json_out:
+        write_json({"min_ob_quality": args.min_ob_quality, "scenarios": results}, args.json_out)
 
 
 if __name__ == "__main__":
