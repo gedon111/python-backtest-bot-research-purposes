@@ -1,5 +1,16 @@
 import type { TradeRecord } from '../../types/artifacts';
-import { binomialTestGreater, computeCorrelationPearson, computeCorrelationSpearman } from './statMath';
+import {
+  binomialTestGreater,
+  bootstrapPercentileCI,
+  computeCorrelationPearson,
+  computeCorrelationSpearman,
+  fisherExactTwoSided,
+  mdeNormalApprox,
+  welchTTest,
+  type BootstrapCIResult,
+  type MdeResult,
+  type WelchResult,
+} from './statMath';
 
 /** Baseline trade set used across the whole tab: min_ob_quality = 0, gui.js:1913-1914's fallback preserved. */
 export function baselineTrades(trades: TradeRecord[]): TradeRecord[] {
@@ -64,6 +75,54 @@ export function computeOrthogonalCriteria(trades: TradeRecord[]): OrthogonalCrit
     }
   }
   return rows;
+}
+
+export interface CriterionTestRow {
+  label: string;
+  trueN: number;
+  trueWins: number;
+  falseN: number;
+  falseWins: number;
+  fisherP: number;
+  welch: WelchResult;
+  mde: MdeResult;
+}
+
+/**
+ * Fisher's exact test (win/loss x criterion-true) and Welch's t-test
+ * (pnl_pct x criterion-true), independently per orthogonal criterion, over
+ * the N=27 baseline -- the live, in-browser counterpart to
+ * analysis/fee_slippage_analysis.py's per-criterion table. Computed
+ * entirely from /api/trades, independent of any Python-precomputed value.
+ */
+export function computeCriteriaTests(trades: TradeRecord[]): CriterionTestRow[] {
+  const base = baselineTrades(trades);
+  return CRITERIA.map((criterion) => {
+    const trueList = base.filter((t) => Boolean(t[criterion.key]));
+    const falseList = base.filter((t) => !t[criterion.key]);
+    const trueWins = trueList.filter((t) => t.pnl_pct > 0).length;
+    const falseWins = falseList.filter((t) => t.pnl_pct > 0).length;
+    const fisherP = fisherExactTwoSided(trueWins, trueList.length - trueWins, falseWins, falseList.length - falseWins);
+    const welch = welchTTest(
+      trueList.map((t) => t.pnl_pct),
+      falseList.map((t) => t.pnl_pct)
+    );
+    const mde = mdeNormalApprox(
+      trueList.map((t) => t.pnl_pct),
+      falseList.map((t) => t.pnl_pct)
+    );
+    return { label: criterion.label, trueN: trueList.length, trueWins, falseN: falseList.length, falseWins, fisherP, welch, mde };
+  });
+}
+
+/** Percentile bootstrap CI on the baseline's own total/average return -- live counterpart to analysis/bootstrap_power_analysis.py's part (a). */
+export function computeOwnBootstrapCI(trades: TradeRecord[], b = 2000, seed = 42): BootstrapCIResult {
+  const base = baselineTrades(trades);
+  return bootstrapPercentileCI(
+    base.map((t) => t.pnl_pct),
+    b,
+    seed
+  );
 }
 
 export interface BaselineOverviewRow {

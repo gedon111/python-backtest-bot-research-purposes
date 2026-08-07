@@ -203,6 +203,145 @@ export function computeCorrelationSpearman(X: number[], Y: number[]): SpearmanRe
   return { rho: pearson.r, p: pearson.p, t: pearson.t };
 }
 
+export interface WelchResult {
+  t: number;
+  df: number;
+  p: number;
+}
+
+/** Welch's unequal-variance two-sample t-test (two-sided), same formula as scipy.stats.ttest_ind(equal_var=False). */
+export function welchTTest(a: number[], b: number[]): WelchResult {
+  const n1 = a.length;
+  const n2 = b.length;
+  const mean = (arr: number[]) => arr.reduce((s, v) => s + v, 0) / arr.length;
+  const variance = (arr: number[], m: number) => (arr.length > 1 ? arr.reduce((s, v) => s + (v - m) ** 2, 0) / (arr.length - 1) : 0);
+  const m1 = mean(a);
+  const m2 = mean(b);
+  const v1 = variance(a, m1);
+  const v2 = variance(b, m2);
+  const se2 = v1 / n1 + v2 / n2;
+  if (se2 <= 0 || n1 < 2 || n2 < 2) return { t: NaN, df: NaN, p: NaN };
+  const t = (m1 - m2) / Math.sqrt(se2);
+  const df = se2 ** 2 / ((v1 / n1) ** 2 / (n1 - 1) + (v2 / n2) ** 2 / (n2 - 1));
+  const p = studentTPValue(t, df);
+  return { t, df, p };
+}
+
+/**
+ * Fisher's exact test (two-sided), 2x2 table [[a,b],[c,d]]. Sums the exact
+ * hypergeometric probability of every table with the same row/column
+ * margins whose probability is <= the observed table's -- same definition
+ * scipy.stats.fisher_exact(alternative='two-sided') uses.
+ */
+export function fisherExactTwoSided(a: number, b: number, c: number, d: number): number {
+  const rowSum1 = a + b;
+  const rowSum2 = c + d;
+  const colSum1 = a + c;
+  const n = rowSum1 + rowSum2;
+  const logChoose = (nn: number, kk: number) => logFactorial(nn) - logFactorial(kk) - logFactorial(nn - kk);
+  const logDenom = logChoose(n, colSum1);
+  const xMin = Math.max(0, colSum1 - rowSum2);
+  const xMax = Math.min(rowSum1, colSum1);
+  const logObserved = logChoose(rowSum1, a) + logChoose(rowSum2, colSum1 - a) - logDenom;
+  const epsilon = 1e-7;
+  let p = 0;
+  for (let x = xMin; x <= xMax; x++) {
+    const lp = logChoose(rowSum1, x) + logChoose(rowSum2, colSum1 - x) - logDenom;
+    if (lp <= logObserved + epsilon) p += Math.exp(lp);
+  }
+  return Math.min(1, p);
+}
+
+// z_{1-alpha/2} for alpha=0.05 and z_{power} for power=0.80 -- standard normal
+// critical values, matching analysis/bootstrap_power_analysis.py's default
+// --alpha 0.05 --power 0.80 (this dashboard doesn't expose alpha/power as
+// tunable, so fixed constants are used rather than a general inverse-normal-CDF
+// approximation).
+const Z_ALPHA_2 = 1.9599639845400545; // qnorm(0.975)
+const Z_BETA = 0.8416212335729143; // qnorm(0.80)
+
+export interface MdeResult {
+  n1: number;
+  n2: number;
+  sd1: number;
+  sd2: number;
+  observedDiff: number;
+  mde: number;
+  detectable: boolean;
+}
+
+/** Minimum detectable effect, two-sample normal approximation: MDE = (z_a/2 + z_b) * sqrt(sd1^2/n1 + sd2^2/n2). */
+export function mdeNormalApprox(trueVals: number[], falseVals: number[]): MdeResult {
+  const n1 = trueVals.length;
+  const n2 = falseVals.length;
+  const mean = (arr: number[]) => arr.reduce((s, v) => s + v, 0) / arr.length;
+  const variance = (arr: number[], m: number) => (arr.length > 1 ? arr.reduce((s, v) => s + (v - m) ** 2, 0) / (arr.length - 1) : 0);
+  const m1 = mean(trueVals);
+  const m2 = mean(falseVals);
+  const sd1 = Math.sqrt(variance(trueVals, m1));
+  const sd2 = Math.sqrt(variance(falseVals, m2));
+  const observedDiff = m1 - m2;
+  const se = Math.sqrt(sd1 ** 2 / n1 + sd2 ** 2 / n2);
+  const mde = (Z_ALPHA_2 + Z_BETA) * se;
+  return { n1, n2, sd1, sd2, observedDiff, mde, detectable: Math.abs(observedDiff) >= mde };
+}
+
+/** Deterministic seeded PRNG (mulberry32) so the in-browser bootstrap is reproducible across renders without depending on any Python-side RNG state. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export interface BootstrapCIResult {
+  b: number;
+  n: number;
+  totalPoint: number;
+  totalCI: [number, number];
+  avgPoint: number;
+  avgCI: [number, number];
+  pctResamplesTotalLe0: number;
+  pctResamplesAvgLe0: number;
+}
+
+/** Nonparametric percentile bootstrap on a trade log's own total/average return (resample n with replacement, B resamples). */
+export function bootstrapPercentileCI(pnl: number[], b: number, seed: number): BootstrapCIResult {
+  const n = pnl.length;
+  const rng = mulberry32(seed);
+  const totals = new Array<number>(b);
+  const avgs = new Array<number>(b);
+  for (let i = 0; i < b; i++) {
+    let s = 0;
+    for (let j = 0; j < n; j++) {
+      s += pnl[Math.floor(rng() * n)];
+    }
+    totals[i] = s;
+    avgs[i] = s / n;
+  }
+  const percentile = (arr: number[], p: number) => {
+    const sorted = [...arr].sort((x, y) => x - y);
+    const idx = (p / 100) * (sorted.length - 1);
+    const lo = Math.floor(idx);
+    const hi = Math.ceil(idx);
+    return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+  };
+  const totalPoint = pnl.reduce((s, v) => s + v, 0);
+  return {
+    b,
+    n,
+    totalPoint,
+    totalCI: [percentile(totals, 2.5), percentile(totals, 97.5)],
+    avgPoint: totalPoint / n,
+    avgCI: [percentile(avgs, 2.5), percentile(avgs, 97.5)],
+    pctResamplesTotalLe0: (totals.filter((v) => v <= 0).length / b) * 100,
+    pctResamplesAvgLe0: (avgs.filter((v) => v <= 0).length / b) * 100,
+  };
+}
+
 /** Self-test from gui.js:1810-1846 -- validates the approximations above against known reference points. */
 export function runDistributionSelfChecks(): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
@@ -219,6 +358,13 @@ export function runDistributionSelfChecks(): { valid: boolean; errors: string[] 
 
   const pF = fPValue(3.1, 3, 20);
   if (Math.abs(pF - 0.05) > 1e-3) errors.push(`F-distribution check failed: expected ~0.05, got ${pF.toFixed(6)}`);
+
+  // Fisher's exact + Welch's t-test checked against the LargeBar criterion's
+  // known values (STUDY_REFERENCE.md Sec.6.3 / CLAUDE.md locked results):
+  // True n=20 (14 wins), False n=7 (5 wins), Fisher p=1.0000, Welch t=+0.2895, p=0.7751.
+  const fisherCheck = fisherExactTwoSided(14, 6, 5, 2);
+  if (Math.abs(fisherCheck - 1.0) > 1e-3)
+    errors.push(`Fisher's exact check failed: expected ~1.0000, got ${fisherCheck.toFixed(6)}`);
 
   return { valid: errors.length === 0, errors };
 }

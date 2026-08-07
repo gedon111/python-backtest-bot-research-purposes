@@ -5,9 +5,11 @@ import {
   baselineTrades,
   computeBaselineOverview,
   computeCorrelations,
+  computeCriteriaTests,
   computeExitReasons,
   computeLongShort,
   computeOrthogonalCriteria,
+  computeOwnBootstrapCI,
 } from '../stats/statsCompute';
 import { binomialTestGreater, runDistributionSelfChecks } from '../stats/statMath';
 import { Latex } from '../common/Latex';
@@ -32,10 +34,12 @@ export function StatsTab() {
   const allTrades = trades.data ?? [];
   const base = useMemo(() => baselineTrades(allTrades), [allTrades]);
   const orthogonal = useMemo(() => computeOrthogonalCriteria(allTrades), [allTrades]);
+  const criteriaTests = useMemo(() => computeCriteriaTests(allTrades), [allTrades]);
   const overview = useMemo(() => computeBaselineOverview(allTrades), [allTrades]);
   const correlations = useMemo(() => computeCorrelations(allTrades), [allTrades]);
   const exitReasons = useMemo(() => computeExitReasons(allTrades), [allTrades]);
   const longShort = useMemo(() => computeLongShort(allTrades), [allTrades]);
+  const ownBootstrap = useMemo(() => computeOwnBootstrapCI(allTrades), [allTrades]);
 
   const obs0 = runs.data?.['0']?.obs ?? [];
   const fvgCount = obs0.filter((o) => o.quality_fvg).length;
@@ -120,6 +124,27 @@ export function StatsTab() {
               <strong>{isNaN(binomP) ? '--' : binomP.toFixed(4)}</strong>
             </div>
           </div>
+          <div className="method-block">
+            <span className="method-label">Method — Fisher's exact test (win/loss × criterion True/False, two-sided)</span>
+            <Latex
+              block
+              className="method-latex"
+              tex="p = \sum_{\substack{x:\, P(x) \,\leq\, P(x_{\text{obs}})}} P(x), \quad P(x) = \dfrac{\binom{a+b}{x}\binom{c+d}{(a+c)-x}}{\binom{n}{a+c}}"
+            />
+            <div className="method-line">
+              2×2 contingency table (wins, losses) × (criterion True, criterion False) per row below; sums the exact
+              hypergeometric probability of every table with the same margins that is no more likely than the observed one.
+            </div>
+            <span className="method-label" style={{ marginTop: '0.6rem', display: 'block' }}>
+              Method — Welch's unequal-variance t-test (pnl_pct, True vs. False)
+            </span>
+            <Latex
+              block
+              className="method-latex"
+              tex="t = \dfrac{\overline{X}_1 - \overline{X}_2}{\sqrt{s_1^2/n_1 + s_2^2/n_2}}, \quad df = \dfrac{(s_1^2/n_1 + s_2^2/n_2)^2}{\frac{(s_1^2/n_1)^2}{n_1-1} + \frac{(s_2^2/n_2)^2}{n_2-1}}"
+            />
+            <div className="method-line">Two-sided p-value from the Student-t CDF at the Welch-Satterthwaite df above (not assumed equal-variance).</div>
+          </div>
           <div className="table-container">
             <table className="stats-table">
               <thead>
@@ -133,26 +158,41 @@ export function StatsTab() {
                   <th>Mean Return (%)</th>
                   <th>Median Return (%)</th>
                   <th>Best Trade PnL (%)</th>
+                  <th>Fisher's Exact p</th>
+                  <th>Welch's t (p)</th>
                 </tr>
               </thead>
               <tbody>
-                {orthogonal.map((row, i) => (
-                  <tr key={`${row.label}-${row.subgroup}`} style={i % 2 === 1 ? { borderBottom: '2px solid var(--border-strong)' } : undefined}>
-                    {row.subgroup === 'True' && (
-                      <td rowSpan={2} style={{ fontWeight: 600, verticalAlign: 'middle' }}>
-                        {row.label}
-                      </td>
-                    )}
-                    <td>{row.subgroup}</td>
-                    <td>{row.n}</td>
-                    <td>{pct(row.pctOfTrades, 1)}</td>
-                    <td className={pnlClass(row.sumPnl)}>{signedPct(row.sumPnl)}</td>
-                    <td>{pct(row.pctOfTotalReturn, 1)}</td>
-                    <td>{signedPct(row.meanReturn)}</td>
-                    <td>{signedPct(row.medianReturn)}</td>
-                    <td>+{row.bestTrade.toFixed(2)}%</td>
-                  </tr>
-                ))}
+                {orthogonal.map((row, i) => {
+                  const test = criteriaTests[Math.floor(i / 2)];
+                  return (
+                    <tr key={`${row.label}-${row.subgroup}`} style={i % 2 === 1 ? { borderBottom: '2px solid var(--border-strong)' } : undefined}>
+                      {row.subgroup === 'True' && (
+                        <td rowSpan={2} style={{ fontWeight: 600, verticalAlign: 'middle' }}>
+                          {row.label}
+                        </td>
+                      )}
+                      <td>{row.subgroup}</td>
+                      <td>{row.n}</td>
+                      <td>{pct(row.pctOfTrades, 1)}</td>
+                      <td className={pnlClass(row.sumPnl)}>{signedPct(row.sumPnl)}</td>
+                      <td>{pct(row.pctOfTotalReturn, 1)}</td>
+                      <td>{signedPct(row.meanReturn)}</td>
+                      <td>{signedPct(row.medianReturn)}</td>
+                      <td>+{row.bestTrade.toFixed(2)}%</td>
+                      {row.subgroup === 'True' && (
+                        <>
+                          <td rowSpan={2} style={{ verticalAlign: 'middle' }}>
+                            {test ? test.fisherP.toFixed(4) : '--'}
+                          </td>
+                          <td rowSpan={2} style={{ verticalAlign: 'middle' }}>
+                            {test && !isNaN(test.welch.t) ? `${signedNum(test.welch.t, 3)} (${test.welch.p.toFixed(4)})` : 'n < 2'}
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -217,13 +257,114 @@ export function StatsTab() {
           </div>
         </div>
 
+        <div className="stat-card">
+          <h3>
+            2. Bootstrap Resampling (Own N = {ownBootstrap.n} Trades) <SectionTag kind="live" />
+          </h3>
+          <p className="stat-desc">
+            Nonparametric percentile bootstrap on the baseline's own trade log: resample n = {ownBootstrap.n} returns
+            with replacement, {ownBootstrap.b.toLocaleString()} times, to estimate a 95% CI on total and average
+            return without assuming a parametric distribution.
+          </p>
+          <div className="method-block">
+            <span className="method-label">Method — percentile bootstrap</span>
+            <Latex
+              block
+              className="method-latex"
+              tex="\hat{\theta}^{*}_b = f(X_1^{*}, \dots, X_n^{*}), \; X_i^{*} \sim \text{Uniform}(X_1,\dots,X_n) \text{ w/ replacement}, \; b = 1,\dots,B"
+            />
+            <div className="method-line">
+              95% CI = [2.5th percentile, 97.5th percentile] of {'{'}θ̂*<sub>b</sub>{'}'}, B = {ownBootstrap.b.toLocaleString()}
+            </div>
+          </div>
+          <div className="stat-metrics-flex">
+            <div className="stat-metric-badge">
+              <span className="stat-metric-label">Total Return 95% CI</span>
+              <span className="stat-metric-val">{signedPct(ownBootstrap.totalPoint)}</span>
+              <span className="stat-metric-sig">
+                [{signedPct(ownBootstrap.totalCI[0])}, {signedPct(ownBootstrap.totalCI[1])}]
+              </span>
+            </div>
+            <div className="stat-metric-badge">
+              <span className="stat-metric-label">Avg Return/Trade 95% CI</span>
+              <span className="stat-metric-val">{signedPct(ownBootstrap.avgPoint)}</span>
+              <span className="stat-metric-sig">
+                [{signedPct(ownBootstrap.avgCI[0])}, {signedPct(ownBootstrap.avgCI[1])}]
+              </span>
+            </div>
+            <div className="stat-metric-badge">
+              <span className="stat-metric-label">Resamples with Total ≤ 0%</span>
+              <span className="stat-metric-val">{pct(ownBootstrap.pctResamplesTotalLe0, 2)}</span>
+              <span className="stat-metric-sig">of {ownBootstrap.b.toLocaleString()} resamples</span>
+            </div>
+          </div>
+          <div className="provenance-note">
+            <span className="provenance-tag">Scope</span>
+            <span>
+              Resamples FROM the baseline's own {ownBootstrap.n} trades (a within-arm design) -- distinct from the
+              between-arms ablation bootstrap in card 6 below, which resamples from a separate indicators-only trade
+              pool not exposed via /api/trades.
+            </span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <h3>
+            3. Minimum Detectable Effect / Power Analysis <SectionTag kind="live" />
+          </h3>
+          <p className="stat-desc">
+            Given each criterion's observed True/False subgroup sizes and standard deviations, the smallest true
+            mean-return gap this sample size could detect 80% of the time at α = 0.05.
+          </p>
+          <div className="method-block">
+            <span className="method-label">Method — two-sample normal-approximation MDE</span>
+            <Latex block className="method-latex" tex="\text{MDE} = (z_{\alpha/2} + z_{\beta}) \sqrt{\dfrac{s_1^2}{n_1} + \dfrac{s_2^2}{n_2}}" />
+            <div className="method-line">
+              z<sub>0.025</sub> = 1.9600, z<sub>0.80</sub> = 0.8416 (α = 0.05, power = 0.80). Where |observed diff| &lt;
+              MDE, a non-significant test reads as "underpowered to rule out a gap up to ≈±MDE," not "no gap exists."
+            </div>
+          </div>
+          <div className="table-container">
+            <table className="stats-table">
+              <thead>
+                <tr>
+                  <th>Criterion</th>
+                  <th>n (True)</th>
+                  <th>SD (True)</th>
+                  <th>n (False)</th>
+                  <th>SD (False)</th>
+                  <th>Observed Diff (%)</th>
+                  <th>MDE (%)</th>
+                  <th>Detectable?</th>
+                </tr>
+              </thead>
+              <tbody>
+                {criteriaTests.map((row) => (
+                  <tr key={row.label}>
+                    <td style={{ fontWeight: 600 }}>{row.label}</td>
+                    <td>{row.mde.n1}</td>
+                    <td>{row.mde.sd1.toFixed(4)}</td>
+                    <td>{row.mde.n2}</td>
+                    <td>{row.mde.sd2.toFixed(4)}</td>
+                    <td className={pnlClass(row.mde.observedDiff)}>{signedPct(row.mde.observedDiff, 4)}</td>
+                    <td>{pct(row.mde.mde, 4)}</td>
+                    <td className={row.mde.detectable ? 'pnl-pos' : undefined}>
+                      {row.mde.detectable ? 'yes' : 'NO (underpowered)'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <QualityEquivalence />
         <AblationStudy />
         <BootstrapAudit />
 
         <div className="stat-card">
           <h3>
-            5. Hold Duration vs. PnL Return Correlation <SectionTag kind="live" />
+            7. Hold Duration vs. PnL Return Correlation <SectionTag kind="live" />
           </h3>
           <p className="stat-desc">
             Evaluating linear and monotonic relationships between trade hold duration (in 4H bars) and PnL percentage
@@ -277,7 +418,7 @@ export function StatsTab() {
 
         <div className="stat-card">
           <h3>
-            6. Exit Reason Distribution (Baseline Dataset N = {base.length}) <SectionTag kind="live" />
+            8. Exit Reason Distribution (Baseline Dataset N = {base.length}) <SectionTag kind="live" />
           </h3>
           <p className="stat-desc">
             Summary of hold times and trade performance grouped by closing event triggers across the full baseline
@@ -319,7 +460,7 @@ export function StatsTab() {
 
         <div className="stat-card full-width">
           <h3>
-            7. Directional Long vs. Short Breakdown <SectionTag kind="live" />
+            9. Directional Long vs. Short Breakdown <SectionTag kind="live" />
           </h3>
           <p className="stat-desc">Comparison of long versus short trade performance across the baseline backtest history.</p>
           <div className="method-block">
@@ -374,7 +515,7 @@ function QualityEquivalence() {
   return (
     <div className="stat-card full-width">
       <h3>
-        2. Order Block Quality Equivalence & Methodological Caution <SectionTag kind="reference" />
+        4. Order Block Quality Equivalence & Methodological Caution <SectionTag kind="reference" />
       </h3>
       <p className="stat-desc">
         Methodological analysis evaluating trade quality score equivalence between top winners and losses, and
@@ -433,7 +574,7 @@ function AblationStudy() {
   return (
     <div className="stat-card full-width">
       <h3>
-        3. 3-Arm Controlled Ablation Study (Isolating the Order Block Structural Gate) <SectionTag kind="reference" />
+        5. 3-Arm Controlled Ablation Study (Isolating the Order Block Structural Gate) <SectionTag kind="reference" />
       </h3>
       <p className="stat-desc">
         Comparing the full OB-gated strategy against indicator-only entry triggers (flat ATR stop vs. 5-bar
@@ -483,7 +624,7 @@ function BootstrapAudit() {
   return (
     <div className="stat-card full-width">
       <h3>
-        4. Bootstrap Resampling Audit (B = 2,000) & Entry-Bar Overlap Audit <SectionTag kind="reference" />
+        6. Ablation-Arm Bootstrap Resampling Audit (B = 2,000) & Entry-Bar Overlap Audit <SectionTag kind="reference" />
       </h3>
       <p className="stat-desc">
         Resampling n=27 trades from the 138-trade indicators-only pool over 2,000 iterations to control for sample
@@ -529,7 +670,7 @@ function MethodologySynthesis() {
   return (
     <div className="stat-card full-width">
       <h3>
-        8. Research Methodology Synthesis & Conclusions <SectionTag kind="reference" />
+        10. Research Methodology Synthesis & Conclusions <SectionTag kind="reference" />
       </h3>
       <p className="stat-desc">
         Summary of structural revisions, collinearity resolution, and key takeaways from the backtest evaluation.
