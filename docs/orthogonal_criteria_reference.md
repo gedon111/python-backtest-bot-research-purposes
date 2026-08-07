@@ -1,5 +1,7 @@
 # Orthogonal Order Block Criteria Reference & Magnitude Contribution Analysis
 
+> **Superseded 2026-08-01:** The FVG lookahead fix (`CLAUDE.md` Known bugs #3, commit `cb4ed93`) changed this file's Section 3 FVG Welch's t-test result; corrected below. See `STUDY_REFERENCE.md` §6.3 for the source of truth and independent live re-derivation.
+
 > **Paper Title:** *Harnessing Bitcoin Volatility: Backtesting an Integrated Algorithmic Strategy Combining KDJ, MACD, and Smart Money Concepts*  
 > **Repository Context:** Binance Backtest Bot Research Package (`BTCUSDT` 4H Dataset, 2022–2026)  
 > **Baseline Dataset:** $N = 27$ Unique Historical Trades (Threshold 0 / Orthogonal Baseline Set)  
@@ -42,7 +44,7 @@ This table partitions the $N=27$ historical trades across each of the 5 criteria
 
 * **Displacement**: $t = -0.9277$, $p = 0.3775$
 * **LargeBar**: $t = +0.2895$, $p = 0.7751$
-* **FVG**: $t = +0.1326$, $p = 0.8956$
+* **FVG**: $t = +0.5360$, $p = 0.5996$ *(post-fix; was $t=+0.1326$, $p=0.8956$ pre-fix — see `STUDY_REFERENCE.md` §6.3)*
 * **LiqSweep**: $t = -0.8195$, $p = 0.4204$
 * **VolExpansion**: $t = -0.8835$, $p = 0.3864$
 

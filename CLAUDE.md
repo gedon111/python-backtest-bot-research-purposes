@@ -14,15 +14,15 @@ the change, not an improvement:
   return, +1.12% avg return/trade, SD 2.41%
 - One-sided binomial p = 0.026 (two-sided 0.052) for the q>=0 baseline.
 - q>=1 one-sided binomial p: 0.038 (n=26, pre-fix) -> 0.054 (n=25,
-  post-fix as of commit 7ad6caa). This is a SIGNIFICANCE-CONCLUSION FLIP
+  post-fix as of commit cb4ed93). This is a SIGNIFICANCE-CONCLUSION FLIP
   (marginally significant -> not significant at alpha=0.05), not a modest
   revision - driven by a single trade (entry_idx=3100) losing its only
   quality point (FVG) under the corrected no-lookahead computation. See
   Known bugs #3. Consistent with the Limitations section's existing
   small-sample caveat about q>=1's thin N.
 - 761 detected Order Blocks; FVG criterion true for 253 (33.2%) as of
-  commit 7ad6caa (was 362 / 47.6% pre-fix; corrected, see Known bugs #3).
-- OB quality distribution (post-fix, commit 7ad6caa): q0=93, q1=154,
+  commit cb4ed93 (was 362 / 47.6% pre-fix; corrected, see Known bugs #3).
+- OB quality distribution (post-fix, commit cb4ed93): q0=93, q1=154,
   q2=206, q3=197, q4=90, q5=21 (was q0=77, q1=147, q2=200, q3=192, q4=112,
   q5=33 pre-fix; corrected, see Known bugs #3).
 - Ablation A (indicators-only, entry-ATR stop): 140 trades, 60.00%, -14.63%
@@ -57,7 +57,7 @@ oddities nearby may be intentional:
    displacement true: 112->107). Does not change the 27-trade q>=0 baseline
    (unaffected by quality filtering) but drops q>=1 from 26->25 trades,
    flipping its one-sided binomial significance (0.038->0.054). Corrected
-   as of commit 7ad6caa. Distinct in kind from bugs #1-2 above (those were
+   as of commit cb4ed93. Distinct in kind from bugs #1-2 above (those were
    definitional corrections; this was data leakage across the confirmation
    boundary). Pending: the paper's Results narrative sentence reporting the
    Welch's t-test p-value range across all 5 orthogonal criteria (currently
