@@ -268,6 +268,44 @@ Sourced from `CLAUDE.md`'s "Known bugs" and "Open question" sections.
    disclosed reproducibility gap, not a numeric error; see
    `STUDY_REFERENCE.md` Sec.6.4/Sec.7 if present, or flag it directly in
    the paper's limitations if not already covered.
+6. **Fisher's exact test is now live-verified, not just Welch's t-test.**
+   Both tests are reproducible in-repo two ways: `analysis/fee_slippage_analysis.py`
+   (CLI, `--json-out artifacts/fee_slippage_analysis.json`) and the
+   dashboard's Stats tab (client-side, from `/api/trades`, independent of
+   the Python side). If the paper's Results section only cites Welch's
+   t-test p-values, consider citing the Fisher's exact p-values alongside
+   them (per-criterion, q>=0 baseline): Displacement p=0.5583, LargeBar
+   p=1.0000, FVG p=1.0000, LiqSweep p=0.6957, VolExpansion p=0.2357 -- none
+   cross p=0.05, consistent with the Welch result.
+7. **MDE/power figures are now available for the Limitations section's
+   small-sample caveat.** `analysis/bootstrap_power_analysis.py` (part b)
+   and the dashboard's "Minimum Detectable Effect / Power Analysis" section
+   report, per criterion at alpha=0.05/power=0.80: the smallest true
+   mean-return gap this N could detect 80% of the time. All 5 criteria are
+   **underpowered** at this sample size (MDE ranges ~2.23-2.91 percentage
+   points, larger than every criterion's observed diff). If the draft's
+   Limitations section currently just says "n=27 is small," this gives a
+   concrete number to cite instead of a qualitative caveat.
+8. **Own-trades bootstrap CI is now available for the Results section's
+   return-concentration discussion.** `analysis/bootstrap_power_analysis.py`
+   (part a) and the dashboard's "Bootstrap Resampling (Own N=27 Trades)"
+   section report a 95% CI on total return of roughly [+6.0%, +55.0%] and
+   on avg return/trade of roughly [+0.22%, +2.04%] (B=10,000, percentile
+   method) -- both intervals exclude zero, but the wide total-return CI
+   itself underscores the return-concentration point already made in
+   Results/Discussion (half the return came from 3 trades).
+9. **Ablation-bootstrap reconstruction attempted this session --
+   diverges on win rate, do not cite as a replacement for the locked
+   figures.** `analysis/ablation_reconstruction.py` is a fresh, best-faith
+   reconstruction of the indicators-only ablation arms (the original
+   generating script was never committed -- see item 5 above). It
+   reproduces the locked trade counts **exactly** (140, 138) and lands
+   close on total return, but its win rate is ~13 / ~11.6 points lower than
+   the locked 60.00% / 55.07% figures. If the paper's Ablation or
+   Limitations section is updated to mention a reconstruction attempt,
+   report this divergence explicitly (see the dashboard's Stats tab,
+   card 5's warning box, for the full finding) rather than citing the
+   reconstructed numbers as a confirmation of the locked ones.
 """.strip()
 
 
