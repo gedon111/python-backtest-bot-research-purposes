@@ -517,9 +517,28 @@ def main():
     class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         daemon_threads = True
 
+    DASHBOARD_DIST_DIR = os.path.join("dashboard-v2", "dist")
+
     class SilentHandler(http.server.SimpleHTTPRequestHandler):
         def log_message(self, format, *args):
             pass
+
+        def translate_path(self, path):
+            import urllib.parse
+            parsed_path = urllib.parse.urlparse(path).path
+            if parsed_path == "/dashboard" or parsed_path == "/dashboard/":
+                return os.path.join(os.getcwd(), DASHBOARD_DIST_DIR, "index.html")
+            if parsed_path.startswith("/dashboard/"):
+                rel = parsed_path[len("/dashboard/"):]
+                candidate = os.path.join(os.getcwd(), DASHBOARD_DIST_DIR, rel)
+                if os.path.isfile(candidate):
+                    return candidate
+                # Bare/unknown sub-path under /dashboard/ -- this app has no
+                # client-side routing today (tabs are React state, not URL
+                # paths), but falling back to index.html here is the standard,
+                # harmless SPA convention rather than a 404 on a hard reload.
+                return os.path.join(os.getcwd(), DASHBOARD_DIST_DIR, "index.html")
+            return super().translate_path(path)
 
         def do_GET(self):
             if self.path == "/api/iterations":
@@ -769,9 +788,20 @@ def main():
     server_thread = threading.Thread(target=serve, daemon=True)
     server_thread.start()
 
-    url = f"http://{HOST}:{PORT}/gui.html"
-    print(f"[Dashboard] Opening dashboard in browser: {url}")
-    webbrowser.open(url)
+    dashboard_index = os.path.join(DASHBOARD_DIST_DIR, "index.html")
+    if not os.path.isfile(dashboard_index):
+        print(
+            f"\n[ERROR] {dashboard_index} not found -- the dashboard hasn't been built.\n"
+            f"  Run: cd dashboard-v2 && npm run build\n"
+            f"  (Run_All.py / Run_Dashboard.py do this automatically; running "
+            f"export_gui_data.py directly does not.)\n"
+            f"  The API server is still running on http://{HOST}:{PORT}/ for debugging, "
+            f"but no browser window will open."
+        )
+    else:
+        url = f"http://{HOST}:{PORT}/dashboard/"
+        print(f"[Dashboard] Opening dashboard in browser: {url}")
+        webbrowser.open(url)
     
     print("\nPress Ctrl+C to stop the server and exit.")
     try:
