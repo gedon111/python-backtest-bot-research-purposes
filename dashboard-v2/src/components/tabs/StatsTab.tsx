@@ -568,8 +568,10 @@ function QualityEquivalence() {
 function AblationStudy() {
   const rows = [
     { variant: 'Arm 1: Full Strategy (OB-Gated Baseline)', anchor: "OB Boundary (ob['bottom'] - 0.5*ATR)", n: 27, wr: 70.37, total: 30.31, avg: 1.12, sd: 2.41, emphasis: true },
-    { variant: 'Arm 2: Flat-ATR Indicators-Only', anchor: 'Entry Volatility Offset (close - 1.5*ATR)', n: 140, wr: 60.0, total: -14.63, avg: -0.1, sd: 2.35, emphasis: false },
-    { variant: 'Arm 3: Swing-Anchored Indicators-Only', anchor: '5-Bar Swing Extreme (pivot - 0.5*ATR)', n: 138, wr: 55.07, total: -25.5, avg: -0.18, sd: 2.52, emphasis: false },
+    { variant: 'Arm 2: Flat-ATR Indicators-Only (locked)', anchor: 'Entry Volatility Offset (close - 1.5*ATR)', n: 140, wr: 60.0, total: -14.63, avg: -0.1, sd: 2.35, emphasis: false },
+    { variant: 'Arm 2: Flat-ATR Indicators-Only (this session’s reconstruction)', anchor: 'Entry Volatility Offset (close - 1.5*ATR)', n: 140, wr: 47.14, total: -13.72, avg: -0.1, sd: 2.81, emphasis: false, reconstructed: true },
+    { variant: 'Arm 3: Swing-Anchored Indicators-Only (locked)', anchor: '5-Bar Swing Extreme (pivot - 0.5*ATR)', n: 138, wr: 55.07, total: -25.5, avg: -0.18, sd: 2.52, emphasis: false },
+    { variant: 'Arm 3: Swing-Anchored Indicators-Only (this session’s reconstruction)', anchor: '5-Bar Swing Extreme (pivot - 0.5*ATR)', n: 138, wr: 43.48, total: -23.85, avg: -0.17, sd: 2.8, emphasis: false, reconstructed: true },
   ];
   return (
     <div className="stat-card full-width">
@@ -595,7 +597,7 @@ function AblationStudy() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.variant} className={r.emphasis ? 'emphasis' : undefined}>
+              <tr key={r.variant} className={r.emphasis ? 'emphasis' : undefined} style={r.reconstructed ? { fontStyle: 'italic', color: 'var(--text-muted)' } : undefined}>
                 <td>{r.variant}</td>
                 <td>{r.anchor}</td>
                 <td>{r.n}</td>
@@ -608,12 +610,26 @@ function AblationStudy() {
           </tbody>
         </table>
       </div>
+      <div className="warning-box">
+        <div className="warning-title">⚠️ Reconstruction-Fidelity Finding: Trade Counts Match, Win Rate Diverges</div>
+        <div>
+          The original script that produced Arms 2/3's per-trade pools was never committed to this repository
+          (STUDY_REFERENCE.md Sec.6.4/7). <code>analysis/ablation_reconstruction.py</code> is a fresh, best-faith
+          reconstruction from the documented ablation design, run this session: it reproduces the locked trade
+          counts <strong>exactly</strong> (140 and 138) and lands close on total return, but its win rate is ~13 and
+          ~11.6 points lower than the locked figures. The exact N match is evidence the entry-side logic (indicator
+          conditions minus the OB touch requirement) is faithfully reconstructed; the divergence is isolated to
+          exit/take-profit mechanics -- most plausibly this reconstruction's fixed-2R take-profit vs. a possible
+          structural/OB-anchored TP in the original uncommitted script. Reported as a finding, not resolved: the
+          locked figures above are unchanged.
+        </div>
+      </div>
       <div className="provenance-note">
         <span className="provenance-tag">Source</span>
         <span>
-          Arms 2 and 3 are separate backtest runs (indicator-only entry logic, ATR/swing-pivot stop placement) with
-          their own trade sets -- see the analysis/ scripts. Not recomputable in-browser from the OB-gated baseline's
-          /api/trades records shown elsewhere on this page, since only Arm 1's trades are exposed via that endpoint.
+          Locked rows: separate backtest runs cited from CLAUDE.md, whose original trade sets aren't recomputable
+          in-browser (only Arm 1's trades are exposed via /api/trades). Reconstructed rows:{' '}
+          <code>analysis/ablation_reconstruction.py</code>, this session, also offline (not live in the browser).
         </span>
       </div>
     </div>
@@ -632,7 +648,7 @@ function BootstrapAudit() {
       </p>
       <div className="callout-grid">
         <div className="callout-card">
-          <div className="callout-title">Bootstrap Resampling (B = 2,000, n = 27)</div>
+          <div className="callout-title">Bootstrap Resampling (locked, B = 2,000, n = 27)</div>
           <div className="stat-metric-val" style={{ color: 'var(--good)' }}>
             Empirical p = 0.0020
           </div>
@@ -643,7 +659,7 @@ function BootstrapAudit() {
           </div>
         </div>
         <div className="callout-card">
-          <div className="callout-title">Entry-Bar Overlap Audit</div>
+          <div className="callout-title">Entry-Bar Overlap Audit (locked)</div>
           <div className="stat-metric-val" style={{ color: 'var(--good)' }}>
             92.59% (25 / 27 Entries)
           </div>
@@ -652,14 +668,27 @@ function BootstrapAudit() {
             gate selects a high-conviction subset.
           </div>
         </div>
+        <div className="callout-card" style={{ fontStyle: 'italic' }}>
+          <div className="callout-title">Bootstrap vs. this session's Arm 3 reconstruction (B = 2,000, n = 27)</div>
+          <div className="stat-metric-val" style={{ color: 'var(--text-muted)' }}>
+            Empirical p = 0.0090 (avg return) / 0.0040 (win rate)
+          </div>
+          <div style={{ color: 'var(--text-muted)', marginTop: '0.3rem' }}>
+            Resampled n=27 Avg Return Percentiles: 2.5th%: -1.26% | 50th%: -0.18% | 97.5th%: +0.89%
+            <br />
+            Still significant (baseline avg return clears the 97.5th percentile of both the locked and reconstructed
+            pools), despite the reconstructed pool's lower win rate -- see card 5's divergence note.
+          </div>
+        </div>
       </div>
       <div className="provenance-note">
         <span className="provenance-tag">Source</span>
         <span>
-          Bootstrap: 2,000 resamples with replacement of n=27 from the 138-trade indicators-only pool (Ablation Arm
-          3's trade set), computed offline -- see analysis/ scripts. That pool isn't exposed via /api/trades, so this
-          can't be recomputed in-browser. Entry-bar overlap: precomputed comparison against the indicators-only
-          ablation's own entry triggers, same source.
+          Locked cards: 2,000 resamples with replacement of n=27 from the 138-trade indicators-only pool (Ablation
+          Arm 3's original trade set), cited from CLAUDE.md/docs -- that pool isn't exposed via /api/trades, so this
+          can't be recomputed in-browser. Reconstructed card: same bootstrap procedure run this session against{' '}
+          <code>analysis/ablation_reconstruction.py</code>'s Arm 3 pool instead (also offline, not live in-browser) --
+          see card 5's reconstruction-fidelity finding before treating this as a replacement for the locked figure.
         </span>
       </div>
     </div>
