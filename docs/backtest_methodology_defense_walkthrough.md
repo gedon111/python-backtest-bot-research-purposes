@@ -221,8 +221,9 @@ Running `simulate_trades(df, min_ob_quality=0)` produces 27 baseline trades. Eac
    Resamples $n=27$ trades from Arm 3's 138-trade pool over 2,000 iterations to control for sample size disparity:
    $$\text{Empirical } p = \frac{1}{B} \sum_{b=1}^{B} \mathbb{I}\left(\bar{X}_{\text{boot}, b} \ge +1.12\%\right) = 0.0020 \quad (\text{Statistically Significant})$$
 5. **Pearson $r$ & Spearman $\rho$**: Measures correlation between hold duration (4H bars) and PnL % across $N=27$ baseline trades:
-   $$Pearson \, r = +0.4907 \quad (p < 0.001, t = 2.82)$$
-   $$Spearman \, \rho = +0.4797 \quad (p < 0.001)$$
+   $$Pearson \, r = +0.4907 \quad (p \approx 0.0094, t = 2.82)$$
+   $$Spearman \, \rho = +0.4797 \quad (p \approx 0.0113)$$
+   *(Corrected during a 2026-08-08 numerical audit: both were previously reported as "$p<0.001$," which is the wrong significance bucket — with $t=2.82$ and $df=25$, the two-sided critical value for $p=0.01$ is $\approx2.79$, so the true $p$ is just under 0.01, not under 0.001. Still significant at $\alpha=0.05$ and $\alpha=0.01$.)*
 
 ---
 
