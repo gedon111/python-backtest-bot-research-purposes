@@ -1,0 +1,121 @@
+{
+  "starting_capital": 10000.0,
+  "fee_model": {
+    "taker_fee_bps_per_side": 5.0,
+    "slippage_bps_per_side": 5.0,
+    "strategy_round_trip_drag_pct": 0.2,
+    "buy_and_hold_style_one_side_drag_pct": 0.1
+  },
+  "main_window": {
+    "label": "locked baseline window",
+    "window_start": "2022-01-01 08:00:00",
+    "window_end": "2026-01-01 08:00:00",
+    "gross": [
+      {
+        "arm": "OB-gated strategy",
+        "total_return_pct": 30.306456356031937,
+        "final_capital": 13417.773473513555,
+        "sharpe": 1.1142026628047457,
+        "sortino": 2.7273017374323563,
+        "max_drawdown_pct": -6.461921868617983,
+        "time_in_market_pct": 2.6348808030112925,
+        "starting_capital": 10000.0
+      },
+      {
+        "arm": "Weekly DCA into BTC",
+        "total_return_pct": 123.12938400089166,
+        "final_capital": 22312.9384000892,
+        "sharpe": 0.5559171811376198,
+        "sortino": 0.8857284119313554,
+        "max_drawdown_pct": -27.849260681789044,
+        "time_in_market_pct": 100.0,
+        "starting_capital": 10000.0,
+        "n_contributions": 210,
+        "contribution_per_week": 47.61904761904762
+      },
+      {
+        "arm": "Lump-sum buy-and-hold",
+        "total_return_pct": 90.07324805001113,
+        "final_capital": 19007.324805001113,
+        "sharpe": 0.56418619936742,
+        "sortino": 0.8033811346047162,
+        "max_drawdown_pct": -67.21392902034937,
+        "time_in_market_pct": 100.0,
+        "starting_capital": 10000.0
+      }
+    ],
+    "fee_adjusted": [
+      {
+        "arm": "OB-gated strategy",
+        "total_return_pct": 24.906456356031935,
+        "final_capital": 12719.006384388367,
+        "sharpe": 0.9442072252889269,
+        "sortino": 2.0830037219290274,
+        "max_drawdown_pct": -7.776236594923948,
+        "time_in_market_pct": 2.6348808030112925,
+        "starting_capital": 10000.0
+      },
+      {
+        "arm": "Weekly DCA into BTC",
+        "total_return_pct": 122.90647752336801,
+        "final_capital": 22290.647752336834,
+        "sharpe": 0.5529212550582089,
+        "sortino": 0.8806280879658203,
+        "max_drawdown_pct": -27.84926068178905,
+        "time_in_market_pct": 100.0,
+        "starting_capital": 10000.0,
+        "n_contributions": 210,
+        "contribution_per_week": 47.61904761904762
+      },
+      {
+        "arm": "Lump-sum buy-and-hold",
+        "total_return_pct": 89.88336468532583,
+        "final_capital": 18988.336468532583,
+        "sharpe": 0.5641861993674222,
+        "sortino": 0.8033811346047197,
+        "max_drawdown_pct": -67.21392902034935,
+        "time_in_market_pct": 100.0,
+        "starting_capital": 10000.0
+      }
+    ]
+  },
+  "formulation_period_window": {
+    "label": "formulation period -- NOT out-of-sample, NOT the 2026 forward-OOS test",
+    "window_start": "2018-01-01 08:00:00",
+    "window_end": "2022-01-01 04:00:00",
+    "gross": [
+      {
+        "arm": "OB-gated strategy",
+        "total_return_pct": 21.824580932541252,
+        "final_capital": 12282.529180900943,
+        "sharpe": 0.6812469523789468,
+        "sortino": 1.3025078924041311,
+        "max_drawdown_pct": -6.004971711657454,
+        "time_in_market_pct": 1.8742857142857146,
+        "starting_capital": 10000.0
+      },
+      {
+        "arm": "Weekly DCA into BTC",
+        "total_return_pct": 439.8754958980313,
+        "final_capital": 53987.54958980332,
+        "sharpe": 0.8243706610865622,
+        "sortino": 1.2335469094483915,
+        "max_drawdown_pct": -46.15759207830486,
+        "time_in_market_pct": 100.0,
+        "starting_capital": 10000.0,
+        "n_contributions": 209,
+        "contribution_per_week": 47.84688995215311
+      },
+      {
+        "arm": "Lump-sum buy-and-hold",
+        "total_return_pct": 236.96492692654013,
+        "final_capital": 33696.492692654014,
+        "sharpe": 0.7889162148505117,
+        "sortino": 1.1193516276011493,
+        "max_drawdown_pct": -81.41717033425718,
+        "time_in_market_pct": 100.0,
+        "starting_capital": 10000.0
+      }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+Arm,Total Return %,Final Capital $,Sharpe,Sortino,Max Drawdown %,% Time In-Market,Starting Capital,Window Start,Window End
+OB-gated strategy,30.3065,13417.77,1.1142,2.7273,-6.4619,2.6349,10000.0,2022-01-01 08:00:00,2026-01-01 08:00:00
+Weekly DCA into BTC,123.1294,22312.94,0.5559,0.8857,-27.8493,100.0000,10000.0,2022-01-01 08:00:00,2026-01-01 08:00:00
+Lump-sum buy-and-hold,90.0732,19007.32,0.5642,0.8034,-67.2139,100.0000,10000.0,2022-01-01 08:00:00,2026-01-01 08:00:00
