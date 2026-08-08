@@ -82,14 +82,21 @@ def resolve_google_service_key_path():
     if not placeholder and os.path.isfile(configured):
         return configured
 
-    # Auto-discover any json key under SERVICE KEY for local workflows.
-    candidates = sorted(glob.glob(os.path.join(BASE_DIR, "SERVICE KEY", "*.json")))
+    # Auto-discover a json key under SERVICE KEY/ for local workflows. Skip
+    # anything explicitly marked dead in its own filename (this repo's own
+    # convention, e.g. "... (not working-disabled).json"), and among the
+    # rest prefer whichever key file was modified most recently -- dropping
+    # a new key into SERVICE KEY/ is this repo's established way to rotate
+    # credentials, so "newest file wins" matches that workflow directly
+    # (unlike the previous hardcoded "new-strat"-substring priority, which
+    # kept selecting a key file whose own name says it doesn't work).
+    candidates = [
+        c for c in glob.glob(os.path.join(BASE_DIR, "SERVICE KEY", "*.json"))
+        if "disabled" not in os.path.basename(c).lower()
+        and "not working" not in os.path.basename(c).lower()
+    ]
     if candidates:
-        # Prioritize the known working 'new-strat' key if multiple exist
-        for c in candidates:
-            if "new-strat" in os.path.basename(c):
-                return c
-        return candidates[0]
+        return max(candidates, key=os.path.getmtime)
     return configured
 
 # ─── API ─────────────────────────────────────────────────────────────────────
@@ -1123,6 +1130,33 @@ def _format_df_for_export(df):
     return df_copy
 
 
+def _format_df_for_export_full(df):
+    """Exports EVERY column present on the fully-simulated dataframe -- not
+    the curated subset _format_df_for_export() selects. Column set is read
+    from df.columns directly (not hardcoded), so nothing is silently dropped
+    if compute_indicators()/simulate_trades() ever add a column. Used for the
+    Candles gsheet tabs, where "as detailed as possible, don't hide any
+    data" is the explicit requirement (_format_df_for_export() itself is
+    left unchanged for whatever else already relies on its curated shape)."""
+    df_copy = df.copy()
+    for col in df_copy.columns:
+        if pd.api.types.is_datetime64_any_dtype(df_copy[col]):
+            df_copy[col] = df_copy[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+        elif pd.api.types.is_float_dtype(df_copy[col]):
+            df_copy[col] = df_copy[col].round(6)
+    # _apply_pnl_formatting() (reused unchanged below) hard-requires columns
+    # named "Trade Status"/"Running PnL %", with the latter pre-formatted as
+    # an "X.XXXX%" string it can .strip('%') -- the same contract
+    # _format_df_for_export() already satisfies. Only these two columns are
+    # touched; every other column keeps its raw name and value untouched.
+    if "Running_PnL_%" in df_copy.columns:
+        df_copy["Running_PnL_%"] = df_copy["Running_PnL_%"].apply(
+            lambda x: f"{x:.4f}%" if pd.notnull(x) and isinstance(x, (float, int)) else "")
+    df_copy = df_copy.rename(columns={"Trade_Status": "Trade Status", "Running_PnL_%": "Running PnL %"})
+    df_copy = df_copy.astype(object).where(pd.notnull(df_copy), "")
+    return df_copy
+
+
 def _write_sheet(ws, df_copy):
     ws.clear()
     ws.update([df_copy.columns.values.tolist()] + df_copy.values.tolist())
@@ -1219,10 +1253,7 @@ def _write_summary_sheet(workbook, sweep_results):
 
 
 # ─── MAIN EXPORT: ALL QUALITY THRESHOLDS ─────────────────────────────────────
-def push_all_thresholds_to_gsheet(raw_df, levels=None, precomputed_dfs=None):
-    if levels is None:
-        levels = [0, 1, 2, 3]
-
+def _authorize_gsheet_workbook():
     scope = ["https://spreadsheets.google.com/feeds",
              "https://www.googleapis.com/auth/drive"]
     key_path = resolve_google_service_key_path()
@@ -1237,8 +1268,15 @@ def push_all_thresholds_to_gsheet(raw_df, levels=None, precomputed_dfs=None):
     creds = ServiceAccountCredentials.from_json_keyfile_name(
         key_path,
         scope)
-    gc       = gspread.authorize(creds)
-    workbook = gc.open_by_key(GOOGLE_SHEET_ID)
+    gc = gspread.authorize(creds)
+    return gc.open_by_key(GOOGLE_SHEET_ID)
+
+
+def push_all_thresholds_to_gsheet(raw_df, levels=None, precomputed_dfs=None):
+    if levels is None:
+        levels = [0, 1, 2, 3]
+
+    workbook = _authorize_gsheet_workbook()
 
     sweep_results = []
 
@@ -1282,6 +1320,252 @@ def push_all_thresholds_to_gsheet(raw_df, levels=None, precomputed_dfs=None):
 
     print("\nCheck GSHEET: All threshold sheets exported successfully.")
     return sweep_results
+
+
+# ─── BENCHMARK-VS-PASSIVE GSHEET EXPORT ───────────────────────────────────────
+# Writes the head-to-head strategy/DCA/buy-and-hold comparison produced by
+# analysis/benchmark_vs_passive.py (its --json-out dict, loaded by the
+# caller) to two dedicated tabs, run alongside every push_all_thresholds_to_
+# gsheet() call so a Google Sheets push always carries the benchmark
+# alongside the per-quality-threshold sheets. This module intentionally does
+# NOT compute the benchmark numbers itself (that would re-derive strategy/
+# indicator logic outside analysis/benchmark_vs_passive.py, the single
+# source of truth for those figures) -- callers (export_gui_data.py) run
+# that script as a subprocess and pass its parsed JSON output in here.
+_BENCHMARK_SHEET_HEADER = ["Arm", "Total Return %", "Final Capital $", "Sharpe", "Sortino", "Max Drawdown %",
+                           "% Time In-Market", "Starting Capital", "Window Start", "Window End"]
+
+
+def _benchmark_row_to_sheet_row(r, window):
+    return [
+        r["arm"], f"{r['total_return_pct']:.4f}", f"{r['final_capital']:.2f}", f"{r['sharpe']:.4f}",
+        f"{r['sortino']:.4f}", f"{r['max_drawdown_pct']:.4f}",
+        f"{r['time_in_market_pct']:.4f}", r["starting_capital"],
+        window["window_start"], window["window_end"],
+    ]
+
+
+def _write_benchmark_sheet(workbook, title, window, blocks):
+    """blocks: list of (label, rows) pairs, each rows a list of per-arm dicts
+    matching analysis/benchmark_vs_passive.py's row shape (arm,
+    total_return_pct, final_capital, sharpe, sortino, max_drawdown_pct,
+    time_in_market_pct, starting_capital)."""
+    all_rows = [[f"Window: {window['window_start']} .. {window['window_end']}"], []]
+    header_row_idxs = []
+    data_rows = []  # (row_idx, r) for coloring after the sheet is written
+    for label, rows in blocks:
+        all_rows.append([label])
+        all_rows.append(_BENCHMARK_SHEET_HEADER)
+        header_row_idxs.append(len(all_rows))  # 1-indexed row number of this header
+        for r in rows:
+            all_rows.append(_benchmark_row_to_sheet_row(r, window))
+            data_rows.append((len(all_rows), r))
+        all_rows.append([])
+
+    needed_rows = len(all_rows) + 5
+    needed_cols = len(_BENCHMARK_SHEET_HEADER) + 2
+    ws = _get_or_create_sheet(workbook, title, rows=needed_rows, cols=needed_cols)
+    ws.clear()
+    ws.update(all_rows)
+
+    header_end_col = gspread.utils.rowcol_to_a1(1, len(_BENCHMARK_SHEET_HEADER)).rstrip("0123456789")
+    format_cell_ranges(ws, [
+        (f"A{i}:{header_end_col}{i}", CellFormat(
+            textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+            backgroundColor=Color(0.18, 0.46, 0.71),
+        )) for i in header_row_idxs
+    ])
+    return_col = _BENCHMARK_SHEET_HEADER.index("Total Return %") + 1
+    capital_col = _BENCHMARK_SHEET_HEADER.index("Final Capital $") + 1
+    ranges = []
+    for row_idx, r in data_rows:
+        color = Color(0.85, 0.95, 0.85) if r["total_return_pct"] >= 0 else Color(0.98, 0.88, 0.88)
+        ranges.append((gspread.utils.rowcol_to_a1(row_idx, return_col), CellFormat(backgroundColor=color)))
+        ranges.append((gspread.utils.rowcol_to_a1(row_idx, capital_col), CellFormat(backgroundColor=color)))
+    if ranges:
+        format_cell_ranges(ws, ranges)
+
+    print(f"  '{title}' done.")
+
+
+def push_benchmark_vs_passive_to_gsheet(benchmark_result):
+    """benchmark_result: the dict analysis/benchmark_vs_passive.py's
+    --json-out writes (top-level keys: starting_capital, fee_model,
+    main_window, formulation_period_window)."""
+    workbook = _authorize_gsheet_workbook()
+
+    main_w = benchmark_result["main_window"]
+    _write_benchmark_sheet(
+        workbook, "Benchmark 2022-2026", main_w,
+        [
+            ("GROSS (no fees/slippage -- matches the locked +30.31% headline convention)", main_w["gross"]),
+            ("FEE-ADJUSTED (strategy: round-trip drag/trade; DCA/B&H: one-sided buy markup)",
+             main_w["fee_adjusted"]),
+        ],
+    )
+
+    form_w = benchmark_result["formulation_period_window"]
+    _write_benchmark_sheet(
+        workbook, "Benchmark 2018-2022 (Formulation)", form_w,
+        [("GROSS -- formulation period, NOT out-of-sample, NOT the 2026 forward-OOS test", form_w["gross"])],
+    )
+
+    print("\nCheck GSHEET: benchmark-vs-passive sheets exported successfully.")
+
+
+# ─── TRADES + RESULTS GSHEET EXPORT ───────────────────────────────────────────
+# Writes the full per-trade log and results summary produced by
+# analysis/export_trades_and_results.py (its --json-out dict, loaded by the
+# caller) to four dedicated tabs -- one Trades + one Results sheet per window
+# (2022-2026 locked baseline, 2018-2022 formulation period). Replaces
+# push_all_thresholds_to_gsheet()'s old per-quality-threshold, per-bar sheets
+# ("Quality 0".."Quality 4", "Summary — Quality Sweep"), which never wrote a
+# clean trade-level table -- this function actively removes those old sheets
+# from the live workbook (idempotent) as part of every push. This module
+# intentionally does NOT compute the trade/results data itself -- see
+# push_benchmark_vs_passive_to_gsheet()'s identical rationale above.
+_TRADE_SHEET_COLUMNS = [
+    "side", "entry_idx", "entry_time", "exit_idx", "exit_time",
+    "entry", "exit", "stop_loss", "take_profit", "pnl_pct", "hold_bars", "exit_reason",
+    "entry_ob_bar", "entry_ob_created_at", "entry_ob_type", "entry_ob_level", "entry_ob_quality",
+    "entry_ob_quality_displacement", "entry_ob_quality_large_bar", "entry_ob_quality_fvg",
+    "entry_ob_quality_liquidity_sweep", "entry_ob_quality_volume_expansion",
+    # Numeric diagnostics behind each boolean above (analysis/export_trades_and_results.py's
+    # compute_ob_criteria_diagnostics(), cross-checked 260/260 against the booleans -- see that
+    # script's verify_ob_criteria_diagnostics()) -- not just true/false, the actual measurements.
+    "entry_ob_displacement_max_body_move", "entry_ob_displacement_threshold",
+    "entry_ob_large_bar_range", "entry_ob_large_bar_threshold",
+    "entry_ob_fvg_max_gap",
+    "entry_ob_liquidity_sweep_ob_extreme", "entry_ob_liquidity_sweep_prior_10bar_extreme",
+    "entry_ob_volume", "entry_ob_volume_avg_20bar", "entry_ob_volume_ratio", "entry_ob_body_ratio",
+    "tp_is_structural", "tp_ob_bar", "tp_ob_created_at", "tp_ob_type", "tp_ob_level", "tp_ob_quality",
+]
+
+_OLD_QUALITY_SWEEP_SHEET_TITLES = [
+    "Quality 0", "Quality 1", "Quality 2", "Quality 3", "Quality 4",
+    "Summary — Quality Sweep",
+]
+
+
+def _delete_worksheet_if_exists(workbook, title):
+    try:
+        ws = workbook.worksheet(title)
+    except gspread.exceptions.WorksheetNotFound:
+        return False
+    workbook.del_worksheet(ws)
+    return True
+
+
+def _clean_old_quality_sweep_sheets(workbook):
+    removed = [t for t in _OLD_QUALITY_SWEEP_SHEET_TITLES if _delete_worksheet_if_exists(workbook, t)]
+    if removed:
+        print(f"  Removed old per-quality-threshold sheet(s): {', '.join(removed)}")
+
+
+def _write_trades_sheet(workbook, title, trades):
+    header = _TRADE_SHEET_COLUMNS
+    rows = [header]
+    for r in trades:
+        rows.append([r.get(c, "") if r.get(c) is not None else "" for c in header])
+
+    needed_rows = len(rows) + 5
+    needed_cols = len(header) + 2
+    ws = _get_or_create_sheet(workbook, title, rows=needed_rows, cols=needed_cols)
+    ws.clear()
+    ws.update(rows)
+
+    header_end = gspread.utils.rowcol_to_a1(1, len(header))
+    format_cell_ranges(ws, [
+        (f"A1:{header_end}", CellFormat(
+            textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+            backgroundColor=Color(0.18, 0.46, 0.71),
+        ))
+    ])
+    pnl_col = header.index("pnl_pct") + 1
+    ranges = []
+    for i, r in enumerate(trades, start=2):
+        pnl = r.get("pnl_pct")
+        if pnl is not None:
+            color = Color(0.85, 0.95, 0.85) if pnl > 0 else Color(0.98, 0.88, 0.88)
+            ranges.append((gspread.utils.rowcol_to_a1(i, pnl_col), CellFormat(backgroundColor=color)))
+    if ranges:
+        format_cell_ranges(ws, ranges)
+
+    print(f"  '{title}' done ({len(trades)} trades).")
+
+
+def _write_results_sheet(workbook, title, window, results):
+    header_row_idx = 3
+    rows = [[f"Window: {window['window_start']} .. {window['window_end']}"], [], ["Metric", "Value"]]
+    for k, v in results.items():
+        rows.append([k, v])
+
+    needed_rows = len(rows) + 5
+    ws = _get_or_create_sheet(workbook, title, rows=needed_rows, cols=4)
+    ws.clear()
+    ws.update(rows)
+
+    format_cell_ranges(ws, [
+        (f"A{header_row_idx}:B{header_row_idx}", CellFormat(
+            textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+            backgroundColor=Color(0.18, 0.46, 0.71),
+        ))
+    ])
+    metric_names = list(results.keys())
+    if "Total Net Return (%)" in metric_names:
+        row_idx = header_row_idx + 1 + metric_names.index("Total Net Return (%)")
+        val = results["Total Net Return (%)"]
+        color = Color(0.85, 0.95, 0.85) if val >= 0 else Color(0.98, 0.88, 0.88)
+        format_cell_ranges(ws, [(f"A{row_idx}:B{row_idx}", CellFormat(backgroundColor=color))])
+    print(f"  '{title}' done.")
+
+
+def push_trades_and_results_to_gsheet(export_result):
+    """export_result: the dict analysis/export_trades_and_results.py's
+    --json-out writes (top-level keys: main_window, formulation_period_window,
+    each with label/window_start/window_end/trades/results)."""
+    workbook = _authorize_gsheet_workbook()
+
+    _clean_old_quality_sweep_sheets(workbook)
+
+    main_w = export_result["main_window"]
+    _write_trades_sheet(workbook, "Trades 2022-2026", main_w["trades"])
+    _write_results_sheet(workbook, "Results 2022-2026", main_w, main_w["results"])
+
+    form_w = export_result["formulation_period_window"]
+    _write_trades_sheet(workbook, "Trades 2018-2022", form_w["trades"])
+    _write_results_sheet(workbook, "Results 2018-2022", form_w, form_w["results"])
+
+    print("\nCheck GSHEET: trades + results sheets exported successfully.")
+
+
+# ─── CANDLES GSHEET EXPORT ─────────────────────────────────────────────────────
+# Writes the per-bar candle export produced by
+# analysis/export_candles_for_gsheet.py (its --json-out dict, loaded by the
+# caller) to two dedicated tabs -- one per window (2022-2026 locked
+# baseline, 2018-2022 formulation period). Reuses _format_df_for_export()'s
+# output shape (the caller already ran it) and this module's own, unchanged
+# _write_sheet()/_apply_pnl_formatting() -- the exact per-bar formatting the
+# old "Quality 0".."Quality 3" sheets used, restored here rather than
+# reimplemented, just pointed at the two windows instead of four quality
+# thresholds.
+def push_candles_to_gsheet(candles_result):
+    """candles_result: the dict analysis/export_candles_for_gsheet.py's
+    --json-out writes (top-level keys: main_window, formulation_period_window,
+    each with label/rows -- rows already shaped by _format_df_for_export())."""
+    workbook = _authorize_gsheet_workbook()
+
+    for key, title in [("main_window", "Candles 2022-2026"), ("formulation_period_window", "Candles 2018-2022")]:
+        df_copy = pd.DataFrame(candles_result[key]["rows"])
+        needed_rows = len(df_copy) + 10
+        needed_cols = len(df_copy.columns) + 2
+        ws = _get_or_create_sheet(workbook, title, rows=needed_rows, cols=needed_cols)
+        print(f"  Writing {len(df_copy)} rows to '{title}'...")
+        _write_sheet(ws, df_copy)
+        _apply_pnl_formatting(ws, df_copy)
+        print(f"  '{title}' done.")
+
+    print("\nCheck GSHEET: candle-level sheets exported successfully.")
 
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────

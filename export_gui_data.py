@@ -410,11 +410,9 @@ def export_artifacts(bot, args):
 
     if args.export_gsheet:
         print("Exporting to Google Sheets (optional mode)...")
-        try:
-            bot.push_all_thresholds_to_gsheet(base_df.copy(), levels=args.levels, precomputed_dfs=sim_dfs)
-        except Exception as e:
-            print(f"Warning: Failed to export to Google Sheets: {e}")
-            print("Please ensure your Google Service Account has Editor permissions for the target Google Sheet.")
+        push_candles(bot, args.output_dir)
+        push_trades_and_results(bot, args.output_dir)
+        push_benchmark_vs_passive(bot, args.output_dir)
 
     return manifest, threshold_runs, verification_report
 
@@ -460,20 +458,105 @@ def run_paper_sync_report(bot, output_dir):
         print(f"\n[WARNING] Skipping paper_sync_report.md: failed to generate ({e}).")
 
 
+def push_candles(bot, output_dir):
+    """
+    Computes the per-bar candle export for both windows
+    (analysis/export_candles_for_gsheet.py, run as a subprocess per this
+    pipeline's established convention) and pushes it to Google Sheets as
+    two tabs, reusing the original per-quality-threshold sheets' proven
+    formatting (bold header, green/red PnL-cell coloring) via
+    push_candles_to_gsheet(). Non-fatal: a failure here is reported and
+    skipped, never aborts the rest of the Google Sheets export.
+    """
+    out_path = os.path.join(output_dir, "export_candles_for_gsheet.json")
+    try:
+        subprocess.run(
+            [sys.executable, "analysis/export_candles_for_gsheet.py", "--json-out", out_path],
+            check=True, capture_output=True, text=True,
+        )
+        with open(out_path, encoding="utf-8") as f:
+            candles_result = json.load(f)
+        bot.push_candles_to_gsheet(candles_result)
+    except subprocess.CalledProcessError as e:
+        print(f"\n[WARNING] Skipping candle-level gsheet push: analysis/export_candles_for_gsheet.py failed "
+              f"(exit {e.returncode}).")
+        if e.stderr:
+            print(e.stderr[-1500:])
+    except Exception as e:
+        print(f"\n[WARNING] Skipping candle-level gsheet push: {e}")
+
+
+def push_trades_and_results(bot, output_dir):
+    """
+    Computes the full per-trade log + results summary for both windows
+    (analysis/export_trades_and_results.py, run as a subprocess per this
+    pipeline's established convention -- see run_statistical_artifacts())
+    and pushes it to Google Sheets as four tabs (Trades/Results x
+    2022-2026/2018-2022), replacing the old per-quality-threshold sheets.
+    Non-fatal: a failure here is reported and skipped, never aborts the
+    rest of the Google Sheets export.
+    """
+    out_path = os.path.join(output_dir, "export_trades_and_results.json")
+    try:
+        subprocess.run(
+            [sys.executable, "analysis/export_trades_and_results.py", "--json-out", out_path],
+            check=True, capture_output=True, text=True,
+        )
+        with open(out_path, encoding="utf-8") as f:
+            export_result = json.load(f)
+        bot.push_trades_and_results_to_gsheet(export_result)
+    except subprocess.CalledProcessError as e:
+        print(f"\n[WARNING] Skipping trades+results gsheet push: analysis/export_trades_and_results.py failed "
+              f"(exit {e.returncode}).")
+        if e.stderr:
+            print(e.stderr[-1500:])
+    except Exception as e:
+        print(f"\n[WARNING] Skipping trades+results gsheet push: {e}")
+
+
+def push_benchmark_vs_passive(bot, output_dir):
+    """
+    Computes the head-to-head strategy/DCA/buy-and-hold benchmark
+    (analysis/benchmark_vs_passive.py, run as a subprocess per this
+    pipeline's established convention -- see run_statistical_artifacts())
+    and pushes it to Google Sheets as two additional tabs, alongside the
+    existing per-quality-threshold sheets. Non-fatal: a failure here is
+    reported and skipped, never aborts the rest of the Google Sheets export.
+    """
+    out_path = os.path.join(output_dir, "benchmark_vs_passive.json")
+    try:
+        subprocess.run(
+            [sys.executable, "analysis/benchmark_vs_passive.py", "--json-out", out_path],
+            check=True, capture_output=True, text=True,
+        )
+        with open(out_path, encoding="utf-8") as f:
+            benchmark_result = json.load(f)
+        bot.push_benchmark_vs_passive_to_gsheet(benchmark_result)
+    except subprocess.CalledProcessError as e:
+        print(f"\n[WARNING] Skipping benchmark-vs-passive gsheet push: analysis/benchmark_vs_passive.py failed "
+              f"(exit {e.returncode}).")
+        if e.stderr:
+            print(e.stderr[-1500:])
+    except Exception as e:
+        print(f"\n[WARNING] Skipping benchmark-vs-passive gsheet push: {e}")
+
+
 def run_statistical_artifacts(output_dir):
     """
-    Regenerates the bootstrap/power, fee-slippage, and ablation-reconstruction
-    JSON artifacts alongside paper_sync_report.md, so a single Run_All.py run
-    produces every statistical figure the dashboard and paper checklist read.
-    Each script is independent and non-fatal to the rest of the pipeline --
-    a failure in one is reported and skipped, not a reason to abort export.
-    Run as a subprocess (not imported) to keep these analysis scripts'
-    argparse-based CLI contract as the one interface this pipeline depends on.
+    Regenerates the bootstrap/power, fee-slippage, ablation-reconstruction,
+    and benchmark-vs-passive JSON artifacts alongside paper_sync_report.md,
+    so a single Run_All.py run produces every statistical figure the
+    dashboard and paper checklist read. Each script is independent and
+    non-fatal to the rest of the pipeline -- a failure in one is reported
+    and skipped, not a reason to abort export. Run as a subprocess (not
+    imported) to keep these analysis scripts' argparse-based CLI contract as
+    the one interface this pipeline depends on.
     """
     scripts = [
         ("analysis/bootstrap_power_analysis.py", "bootstrap_power_analysis.json"),
         ("analysis/fee_slippage_analysis.py", "fee_slippage_analysis.json"),
         ("analysis/ablation_reconstruction.py", "ablation_reconstruction.json"),
+        ("analysis/benchmark_vs_passive.py", "benchmark_vs_passive.json"),
     ]
     for script, out_name in scripts:
         out_path = os.path.join(output_dir, out_name)
@@ -750,26 +833,11 @@ def main():
             try:
                 bot = load_bot_module()
 
-                iteration_parameters = None
+                print("[Dashboard Server] Exporting to Google Sheets...")
+                push_candles(bot, "artifacts")
+                push_trades_and_results(bot, "artifacts")
+                push_benchmark_vs_passive(bot, "artifacts")
 
-                cache_path = "artifacts/candles.csv"
-                if os.path.isfile(cache_path):
-                    base_df = pd.read_csv(cache_path)
-                    base_df["open_time"] = pd.to_datetime(base_df["open_time"])
-                else:
-                    base_df = bot.get_candles(symbol="BTCUSDT", interval=bot.Client.KLINE_INTERVAL_4HOUR)
-                
-                base_df = bot.compute_indicators(base_df)
-                
-                levels = [0, 1, 2, 3]
-                sim_dfs = {}
-                for level in levels:
-                    sim_df = bot.simulate_trades(base_df.copy(), min_ob_quality=level, iteration_parameters=iteration_parameters)
-                    sim_dfs[level] = sim_df
-                
-                print(f"[Dashboard Server] Exporting iteration {it_id} to Google Sheets...")
-                bot.push_all_thresholds_to_gsheet(base_df.copy(), levels=levels, precomputed_dfs=sim_dfs)
-                
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
