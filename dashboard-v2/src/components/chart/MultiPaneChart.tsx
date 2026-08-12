@@ -8,7 +8,6 @@ import {
   type IChartApi,
   type IPaneApi,
   type ISeriesApi,
-  type IPriceLine,
   type ITimeScaleApi,
   type Time,
 } from 'lightweight-charts';
@@ -70,7 +69,11 @@ interface ChartBundle {
   jStatic: ISeriesApi<'Line'>;
   atrLine: ISeriesApi<'Line'>;
   atr200Line: ISeriesApi<'Line'>;
-  activeTradeLines: IPriceLine[];
+  /** Entry/TP/SL for the hovered trade, each a 2-point LineSeries spanning
+   * only startTime->endTime -- see setActiveTradeLines. Not IPriceLine[]:
+   * createPriceLine has no time-bounds API, it always spans the full chart
+   * width, which is what this replaces. */
+  activeTradeSeries: ISeriesApi<'Line'>[];
   timeToIndex: Map<number, number>;
   adaptiveKSeriesList: ISeriesApi<'Line'>[];
   adaptiveDSeriesList: ISeriesApi<'Line'>[];
@@ -192,7 +195,7 @@ export function MultiPaneChart({
       jStatic,
       atrLine,
       atr200Line,
-      activeTradeLines: [],
+      activeTradeSeries: [],
       timeToIndex,
       adaptiveKSeriesList: [],
       adaptiveDSeriesList: [],
@@ -421,35 +424,46 @@ export function MultiPaneChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lockedWindowStart, lockedWindowEnd]);
 
+  /**
+   * Entry/TP/SL as 2-point LineSeries spanning only trade.startTime->endTime,
+   * not chart-wide createPriceLine (which has no time-bounds API and always
+   * draws edge-to-edge -- that was the "takes every pixel" complaint). Same
+   * per-trade-series idiom as rebuildAdaptiveKdjSeries below. startTime/endTime,
+   * not entry_idx/exit_idx, for the same LOCKED-vs-mounted-array reason
+   * documented on findActiveTrade above.
+   */
   function setActiveTradeLines(bundle: ChartBundle, trade: ProcessedTrade | null) {
-    bundle.activeTradeLines.forEach((line) => bundle.candleSeries.removePriceLine(line));
-    bundle.activeTradeLines = [];
+    for (const s of bundle.activeTradeSeries) bundle.chart.removeSeries(s);
+    bundle.activeTradeSeries = [];
     if (!trade) return;
-    bundle.activeTradeLines.push(
-      bundle.candleSeries.createPriceLine({
-        price: trade.entry,
-        color: trade.side === 'LONG' ? '#2ecc71' : '#ff4d4f',
-        lineWidth: 2,
-        lineStyle: LineStyle.Solid,
-        axisLabelVisible: false,
-        title: `${trade.side} entry`,
-      }),
-      bundle.candleSeries.createPriceLine({
-        price: trade.take_profit,
-        color: '#2ecc71',
-        lineWidth: 1,
-        lineStyle: LineStyle.Dashed,
-        axisLabelVisible: false,
-        title: 'TP',
-      }),
-      bundle.candleSeries.createPriceLine({
-        price: trade.stop_loss,
-        color: '#ff4d4f',
-        lineWidth: 1,
-        lineStyle: LineStyle.Dashed,
-        axisLabelVisible: false,
-        title: 'SL',
-      }),
+
+    const addLevelSeries = (price: number, color: string, lineWidth: 1 | 2, lineStyle: LineStyle) => {
+      const series = bundle.chart.addSeries(
+        LineSeries,
+        {
+          color,
+          lineWidth,
+          lineStyle,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+          // A distant stop-loss/take-profit shouldn't rescale the main price
+          // pane's autoscale -- exclude these series from it entirely.
+          autoscaleInfoProvider: () => null,
+        },
+        PANE.main,
+      );
+      series.setData([
+        { time: trade.startTime as Time, value: price },
+        { time: trade.endTime as Time, value: price },
+      ]);
+      return series;
+    };
+
+    bundle.activeTradeSeries.push(
+      addLevelSeries(trade.entry, trade.side === 'LONG' ? '#2ecc71' : '#ff4d4f', 2, LineStyle.Solid),
+      addLevelSeries(trade.take_profit, '#2ecc71', 1, LineStyle.Dashed),
+      addLevelSeries(trade.stop_loss, '#ff4d4f', 1, LineStyle.Dashed),
     );
   }
 
@@ -571,6 +585,38 @@ export function MultiPaneChart({
     drawFormulationPeriodBands(container, timeScale);
 
     const { processedObs, processedTrades, showObZones, showTradeZones, dataColors } = propsRef.current;
+
+    // Entry/TP/SL text labels for the actively-hovered trade -- independent of
+    // showObZones/showTradeZones, matching setActiveTradeLines' own line
+    // series, which also render regardless of those toggles. createPriceLine's
+    // `title` used to provide this label for free; a plain LineSeries has no
+    // such option, so it's drawn here instead, anchored past the segment's
+    // right (endTime) edge.
+    if (hoveredTime != null) {
+      const activeTrade = processedTrades.find((t) => t.startTime <= hoveredTime && hoveredTime <= t.endTime);
+      if (activeTrade) {
+        const endX = timeScale.timeToCoordinate(activeTrade.endTime as Time);
+        if (endX !== null) {
+          const levels: [number, string, string][] = [
+            [activeTrade.entry, `${activeTrade.side} entry`, activeTrade.side === 'LONG' ? '#2ecc71' : '#ff4d4f'],
+            [activeTrade.take_profit, 'TP', '#2ecc71'],
+            [activeTrade.stop_loss, 'SL', '#ff4d4f'],
+          ];
+          for (const [price, text, color] of levels) {
+            const y = bundle.candleSeries.priceToCoordinate(price);
+            if (y === null) continue;
+            const label = document.createElement('div');
+            label.className = 'trade-line-label';
+            label.style.left = `${endX + 4}px`;
+            label.style.top = `${y}px`;
+            label.style.color = color;
+            label.textContent = text;
+            container.appendChild(label);
+          }
+        }
+      }
+    }
+
     if (!showObZones && !showTradeZones) return;
 
     if (showObZones) {
