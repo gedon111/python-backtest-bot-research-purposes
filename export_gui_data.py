@@ -429,6 +429,7 @@ def parse_args():
     parser.add_argument("--export-gsheet", action="store_true")
     parser.add_argument("--db-url", default=None, help="SQLAlchemy database URL connection string.")
     parser.add_argument("--no-server", action="store_true", help="Skip launching the local dashboard web server.")
+    parser.add_argument("--no-browser", action="store_true", help="Start the server but don't auto-open a browser tab (used by dashboard-v2's `npm run dev`).")
     args = parser.parse_args()
     args.levels = [int(x.strip()) for x in args.levels.split(",") if x.strip()]
     if not args.levels:
@@ -595,7 +596,13 @@ def main():
 
     # Start local web server and open browser
     PORT = 8765
-    HOST = "127.0.0.1"
+    # Loopback-only by default so a native run isn't reachable from the LAN.
+    # The Dockerfile sets DASHBOARD_HOST=0.0.0.0, since a container's
+    # loopback interface is not what `docker run -p` forwards host traffic
+    # to -- binding 127.0.0.1 in that case would accept connections from
+    # `docker exec` but silently refuse every connection coming through the
+    # published port.
+    HOST = os.environ.get("DASHBOARD_HOST", "127.0.0.1")
     
     class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         daemon_threads = True
@@ -866,6 +873,9 @@ def main():
             f"  The API server is still running on http://{HOST}:{PORT}/ for debugging, "
             f"but no browser window will open."
         )
+    elif args.no_browser:
+        url = f"http://{HOST}:{PORT}/dashboard/"
+        print(f"[Dashboard] Server ready at {url} (browser suppressed by --no-browser)")
     else:
         url = f"http://{HOST}:{PORT}/dashboard/"
         print(f"[Dashboard] Opening dashboard in browser: {url}")

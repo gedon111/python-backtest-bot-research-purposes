@@ -9,10 +9,11 @@ This project is a Python backtest and reporting bot that pulls BTC/USDT market d
 The easiest way to run the entire project is using the automated dashboard launcher. This will run the backtests, compile the trade data, start a local server, and open the visual interface in your browser.
 
 ### 1. Install Dependencies
-Make sure you have the required libraries installed:
 ```bash
-pip install pandas numpy python-binance oauth2client gspread gspread-formatting
+pip install -r requirements.txt
 ```
+`requirements.txt` is the single source of truth for Python dependencies --
+the `Dockerfile` installs from the same file, so both paths stay in sync.
 
 ### 2. Run the Dashboard Launcher
 Simply run the runner script:
@@ -20,7 +21,7 @@ Simply run the runner script:
 python Run_Dashboard.py
 ```
 * **Offline Mode (Default)**: The script will load from the local candles cache, build the dashboard if needed, and immediately launch the web UI at `http://127.0.0.1:8765/dashboard/`.
-* **Online Mode (Binance API & Google Sheets Export)**: To pull live data and upload results to Google Sheets, set the following environment variables first:
+* **Online Mode (Binance API & Google Sheets Export)**: To pull live data and upload results to Google Sheets, set the following environment variables first (see `.env.example` for the full list -- this project does not auto-load a `.env` file, so set these in your shell/session):
   ```bash
   # Optional: Binance Keys
   set BINANCE_API_KEY=your_key
@@ -30,6 +31,23 @@ python Run_Dashboard.py
   set GOOGLE_SERVICE_KEY_PATH=path/to/service-key.json
   set GOOGLE_SHEET_ID=your_sheet_id
   ```
+
+### 2b. Frontend Dev Mode (Hot Reload)
+For active frontend work on `dashboard-v2/`, run its Vite dev server instead
+of (or alongside) `Run_Dashboard.py`:
+```bash
+cd dashboard-v2
+npm install
+npm run dev
+```
+`npm run dev` automatically starts the Python backend
+(`export_gui_data.py --no-browser`) if one isn't already running on port
+8765, waits for it to become ready, then starts Vite at `http://localhost:5173`
+with hot reload -- no separate terminal/manual backend step needed. If you're
+already running a backend yourself (e.g. `Run_Dashboard.py` in another
+terminal, or iterating on backend code and don't want it restarted), use
+`npm run dev:vite-only` instead, which just runs Vite against whatever
+backend is already up.
 
 ### 3. Run with Docker (Alternative Setup)
 Alternatively, you can build and run the project inside a Docker container. The included `Dockerfile` installs all dependencies (including NumPy, Pandas, SciPy, and SQLAlchemy) and launches the pipeline:
@@ -41,6 +59,26 @@ docker build -t binance-backtest-bot .
 docker run -p 8765:8765 binance-backtest-bot
 ```
 This automatically runs the backtest simulations, saves the trade results locally to `backtest_results.db`, and launches the interactive dashboard server at `http://localhost:8765/dashboard/`.
+
+### 4. Migrating to a New Machine
+Everything needed to run this project is tracked in this git repository
+(source, `artifacts/candles.csv` cache, `backtest_results.db`, dashboard
+source) except two things that are deliberately git-ignored -- see
+Security and Credentials below:
+
+1. `git clone` the repo on the new machine.
+2. `pip install -r requirements.txt`, or use Docker (see above) -- either
+   path installs from the same pinned `requirements.txt`.
+3. **Manually** copy your Google service-account key JSON into a local
+   `SERVICE KEY/` folder at the repo root (e.g. via a password manager or
+   encrypted transfer). Never commit it or send it through git -- `SERVICE
+   KEY/` is git-ignored on purpose.
+4. Only if you need live Binance pulls or Google Sheets export: set the 4
+   environment variables listed in `.env.example` in your shell/session
+   (this project does not auto-load a `.env` file).
+5. Run `python Run_Dashboard.py`. Offline mode works immediately from the
+   committed `artifacts/candles.csv` cache -- no keys required to view the
+   dashboard or reproduce the locked backtest results.
 
 ---
 
@@ -466,5 +504,7 @@ Entries
 - 2026-08-03 | OOS/backfill validation promoted to `analysis/` (Supplementary Analysis Scripts) | update | Promoted `scratch/oos_live_pull_2026_08.py` and `scratch/eightyr_backfill_audit.py` together to one permanent, git-tracked, CLI-runnable module (`analysis/oos_validation_analysis.py`) on branch `feature/oos-validation-analysis` -- the one script in `analysis/` that makes live Binance API calls, a disclosed exception to the offline-only rule, same justification as its scratch predecessors. Redesigned to pull through a fixed historical end date (`--oos-end-date`, default 2026-07-31) instead of an open-ended "through now," making it safely re-runnable without drifting (Binance does not revise historical candles, verified this session) rather than requiring a static frozen-snapshot workaround. Section 1 (forward OOS, 2022-01-01..2026-07-31): locked 27-trade baseline reproduces byte-identically (integrity + regression checks PASS) before 4 new out-of-sample trades are examined -- 1 win, 3 losses, 25.00% win rate, -3.45% total return, reported plainly as a small, directionally unfavorable result, not softened. Section 2 (8yr backfill, 2018-2026): confirms the locked baseline reproduces exactly even with ~4 extra years of indicator warm-up prepended (not guaranteed a priori, given MACD/KDJ's theoretically unbounded recursive memory -- empirically PASS, max pnl diff 0.0000000000), then reports 2018-2022 performance (25 trades, 60.00% win rate, +21.82%) explicitly labeled NOT out-of-sample -- disclosed this session as the period the strategy's rule structure was originally formulated against, with only the minimum stop-distance filter changed afterward -- plus combined 2018-2026 stats (56 trades, 62.50%, +48.68%, one-sided binomial p=0.0407) with an explicit caveat against citing that figure as clean validation, since it mixes formulation-period and out-of-sample data. Both `docs/limitations_section_draft.md` (subsection a) and `docs/results_section_addition_draft.md` (new subsection c) updated with these findings; both remain drafts pending separate human review before paper integration. Promotion verified: default-args run reproduces every number already reported and discussed prior to promotion, exactly. | To make this session's out-of-sample and formulation-period disclosures a permanent, reproducible part of the toolchain rather than one-off scratch findings and chat history, and to give the "run once, report as-is" pre-registration commitment a design (fixed end date) that survives being productionized instead of requiring an honor-system workaround.
 - 2026-08-03 | `--json-out` added to all 5 `analysis/` scripts (Supplementary Analysis Scripts) | update | Added an optional `--json-out PATH` flag to `fee_slippage_analysis.py`, `bootstrap_power_analysis.py`, `benchmark_dca_analysis.py`, `regime_breakdown_analysis.py`, and `oos_validation_analysis.py` on branch `feature/analysis-json-export`, backed by a new shared `analysis/_json_utils.py` helper (mirrors `export_gui_data.py`'s `fallback_json` numpy/pandas serialization, duplicated rather than imported to keep `analysis/` dependency-free of the root pipeline scripts). Each script's internal functions were refactored to also return the same numbers they already print, with zero re-derivation. Verified byte-identical stdout (flag omitted) against each script's pre-change committed version for all 5 scripts. Generated and committed the resulting 5 artifacts (`artifacts/fee_slippage_analysis.json`, `artifacts/bootstrap_power_analysis.json`, `artifacts/benchmark_dca_analysis.json`, `artifacts/regime_breakdown_analysis.json`, `artifacts/oos_validation_analysis.json`) so the dashboard has data without requiring a manual script run first; all validated as parseable JSON with no non-serializable types leaked through. Not wired into `Run_All.py`/`Run_Dashboard.py` -- all 5 scripts remain manually run. | To give the new dashboard "Supplementary Analysis" tab a stable, regeneratable data source without duplicating any of the scripts' underlying computation in JavaScript.
 - 2026-08-03 | Known Limitations / Future Work (new section) | update | Added a new "Known Limitations / Future Work" section documenting that leverage is not modeled: `simulate_trades()` evaluates all exit conditions at bar-close resolution only, intrabar `high`/`low` (present in the data, read into the loop) are used only for OB-touch detection and two quality criteria, never for exits, and the engine has no margin/liquidation-price concept at all. States plainly that a leveraged backtest is not defensible without adding intrabar liquidation tracking to the exit-evaluation logic, and that this codebase deliberately does not attempt a leverage-multiplier workaround on the existing close-basis trade log, since that would silently hide the exact risk (intrabar liquidation invisible to a close-only simulation) it claims to model. Cites Svogun & Bazán-Palomino (2022) as consistent precedent for reporting unlevered notional returns in the technical-trading-rule literature. No code changes -- documentation only, per this session's investigation finding that the engine "cannot honestly support this." | To make an already-investigated scope decision (not a gap someone might mistake for an oversight) explicit and discoverable, and to record what a future revisit would actually require rather than leaving it unstated.
+- 2026-08-10 | Quick Start / dependency install (Install Dependencies, new "Frontend Dev Mode" subsection) | correction | The `pip install` line here previously listed `pandas numpy python-binance oauth2client gspread gspread-formatting` -- missing `scipy`, which 7+ scripts under `analysis/` actually import (`from scipy import stats`), so a fresh install via this exact line crashed the first time any of those scripts ran. The `Dockerfile` had its own separate, also-incomplete list (missing `scipy`, plus an unused `scikit-learn` left over from the already-disclosed removed ML pipeline). Both replaced with a single new root `requirements.txt` (pinned versions), installed via `pip install -r requirements.txt` here and `COPY requirements.txt . && RUN pip install --no-cache-dir -r requirements.txt` in the `Dockerfile`, so the two paths can no longer drift apart. Also added a new "Frontend Dev Mode (Hot Reload)" subsection documenting `dashboard-v2`'s `npm run dev` (now auto-starts `export_gui_data.py --no-browser` via `dashboard-v2/scripts/dev.mjs` if a backend isn't already running on :8765, so the Vite proxy always has something to talk to) and the `dev:vite-only` escape hatch for running Vite against an already-running/manually-managed backend. Added `.env.example` at repo root documenting the 4 env vars this section already described (`BINANCE_API_KEY`, `BINANCE_API_SECRET`, `GOOGLE_SERVICE_KEY_PATH`, `GOOGLE_SHEET_ID`) -- not auto-loaded, still set via shell/session as before. Separately, per an explicit decision this session, the standing credential-exposure finding two entries above (`SERVICE KEY/python-trading-bot-new-strat-10.json` in git history at `a2db013`) remains deliberately unaddressed -- confirmed private/personal repo, narrowly-scoped key, history purge and key rotation explicitly declined as out of scope. | A user hit `ECONNREFUSED` running `npm run dev` with no backend running, which led to a broader "make this ready to migrate to another computer" pass -- the missing/drifted dependency lists and undocumented two-step dev workflow were both real gaps a fresh machine would hit immediately.
+- 2026-08-12 | Quick Start (new "Migrating to a New Machine" subsection); `.gitignore` | correction | Added a step-by-step "Migrating to a New Machine" subsection (clone, install deps or Docker, manually copy the `SERVICE KEY/` JSON and set env vars if needed, run `Run_Dashboard.py`) so the credential/setup steps a previous entry documented piecemeal are in one place. Separately found and fixed a real gap in `.gitignore`: it excluded `.venv/`/`venv/`/`env/`/`*.pyc` but not `.env` itself, even though `.env.example`'s own header comment tells users to "copy to `.env` for your own reference" -- if that file ever gained real secrets it was not actually git-ignored. Added `.env` and `.env.*` (with `!.env.example` to keep the tracked example file from being excluded by the new pattern). This commit also carries the already-pending `requirements.txt`/`Dockerfile`/README changes from the entry above (left uncommitted at the end of that session) plus a routine artifact regeneration (`artifacts/*.json`, `backtest_results.db` -- timestamps only, confirmed zero numeric/MISMATCH diff via `artifacts/paper_sync_report.md`) and a new `docs/order_block_criteria_per_trade_reference.md`, pushed together to both `development` and `main` (fast-forward, `main` was an exact 1-commit ancestor) as part of a full migration-readiness pass. | Preparing the repo to be cloned onto a different machine surfaced both a documentation gap (no single migration checklist) and a real credential-safety gap (`.env` not git-ignored) that needed closing before pushing, not after.
 
 

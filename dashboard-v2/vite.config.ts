@@ -12,11 +12,13 @@ export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/dashboard/' : '/',
   server: {
     proxy: {
-      // Forward to the existing local dashboard server (export_gui_data.py's
-      // SilentHandler, started via `python export_gui_data.py` or
-      // Run_Dashboard.py) so `npm run dev` can be verified against real,
-      // running data instead of mocks. Static files are served from the repo
-      // root by SimpleHTTPRequestHandler, so /artifacts/* resolves directly.
+      // Forward to the local dashboard server (export_gui_data.py's
+      // SilentHandler). `npm run dev` (scripts/dev.mjs) starts this backend
+      // automatically if it isn't already running, so this proxy always has
+      // something to talk to -- if you bypass that via `dev:vite-only`,
+      // start the backend yourself first (`python export_gui_data.py` or
+      // Run_Dashboard.py). Static files are served from the repo root by
+      // SimpleHTTPRequestHandler, so /artifacts/* resolves directly.
       '/api': 'http://127.0.0.1:8765',
       '/artifacts': 'http://127.0.0.1:8765',
     },

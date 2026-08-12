@@ -10,7 +10,7 @@ RUN npm ci
 COPY dashboard-v2/ ./
 RUN npm run build
 
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -19,8 +19,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python requirements
-RUN pip install --no-cache-dir pandas numpy sqlalchemy scikit-learn python-binance oauth2client gspread gspread-formatting
+# Install python requirements (single source of truth, shared with the
+# native `pip install -r requirements.txt` path documented in README.md)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy code, database, credentials, and artifacts
 COPY . .
@@ -28,6 +30,12 @@ COPY . .
 # Pre-built dashboard-v2 static assets, served at /dashboard/ by
 # export_gui_data.py's SilentHandler.
 COPY --from=dashboard-build /app/dashboard-v2/dist ./dashboard-v2/dist
+
+# Bind the dashboard server to all interfaces inside the container --
+# `docker run -p` forwards host traffic to the container's external
+# interface, not its loopback one, which 127.0.0.1 (the native-run default,
+# see export_gui_data.py) would silently refuse.
+ENV DASHBOARD_HOST=0.0.0.0
 
 # Expose the dashboard web server port
 EXPOSE 8765

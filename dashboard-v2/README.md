@@ -1,32 +1,47 @@
-# React + TypeScript + Vite
+# dashboard-v2
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite frontend for the project's terminal-style
+backtest dashboard. Talks to the Python backend (`export_gui_data.py` at the
+repo root) via `/api/*` and `/artifacts/*`, proxied through Vite in dev mode
+(see `vite.config.ts`). See the root `README.md` for the full pipeline
+(data fetch -> indicators -> SMC order blocks -> trade simulation ->
+artifact export).
 
-Currently, two official plugins are available:
+## Dev mode (hot reload)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+This starts the Python backend automatically (`export_gui_data.py
+--no-browser`, from the repo root) if one isn't already listening on
+`127.0.0.1:8765`, waits for it to be ready, then starts Vite at
+`http://localhost:5173` with hot reload. Ctrl+C stops both. The orchestration
+lives in `scripts/dev.mjs`.
+
+If you already have a backend running yourself (e.g. `python
+Run_Dashboard.py` or `python export_gui_data.py` in another terminal, or
+you're iterating on backend code and don't want it restarted), use:
+
+```bash
+npm run dev:vite-only
+```
+
+which just runs Vite against whatever backend is already up.
+
+## Build
+
+```bash
+npm run build
+```
+
+Type-checks (`tsc -b`) then builds to `dist/`, served by
+`export_gui_data.py`'s `SilentHandler` under `/dashboard/` in production
+(`python Run_Dashboard.py` builds this automatically if stale).
+
+## Other scripts
+
+- `npm run typecheck` -- `tsc -b --noEmit`
+- `npm run lint` -- `oxlint`
+- `npm run preview` -- preview a production build locally
