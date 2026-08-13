@@ -1,18 +1,25 @@
 import { useMemo } from 'react';
 import './SolutionsTab.css';
-import { useTrades } from '../../api/hooks';
+import { useCandles, useTrades } from '../../api/hooks';
 import { baselineProvenance, baselineTrades, computeCriteriaTests, computeOwnBootstrapCI } from '../stats/statsCompute';
 import { binomialTailTerms, binomialTestGreater, computeCorrelationPearson, computeCorrelationSpearman, fisherExactTerms } from '../stats/statMath';
+import { dcaArm, lumpSumArm, strategyArm } from '../stats/benchmarkMath';
 import {
   binomialDerivation,
   bootstrapDerivation,
+  dcaArmDerivation,
   fisherDerivation,
+  lumpSumArmDerivation,
   mdeDerivation,
   pearsonDerivation,
   spearmanDerivation,
+  strategyArmDerivation,
   welchDerivation,
 } from '../stats/derivationSteps';
 import { DerivationCard } from '../stats/DerivationCard';
+
+const STARTING_CAPITAL = 10000;
+const STRATEGY_ROUND_TRIP_DRAG_PCT = 0.2; // matches analysis/benchmark_vs_passive.py's ROUND_TRIP_DRAG_PCT
 
 /**
  * Full step-by-step derivation of every statistic on the Stats tab --
@@ -24,7 +31,9 @@ import { DerivationCard } from '../stats/DerivationCard';
  */
 export function SolutionsTab() {
   const trades = useTrades();
+  const candles = useCandles();
   const allTrades = trades.data ?? [];
+  const allCandles = candles.data ?? [];
 
   const base = useMemo(() => baselineTrades(allTrades), [allTrades]);
   const prov = useMemo(() => baselineProvenance(allTrades), [allTrades]);
@@ -48,11 +57,35 @@ export function SolutionsTab() {
   const pearson = useMemo(() => computeCorrelationPearson(holdBars, pnl), [holdBars, pnl]);
   const spearman = useMemo(() => computeCorrelationSpearman(holdBars, pnl), [holdBars, pnl]);
 
-  if (trades.loading) return <div className="stats-tab-loading">Loading trade data...</div>;
+  // Independent JS re-derivation of the Sharpe/Sortino/MaxDD benchmark
+  // comparison -- computed here (not in benchmarkMath.ts/derivationSteps.ts,
+  // which only build/format) from the same /artifacts/candles.json +
+  // /api/trades data every other section on this page uses. See
+  // benchmarkMath.ts's module doc for why this never imports Python's
+  // precomputed benchmark_vs_passive.json.
+  const strategyResult = useMemo(
+    () => (allCandles.length > 0 && base.length > 0 ? strategyArm(allCandles, base, STARTING_CAPITAL) : null),
+    [allCandles, base],
+  );
+  const strategyFeeAdjResult = useMemo(
+    () => (allCandles.length > 0 && base.length > 0 ? strategyArm(allCandles, base, STARTING_CAPITAL, STRATEGY_ROUND_TRIP_DRAG_PCT) : null),
+    [allCandles, base],
+  );
+  const dcaResult = useMemo(() => (allCandles.length > 0 ? dcaArm(allCandles, STARTING_CAPITAL) : null), [allCandles]);
+  const lumpSumResult = useMemo(() => (allCandles.length > 0 ? lumpSumArm(allCandles, STARTING_CAPITAL) : null), [allCandles]);
+
+  if (trades.loading || candles.loading) return <div className="stats-tab-loading">Loading trade and candle data...</div>;
   if (trades.error) {
     return (
       <div className="stats-tab-loading" role="alert">
         Failed to load /api/trades: {trades.error.message}
+      </div>
+    );
+  }
+  if (candles.error) {
+    return (
+      <div className="stats-tab-loading" role="alert">
+        Failed to load /artifacts/candles.json: {candles.error.message}
       </div>
     );
   }
@@ -99,6 +132,24 @@ export function SolutionsTab() {
         <div className="derivation-grid">
           <DerivationCard step={pearsonDerivation(holdBars, pnl, pearson)} />
           <DerivationCard step={spearmanDerivation(holdBars, pnl, spearman)} />
+        </div>
+      </section>
+
+      <section className="stat-card panel">
+        <h3>5. Risk-Adjusted &amp; Benchmark Metrics</h3>
+        <p className="stats-legend text-muted">
+          Sharpe, Sortino and Max Drawdown for the OB-gated strategy vs. weekly DCA into BTC vs. lump-sum
+          buy-and-hold, at $10,000 notional starting capital, over the same locked 2022-2026 window
+          (8,767 bars). This is a genuine independent re-derivation from <code>/artifacts/candles.json</code> and{' '}
+          <code>/api/trades</code> (see <code>benchmarkMath.ts</code>) -- it never imports from or fetches
+          Python's precomputed <code>benchmark_vs_passive.json</code>. Each card's last step cross-checks
+          against the CLAUDE.md-locked Python figures as an explicit, labelled comparison; a mismatch would be
+          reported here, not silently tuned away.
+        </p>
+        <div className="derivation-grid">
+          {strategyResult && strategyFeeAdjResult && <DerivationCard step={strategyArmDerivation(strategyResult, strategyFeeAdjResult)} />}
+          {dcaResult && <DerivationCard step={dcaArmDerivation(dcaResult)} />}
+          {lumpSumResult && <DerivationCard step={lumpSumArmDerivation(lumpSumResult)} />}
         </div>
       </section>
     </div>

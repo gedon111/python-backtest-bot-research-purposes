@@ -35,6 +35,7 @@ import type {
 } from './statMath';
 import { Z_ALPHA_2, Z_BETA } from './statMath';
 import type { BaselineProvenance, CriterionTestRow } from './statsCompute';
+import type { ArmResult, DcaArmResult } from './benchmarkMath';
 
 export interface DerivationVariable {
   symbol: string;
@@ -98,6 +99,14 @@ const term = (v: number) => (v < 0 ? `(${v.toFixed(2)})` : v.toFixed(2));
  * output depends on the reader's browser locale -- "2,000" in en-US is
  * "2.000" in de-DE, making a `tex` string non-author-constant). */
 const commaInt = (v: number) => Math.trunc(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+/** Locale-independent thousands separator with a fixed decimal tail (dollar amounts), same reasoning as commaInt. */
+const commaFixed = (v: number, decimals = 2) => {
+  const sign = v < 0 ? '-' : '';
+  const [intPart, decPart] = Math.abs(v).toFixed(decimals).split('.');
+  return sign + intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (decPart ? '.' + decPart : '');
+};
+/** UTC calendar date for a Candle/trade unix-second timestamp -- not toLocaleDateString(), whose output depends on the reader's browser locale. */
+const fmtDate = (timeSec: number) => new Date(timeSec * 1000).toISOString().slice(0, 10);
 /** Plain-text probability formatter for TABLE CELLS ONLY -- exponential
  * notation ("7.4506e-9") is safe as plain text but would render wrong inside
  * KaTeX (the "e" would typeset as an italic variable, not "x10^-9"). */
@@ -845,5 +854,296 @@ export function spearmanDerivation(X: number[], Y: number[], result: SpearmanRes
     prose:
       'Rank-based, so robust to the outlier winning trades that dominate the raw Pearson sums above -- each ' +
       'value is replaced by its rank (ties averaged) before applying the same Pearson formula.',
+  };
+}
+
+// ─── 8. Risk-adjusted & benchmark metrics (Sharpe, Sortino, Max Drawdown) ──
+// benchmarkMath.ts independently re-derives these from /artifacts/candles.json
+// + /api/trades -- it never imports from or fetches Python's precomputed
+// benchmark_vs_passive.json. The PY_* constants below are only the CLAUDE.md
+// locked comparison figures, rendered as a labelled crosscheck row, exactly
+// like the bootstrap B=2,000-vs-10,000 disclosure above -- if the two
+// disagree, that's reported, not reconciled away.
+const CROSSCHECK_SOURCE =
+  'analysis/benchmark_vs_passive.py output, CLAUDE.md Locked results (benchmark-vs-passive block, ' +
+  '2022-2026 window, $10,000 notional, gross unless stated)';
+
+const PY_STRATEGY_GROSS = { totalReturnPct: 30.31, finalCapital: 13417.77, sharpe: 1.114, sortino: 2.727, maxDrawdownPct: -6.46, timeInMarketPct: 2.63 };
+const PY_STRATEGY_FEE_ADJ = { totalReturnPct: 24.91, finalCapital: 12719.01 };
+const PY_DCA = { totalReturnPct: 123.13, finalCapital: 22312.94, sharpe: 0.556, sortino: null as number | null, maxDrawdownPct: -27.85, timeInMarketPct: 100 };
+const PY_LUMP = { totalReturnPct: 90.07, finalCapital: 19007.32, sharpe: 0.564, sortino: null as number | null, maxDrawdownPct: -67.21, timeInMarketPct: 100 };
+
+/** Fractional-return formatter (Sharpe/Sortino inputs are pct_change() fractions, e.g. 0.0012, not pnl_pct-style already-percent values). */
+const pct4 = (v: number) => (Number.isNaN(v) ? '\\text{NaN}' : `${(v * 100).toFixed(4)}\\%`);
+const num3 = (v: number) => (Number.isNaN(v) ? '\\text{NaN}' : v.toFixed(3));
+
+function equitySampleTable(result: ArmResult, valueLabel: string): DerivationBlock {
+  return table({
+    caption: `First ${result.equitySample.length} ${valueLabel} points`,
+    headers: ['Bar', 'Date (UTC)', valueLabel],
+    rows: result.equitySample.map((p) => ({ cells: [String(p.index), fmtDate(p.time), '$' + commaFixed(p.equity)] })),
+    collapsed: false,
+  });
+}
+
+function sharpeSortinoSteps(result: ArmResult, periodLabel: string): DerivationLine[] {
+  const r = result.returns;
+  const P = result.periodsPerYear.toFixed(1);
+  return [
+    {
+      label: `${periodLabel} returns: mean and standard deviation`,
+      blocks: [
+        note(
+          `N = ${commaInt(r.n)} ${periodLabel} returns, each computed as (E_i - E_{i-1})/E_{i-1} from the equity ` +
+            `series constructed above -- too many to enumerate individually (unlike the 27-trade tables ` +
+            'elsewhere on this page), so only the construction rule and the resulting mean/SD are shown.',
+        ),
+        values([
+          { symbol: 'N', description: `${periodLabel} returns`, value: commaInt(r.n) },
+          { symbol: '\\bar r', description: 'mean return per period', value: pct4(r.meanR) },
+          { symbol: 's_r', description: 'sample standard deviation of returns (ddof=1)', value: pct4(r.stdR) },
+        ]),
+      ],
+    },
+    {
+      label: 'Sharpe ratio',
+      blocks: [
+        algebra(
+          '\\text{Sharpe} = \\dfrac{\\bar r}{s_r}\\sqrt{P}',
+          `\\text{Sharpe} = \\dfrac{${pct4(r.meanR)}}{${pct4(r.stdR)}}\\sqrt{${P}}`,
+          `\\text{Sharpe} = ${num3(r.sharpe)}`,
+        ),
+        note(`Risk-free rate = 0. P = periods/year = ${P} (annualization factor for this arm's sampling frequency).`),
+      ],
+    },
+    {
+      label: 'Sortino ratio',
+      blocks: [
+        algebra(
+          '\\sigma_d = \\sqrt{\\dfrac{1}{N}\\sum_{i=1}^{N} \\min(r_i, 0)^2}',
+          undefined,
+          `\\sigma_d = ${pct4(r.downsideDev)}`,
+        ),
+        note(
+          'The downside deviation divides by N (population, ddof=0) over ALL N returns, not just the negative ' +
+            'ones -- every non-negative period still contributes a 0 to the sum. Matches ' +
+            'benchmark_dca_analysis.py:82-84 exactly: np.sqrt((np.minimum(r,0)**2).mean()).',
+        ),
+        algebra(
+          '\\text{Sortino} = \\dfrac{\\bar r}{\\sigma_d}\\sqrt{P}',
+          `\\text{Sortino} = \\dfrac{${pct4(r.meanR)}}{${pct4(r.downsideDev)}}\\sqrt{${P}}`,
+          `\\text{Sortino} = ${num3(r.sortino)}`,
+        ),
+      ],
+    },
+  ];
+}
+
+function maxDrawdownStep(result: ArmResult): DerivationLine {
+  const tp = result.troughPoint;
+  return {
+    label: 'Maximum drawdown',
+    blocks: [
+      algebra('DD_t = \\dfrac{E_t - \\max_{s \\leq t} E_s}{\\max_{s \\leq t} E_s}\\times 100, \\qquad DD_{\\min} = \\min_t DD_t'),
+      note(
+        `Worst point: bar ${tp.index} (${fmtDate(tp.time)}) -- equity there = $${commaFixed(tp.equity)}, running ` +
+          `max at that point = $${commaFixed(tp.runningMax)}.`,
+      ),
+      algebra(
+        'DD_{\\min} = \\dfrac{E_{t^*} - \\text{RunningMax}_{t^*}}{\\text{RunningMax}_{t^*}}\\times 100',
+        `DD_{\\min} = \\dfrac{${commaFixed(tp.equity)} - ${commaFixed(tp.runningMax)}}{${commaFixed(tp.runningMax)}}\\times 100`,
+        `DD_{\\min} = ${n2(result.maxDrawdownPct)}\\%`,
+      ),
+    ],
+  };
+}
+
+function benchmarkCrosscheckStep(
+  result: ArmResult,
+  py: { totalReturnPct: number; finalCapital: number; sharpe: number; sortino: number | null; maxDrawdownPct: number; timeInMarketPct: number },
+  exposureCaveat: boolean,
+): DerivationLine {
+  // crosscheck's jsValue/pyValue render as plain React text, NOT through
+  // <Latex> (see DerivationCard.tsx's 'crosscheck' case) -- unlike every
+  // other block kind on this page, these must be plain strings, never
+  // LaTeX-escaped (\%, \$); a literal "%"/"$" is correct here.
+  const close = (a: number, b: number, tol: number) => Math.abs(a - b) < tol;
+  const blocks: DerivationBlock[] = [
+    crosscheck('Total return', `${s2(result.totalReturnPct)}%`, `${s2(py.totalReturnPct)}%`, CROSSCHECK_SOURCE, close(result.totalReturnPct, py.totalReturnPct, 0.1)),
+    crosscheck('Final capital', `$${commaFixed(result.finalCapital)}`, `$${commaFixed(py.finalCapital)}`, CROSSCHECK_SOURCE, close(result.finalCapital, py.finalCapital, 10)),
+    crosscheck('Sharpe', num3(result.returns.sharpe), py.sharpe.toFixed(3), CROSSCHECK_SOURCE, close(result.returns.sharpe, py.sharpe, 0.02)),
+  ];
+  if (py.sortino != null) {
+    blocks.push(crosscheck('Sortino', num3(result.returns.sortino), py.sortino.toFixed(3), CROSSCHECK_SOURCE, close(result.returns.sortino, py.sortino, 0.02)));
+  } else {
+    blocks.push(note("CLAUDE.md's locked comparison does not disclose a Sortino figure for this arm -- only Sharpe and MaxDD -- so this row has no Python value to check against."));
+  }
+  blocks.push(
+    crosscheck('Max drawdown', `${n2(result.maxDrawdownPct)}%`, `${py.maxDrawdownPct.toFixed(2)}%`, CROSSCHECK_SOURCE, close(result.maxDrawdownPct, py.maxDrawdownPct, 0.1)),
+    crosscheck('Time in market', `${n2(result.timeInMarketPct)}%`, `${py.timeInMarketPct.toFixed(2)}%`, CROSSCHECK_SOURCE, close(result.timeInMarketPct, py.timeInMarketPct, 0.1)),
+  );
+  if (exposureCaveat) {
+    blocks.push(
+      note(
+        "This arm holds 100% of its window's bars, against the strategy's 2.63% time-in-market -- a materially " +
+          'different risk exposure. Per CLAUDE.md, a higher raw return here must never be stated without this ' +
+          'exposure-time caveat in the same breath.',
+        'caveat',
+      ),
+    );
+  }
+  return { label: 'Cross-check vs. the Python benchmark script', blocks };
+}
+
+export function strategyArmDerivation(result: ArmResult, feeAdjResult: ArmResult): DerivationStep {
+  return {
+    id: 'benchmark-strategy',
+    title: 'OB-Gated Strategy -- Equity Curve, Sharpe, Sortino, Max Drawdown',
+    steps: [
+      {
+        label: 'Capital and construction rule',
+        blocks: [
+          values([
+            { symbol: 'C_0', description: 'starting capital', value: `\\$${commaInt(result.startingCapital)}` },
+            { symbol: 'n_{\\text{bars}}', description: '4h bars in the locked window', value: commaInt(result.nBars) },
+          ]),
+          note(
+            "Capital sits idle between trades and compounds multiplicatively by (1+pnl_pct/100) only at each " +
+              "trade's own exit bar -- valid because trades never overlap (simulate_trades() only opens a new " +
+              'position once the prior one is flat).',
+          ),
+          algebra(
+            'E_0 = C_0, \\qquad E_i = \\begin{cases} E_{i-1}(1+\\text{pnl\\_pct}_i/100) & \\text{bar } i \\text{ is a trade exit} \\\\ E_{i-1} & \\text{otherwise} \\end{cases}',
+          ),
+          equitySampleTable(result, 'Equity ($)'),
+        ],
+      },
+      ...sharpeSortinoSteps(result, '4h-bar'),
+      maxDrawdownStep(result),
+      {
+        label: 'Total return, final capital, and time in market',
+        blocks: [
+          algebra('\\text{Total return} = \\sum_i \\text{pnl\\_pct}_i', undefined, `\\text{Total return} = ${s2(result.totalReturnPct)}\\%`),
+          note(
+            "This is a simple SUM of each trade's pnl_pct -- the same convention as the locked +30.31% headline " +
+              "figure -- which differs very slightly from the compounded equity curve's own final value below; " +
+              'both are shown, not reconciled away (benchmark_vs_passive.py:238-244 documents the same split ' +
+              'deliberately, on the Python side).',
+          ),
+          algebra('\\text{Final capital} = E_{n_{\\text{bars}}-1}', undefined, `\\text{Final capital} = \\$${commaFixed(result.finalCapital)}`),
+          algebra(
+            '\\text{Time in market} = \\dfrac{\\sum_i \\text{hold\\_bars}_i}{n_{\\text{bars}}}\\times 100',
+            undefined,
+            `\\text{Time in market} = ${n2(result.timeInMarketPct)}\\%`,
+          ),
+        ],
+      },
+      benchmarkCrosscheckStep(result, PY_STRATEGY_GROSS, false),
+      {
+        label: 'Fee-adjusted variant (0.20% round-trip drag per trade)',
+        blocks: [
+          note(
+            'Matches fee_slippage_analysis.py\'s confirmed primary scenario (5bps/side taker + 5bps/side ' +
+              'slippage, round-tripped): each trade\'s pnl_pct is reduced by 0.20% before summing/compounding.',
+          ),
+          crosscheck(
+            'Total return (fee-adjusted)',
+            `${s2(feeAdjResult.totalReturnPct)}%`,
+            `${s2(PY_STRATEGY_FEE_ADJ.totalReturnPct)}%`,
+            CROSSCHECK_SOURCE,
+            Math.abs(feeAdjResult.totalReturnPct - PY_STRATEGY_FEE_ADJ.totalReturnPct) < 0.1,
+          ),
+          crosscheck(
+            'Final capital (fee-adjusted)',
+            `$${commaFixed(feeAdjResult.finalCapital)}`,
+            `$${commaFixed(PY_STRATEGY_FEE_ADJ.finalCapital)}`,
+            CROSSCHECK_SOURCE,
+            Math.abs(feeAdjResult.finalCapital - PY_STRATEGY_FEE_ADJ.finalCapital) < 10,
+          ),
+        ],
+      },
+    ],
+    resultTex: `\\text{Sharpe} = ${num3(result.returns.sharpe)}, \\quad \\text{Sortino} = ${num3(result.returns.sortino)}, \\quad \\text{Max DD} = ${n2(result.maxDrawdownPct)}\\%`,
+    prose:
+      'Event-driven equity curve on the same 27-trade baseline used throughout this page -- Sharpe/Sortino ' +
+      "annualized on 4h-bar returns, matching analysis/benchmark_vs_passive.py's strategy_arm().",
+  };
+}
+
+export function dcaArmDerivation(result: DcaArmResult): DerivationStep {
+  return {
+    id: 'benchmark-dca',
+    title: 'Weekly DCA into BTC -- Equity Curve, Sharpe, Sortino, Max Drawdown',
+    steps: [
+      {
+        label: 'Capital and contribution schedule',
+        blocks: [
+          values([
+            { symbol: 'C_0', description: 'starting capital', value: `\\$${commaInt(result.startingCapital)}` },
+            { symbol: 'W', description: 'ISO calendar weeks in the window', value: commaInt(result.nContributions) },
+            { symbol: 'c', description: 'contribution per week, C_0/W', value: `\\$${commaFixed(result.contributionPerWeek)}` },
+          ]),
+          note(
+            'One contribution at the first bar of every ISO-8601 calendar week (Monday-Thursday rule), bought at ' +
+              "that bar's CLOSE price -- same timing convention as benchmark_dca_analysis.py's Section 2.",
+          ),
+          algebra('\\text{units} \\mathrel{+}= \\dfrac{c}{\\text{close}_i}\\ \\text{at each contribution bar } i, \\qquad V_i = \\text{units}\\times\\text{close}_i'),
+          equitySampleTable(result, 'Portfolio value ($)'),
+        ],
+      },
+      ...sharpeSortinoSteps(result, 'weekly'),
+      maxDrawdownStep(result),
+      {
+        label: 'Total return',
+        blocks: [
+          values([{ symbol: '\\text{Contributed}', description: 'W x c', value: `\\$${commaFixed(result.startingCapital)}` }]),
+          algebra(
+            '\\text{Total return} = \\dfrac{V_{\\text{final}} - \\text{Contributed}}{\\text{Contributed}}\\times 100',
+            `\\text{Total return} = \\dfrac{${commaFixed(result.finalCapital)} - ${commaFixed(result.startingCapital)}}{${commaFixed(result.startingCapital)}}\\times 100`,
+            `\\text{Total return} = ${s2(result.totalReturnPct)}\\%`,
+          ),
+        ],
+      },
+      benchmarkCrosscheckStep(result, PY_DCA, true),
+    ],
+    resultTex: `\\text{Sharpe} = ${num3(result.returns.sharpe)}, \\quad \\text{Max DD} = ${n2(result.maxDrawdownPct)}\\%`,
+    prose:
+      "Weekly-sampled equity curve -- Sharpe/Sortino/MaxDD use the W weekly value samples, not every 4h bar, " +
+      "matching analysis/benchmark_vs_passive.py's dca_arm() exactly.",
+  };
+}
+
+export function lumpSumArmDerivation(result: ArmResult): DerivationStep {
+  return {
+    id: 'benchmark-lumpsum',
+    title: 'Lump-Sum Buy-and-Hold -- Equity Curve, Sharpe, Sortino, Max Drawdown',
+    steps: [
+      {
+        label: 'Capital and construction rule',
+        blocks: [
+          values([{ symbol: 'C_0', description: 'starting capital', value: `\\$${commaInt(result.startingCapital)}` }]),
+          note("All capital deployed at the window's very first bar's OPEN price -- a deliberately different anchor than the DCA arm's per-contribution CLOSE price, flagged explicitly in benchmark_vs_passive.py's module docstring."),
+          algebra('\\text{units} = \\dfrac{C_0}{\\text{open}_0}, \\qquad E_i = \\text{units}\\times\\text{close}_i'),
+          equitySampleTable(result, 'Equity ($)'),
+        ],
+      },
+      ...sharpeSortinoSteps(result, '4h-bar'),
+      maxDrawdownStep(result),
+      {
+        label: 'Total return',
+        blocks: [
+          algebra(
+            '\\text{Total return} = \\dfrac{E_{\\text{final}} - C_0}{C_0}\\times 100',
+            `\\text{Total return} = \\dfrac{${commaFixed(result.finalCapital)} - ${commaFixed(result.startingCapital)}}{${commaFixed(result.startingCapital)}}\\times 100`,
+            `\\text{Total return} = ${s2(result.totalReturnPct)}\\%`,
+          ),
+        ],
+      },
+      benchmarkCrosscheckStep(result, PY_LUMP, true),
+    ],
+    resultTex: `\\text{Sharpe} = ${num3(result.returns.sharpe)}, \\quad \\text{Max DD} = ${n2(result.maxDrawdownPct)}\\%`,
+    prose:
+      "Single all-in purchase at the window's first open, held to the last close -- Sharpe/Sortino annualized on " +
+      "4h-bar returns, matching analysis/benchmark_vs_passive.py's lump_sum_arm().",
   };
 }

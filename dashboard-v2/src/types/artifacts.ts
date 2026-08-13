@@ -123,8 +123,11 @@ export interface TradeRecord {
   trade_id: number;
   side: 'LONG' | 'SHORT';
   min_ob_quality: number;
-  entry_time: string;
-  exit_time: string;
+  // Integer columns in db_manager.py's Trade model, populated in
+  // export_gui_data.py:388-389 as int(base_df.loc[idx, 'time']) -- unix
+  // seconds, matching Candle.time exactly, not an ISO string.
+  entry_time: number;
+  exit_time: number;
   entry_price: number;
   exit_price: number;
   stop_loss: number;
