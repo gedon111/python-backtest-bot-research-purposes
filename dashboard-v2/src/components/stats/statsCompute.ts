@@ -18,6 +18,28 @@ export function baselineTrades(trades: TradeRecord[]): TradeRecord[] {
   return base.length > 0 ? base : trades;
 }
 
+export interface BaselineProvenance {
+  totalTrades: number;
+  matchedByFilter: number;
+  n: number;
+  fallbackUsed: boolean;
+}
+
+/** Which branch of baselineTrades' filter/fallback actually fired, and against
+ * how many total trades -- so the Solutions tab can state "n and k come from
+ * filtering /api/trades to min_ob_quality===0" truthfully instead of
+ * presenting n as a bare given. Does not alter baselineTrades' own behavior. */
+export function baselineProvenance(trades: TradeRecord[]): BaselineProvenance {
+  const matched = trades.filter((t) => t.min_ob_quality === 0).length;
+  const fallbackUsed = matched === 0 && trades.length > 0;
+  return {
+    totalTrades: trades.length,
+    matchedByFilter: matched,
+    n: fallbackUsed ? trades.length : matched,
+    fallbackUsed,
+  };
+}
+
 const median = (arr: number[]) => {
   if (arr.length === 0) return 0;
   const s = [...arr].sort((a, b) => a - b);
@@ -79,6 +101,10 @@ export function computeOrthogonalCriteria(trades: TradeRecord[]): OrthogonalCrit
 
 export interface CriterionTestRow {
   label: string;
+  /** The TradeRecord field this criterion partitions on, e.g. "quality_fvg" --
+   * additive, so the Solutions tab can name the actual field rather than only
+   * its display label. */
+  field: string;
   trueN: number;
   trueWins: number;
   falseN: number;
@@ -117,6 +143,7 @@ export function computeCriteriaTests(trades: TradeRecord[]): CriterionTestRow[] 
     );
     return {
       label: criterion.label,
+      field: criterion.key as string,
       trueN: trueList.length,
       trueWins,
       falseN: falseList.length,

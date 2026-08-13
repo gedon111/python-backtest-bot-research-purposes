@@ -135,13 +135,27 @@ export function logFactorial(n: number): number {
   return ans;
 }
 
+export interface BinomialTerm {
+  x: number;
+  p: number;
+}
+
+/** Every term P(X=x) of the tail sum P(X>=k), x=k..n, in the same ascending-x
+ * order binomialTestGreater sums them in -- extracted so the Solutions tab can
+ * show the term-by-term enumeration instead of asserting the summed p-value. */
+export function binomialTailTerms(n: number, k: number, p0 = 0.5): BinomialTerm[] {
+  const terms: BinomialTerm[] = [];
+  for (let x = k; x <= n; x++) {
+    const logComb = logFactorial(n) - logFactorial(x) - logFactorial(n - x);
+    terms.push({ x, p: Math.exp(logComb + x * Math.log(p0) + (n - x) * Math.log(1.0 - p0)) });
+  }
+  return terms;
+}
+
 export function binomialTestGreater(n: number, k: number, p0 = 0.5): number {
   if (n === 0) return 1.0;
   let sum = 0.0;
-  for (let x = k; x <= n; x++) {
-    const logComb = logFactorial(n) - logFactorial(x) - logFactorial(n - x);
-    sum += Math.exp(logComb + x * Math.log(p0) + (n - x) * Math.log(1.0 - p0));
-  }
+  for (const term of binomialTailTerms(n, k, p0)) sum += term.p;
   return sum;
 }
 
@@ -149,6 +163,18 @@ export interface PearsonResult {
   r: number;
   p: number;
   t: number;
+  // Additive: the five running sums + numerator/denominator, so the
+  // Solutions tab can show the full substitution by reading these back
+  // rather than recomputing them in a second code path (derivationSteps.ts
+  // used to re-derive these itself -- fixed here).
+  n: number;
+  sumX: number;
+  sumY: number;
+  sumXY: number;
+  sumX2: number;
+  sumY2: number;
+  num: number;
+  den: number;
 }
 
 export function computeCorrelationPearson(X: number[], Y: number[]): PearsonResult {
@@ -170,13 +196,20 @@ export function computeCorrelationPearson(X: number[], Y: number[]): PearsonResu
   const r = den !== 0 ? num / den : 0.0;
   const t = r * Math.sqrt((N - 2) / (1 - r * r));
   const p = studentTPValue(t, N - 2);
-  return { r, p, t };
+  return { r, p, t, n: N, sumX, sumY, sumXY, sumX2, sumY2, num, den };
 }
 
 export interface SpearmanResult {
   rho: number;
   p: number;
   t: number;
+  // Additive: the ranked series and the full Pearson-on-ranks result (same
+  // machinery computeCorrelationPearson uses internally, exposed rather than
+  // discarded) so the Solutions tab can show the rank table and the
+  // downstream sums without a second code path.
+  rankX: number[];
+  rankY: number[];
+  ranked: PearsonResult;
 }
 
 export function computeCorrelationSpearman(X: number[], Y: number[]): SpearmanResult {
@@ -200,7 +233,7 @@ export function computeCorrelationSpearman(X: number[], Y: number[]): SpearmanRe
   const rankX = getRanks(X);
   const rankY = getRanks(Y);
   const pearson = computeCorrelationPearson(rankX, rankY);
-  return { rho: pearson.r, p: pearson.p, t: pearson.t };
+  return { rho: pearson.r, p: pearson.p, t: pearson.t, rankX, rankY, ranked: pearson };
 }
 
 export interface WelchResult {
@@ -217,6 +250,20 @@ export interface WelchResult {
   m2: number;
   v1: number;
   v2: number;
+  // Further additive: the SE^2 components (a1=v1/n1, a2=v2/n2), SE itself,
+  // and the three pieces of the Welch-Satterthwaite df formula, plus the
+  // incomplete-beta argument x=df/(df+t^2) -- all of these were computed
+  // internally before but discarded, forcing derivationSteps.ts to either
+  // assert them or recompute them itself. Exposing them keeps derivationSteps
+  // a pure formatter, per this file's own no-recompute contract.
+  a1: number;
+  a2: number;
+  se2: number;
+  se: number;
+  dfNum: number;
+  dfDen1: number;
+  dfDen2: number;
+  tX: number;
 }
 
 /** Welch's unequal-variance two-sample t-test (two-sided), same formula as scipy.stats.ttest_ind(equal_var=False). */
@@ -229,12 +276,81 @@ export function welchTTest(a: number[], b: number[]): WelchResult {
   const m2 = mean(b);
   const v1 = variance(a, m1);
   const v2 = variance(b, m2);
-  const se2 = v1 / n1 + v2 / n2;
-  if (se2 <= 0 || n1 < 2 || n2 < 2) return { t: NaN, df: NaN, p: NaN, n1, n2, m1, m2, v1, v2 };
-  const t = (m1 - m2) / Math.sqrt(se2);
-  const df = se2 ** 2 / ((v1 / n1) ** 2 / (n1 - 1) + (v2 / n2) ** 2 / (n2 - 1));
+  const a1 = v1 / n1;
+  const a2 = v2 / n2;
+  const se2 = a1 + a2;
+  if (se2 <= 0 || n1 < 2 || n2 < 2) {
+    return { t: NaN, df: NaN, p: NaN, n1, n2, m1, m2, v1, v2, a1, a2, se2, se: NaN, dfNum: NaN, dfDen1: NaN, dfDen2: NaN, tX: NaN };
+  }
+  const se = Math.sqrt(se2);
+  const t = (m1 - m2) / se;
+  const dfNum = se2 ** 2;
+  const dfDen1 = a1 ** 2 / (n1 - 1);
+  const dfDen2 = a2 ** 2 / (n2 - 1);
+  const df = dfNum / (dfDen1 + dfDen2);
+  const tX = df / (df + t * t);
   const p = studentTPValue(t, df);
-  return { t, df, p, n1, n2, m1, m2, v1, v2 };
+  return { t, df, p, n1, n2, m1, m2, v1, v2, a1, a2, se2, se, dfNum, dfDen1, dfDen2, tX };
+}
+
+export interface FisherTerm {
+  x: number;
+  p: number;
+  logP: number;
+  included: boolean;
+}
+
+export interface FisherTermsResult {
+  terms: FisherTerm[];
+  xMin: number;
+  xMax: number;
+  xObs: number;
+  pObs: number;
+  logPObs: number;
+  epsilon: number;
+  rowSum1: number;
+  rowSum2: number;
+  colSum1: number;
+  colSum2: number;
+  n: number;
+}
+
+/** Every table P(x) with the observed 2x2's row/column margins, x=xMin..xMax,
+ * in the same ascending-x order fisherExactTwoSided sums the included ones in
+ * -- extracted so the Solutions tab can show the full enumeration and the
+ * inclusion boundary (a log-space comparison, hence logP/logPObs/epsilon
+ * exposed too) instead of asserting the summed p-value. */
+export function fisherExactTerms(a: number, b: number, c: number, d: number): FisherTermsResult {
+  const rowSum1 = a + b;
+  const rowSum2 = c + d;
+  const colSum1 = a + c;
+  const colSum2 = b + d;
+  const n = rowSum1 + rowSum2;
+  const logChoose = (nn: number, kk: number) => logFactorial(nn) - logFactorial(kk) - logFactorial(nn - kk);
+  const logDenom = logChoose(n, colSum1);
+  const xMin = Math.max(0, colSum1 - rowSum2);
+  const xMax = Math.min(rowSum1, colSum1);
+  const logObserved = logChoose(rowSum1, a) + logChoose(rowSum2, colSum1 - a) - logDenom;
+  const epsilon = 1e-7;
+  const terms: FisherTerm[] = [];
+  for (let x = xMin; x <= xMax; x++) {
+    const lp = logChoose(rowSum1, x) + logChoose(rowSum2, colSum1 - x) - logDenom;
+    terms.push({ x, p: Math.exp(lp), logP: lp, included: lp <= logObserved + epsilon });
+  }
+  return {
+    terms,
+    xMin,
+    xMax,
+    xObs: a,
+    pObs: Math.exp(logObserved),
+    logPObs: logObserved,
+    epsilon,
+    rowSum1,
+    rowSum2,
+    colSum1,
+    colSum2,
+    n,
+  };
 }
 
 /**
@@ -244,21 +360,9 @@ export function welchTTest(a: number[], b: number[]): WelchResult {
  * scipy.stats.fisher_exact(alternative='two-sided') uses.
  */
 export function fisherExactTwoSided(a: number, b: number, c: number, d: number): number {
-  const rowSum1 = a + b;
-  const rowSum2 = c + d;
-  const colSum1 = a + c;
-  const n = rowSum1 + rowSum2;
-  const logChoose = (nn: number, kk: number) => logFactorial(nn) - logFactorial(kk) - logFactorial(nn - kk);
-  const logDenom = logChoose(n, colSum1);
-  const xMin = Math.max(0, colSum1 - rowSum2);
-  const xMax = Math.min(rowSum1, colSum1);
-  const logObserved = logChoose(rowSum1, a) + logChoose(rowSum2, colSum1 - a) - logDenom;
-  const epsilon = 1e-7;
+  const { terms } = fisherExactTerms(a, b, c, d);
   let p = 0;
-  for (let x = xMin; x <= xMax; x++) {
-    const lp = logChoose(rowSum1, x) + logChoose(rowSum2, colSum1 - x) - logDenom;
-    if (lp <= logObserved + epsilon) p += Math.exp(lp);
-  }
+  for (const term of terms) if (term.included) p += term.p;
   return Math.min(1, p);
 }
 
@@ -266,9 +370,10 @@ export function fisherExactTwoSided(a: number, b: number, c: number, d: number):
 // critical values, matching analysis/bootstrap_power_analysis.py's default
 // --alpha 0.05 --power 0.80 (this dashboard doesn't expose alpha/power as
 // tunable, so fixed constants are used rather than a general inverse-normal-CDF
-// approximation).
-const Z_ALPHA_2 = 1.9599639845400545; // qnorm(0.975)
-const Z_BETA = 0.8416212335729143; // qnorm(0.80)
+// approximation). Exported (was module-private) so the Solutions tab displays
+// these exact values instead of a shadowing local copy at lower precision.
+export const Z_ALPHA_2 = 1.9599639845400545; // qnorm(0.975)
+export const Z_BETA = 0.8416212335729143; // qnorm(0.80)
 
 export interface MdeResult {
   n1: number;
@@ -278,6 +383,13 @@ export interface MdeResult {
   observedDiff: number;
   mde: number;
   detectable: boolean;
+  // Additive: SE itself. NOT guaranteed bit-identical to Welch's `se` for the
+  // same subgroup split -- both compute sqrt(sd1^2/n1 + sd2^2/n2) from the
+  // same sd1/sd2, but Welch derives its variance directly (v1) while this
+  // function goes variance->sqrt->square (sd1**2), which loses/regains a bit
+  // in ~30% of subgroups observed. Report both, never claim they're the same
+  // value "by construction".
+  se: number;
 }
 
 /** Minimum detectable effect, two-sample normal approximation: MDE = (z_a/2 + z_b) * sqrt(sd1^2/n1 + sd2^2/n2). */
@@ -293,7 +405,7 @@ export function mdeNormalApprox(trueVals: number[], falseVals: number[]): MdeRes
   const observedDiff = m1 - m2;
   const se = Math.sqrt(sd1 ** 2 / n1 + sd2 ** 2 / n2);
   const mde = (Z_ALPHA_2 + Z_BETA) * se;
-  return { n1, n2, sd1, sd2, observedDiff, mde, detectable: Math.abs(observedDiff) >= mde };
+  return { n1, n2, sd1, sd2, observedDiff, mde, detectable: Math.abs(observedDiff) >= mde, se };
 }
 
 /** Deterministic seeded PRNG (mulberry32) so the in-browser bootstrap is reproducible across renders without depending on any Python-side RNG state. */
@@ -307,6 +419,23 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+export interface BootstrapReplicateDetail {
+  indices: number[];
+  values: number[];
+  total: number;
+  avg: number;
+}
+
+export interface PercentileDetail {
+  p: number;
+  idx: number;
+  lo: number;
+  hi: number;
+  loValue: number;
+  hiValue: number;
+  result: number;
+}
+
 export interface BootstrapCIResult {
   b: number;
   n: number;
@@ -316,6 +445,16 @@ export interface BootstrapCIResult {
   avgCI: [number, number];
   pctResamplesTotalLe0: number;
   pctResamplesAvgLe0: number;
+  // Additive: the first resample replicate's drawn indices/values/total/avg
+  // (captured, not separately generated, so the RNG draw sequence for i>=1 is
+  // untouched), and the full lo/hi bracket + interpolation detail behind each
+  // of the four percentile() calls above.
+  seed: number;
+  firstReplicate: BootstrapReplicateDetail;
+  totalLoDetail: PercentileDetail;
+  totalHiDetail: PercentileDetail;
+  avgLoDetail: PercentileDetail;
+  avgHiDetail: PercentileDetail;
 }
 
 /** Nonparametric percentile bootstrap on a trade log's own total/average return (resample n with replacement, B resamples). */
@@ -324,31 +463,52 @@ export function bootstrapPercentileCI(pnl: number[], b: number, seed: number): B
   const rng = mulberry32(seed);
   const totals = new Array<number>(b);
   const avgs = new Array<number>(b);
+  let firstReplicate: BootstrapReplicateDetail = { indices: [], values: [], total: 0, avg: 0 };
   for (let i = 0; i < b; i++) {
     let s = 0;
+    const captureFirst = i === 0;
+    const indices: number[] = captureFirst ? new Array<number>(n) : [];
     for (let j = 0; j < n; j++) {
-      s += pnl[Math.floor(rng() * n)];
+      const idx = Math.floor(rng() * n);
+      if (captureFirst) indices[j] = idx;
+      s += pnl[idx];
     }
     totals[i] = s;
     avgs[i] = s / n;
+    if (captureFirst) {
+      firstReplicate = { indices, values: indices.map((idx) => pnl[idx]), total: s, avg: s / n };
+    }
   }
-  const percentile = (arr: number[], p: number) => {
+  const percentileDetailed = (arr: number[], p: number): PercentileDetail => {
     const sorted = [...arr].sort((x, y) => x - y);
     const idx = (p / 100) * (sorted.length - 1);
     const lo = Math.floor(idx);
     const hi = Math.ceil(idx);
-    return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+    const loValue = sorted[lo];
+    const hiValue = sorted[hi];
+    const result = lo === hi ? loValue : loValue + (hiValue - loValue) * (idx - lo);
+    return { p, idx, lo, hi, loValue, hiValue, result };
   };
+  const totalLoDetail = percentileDetailed(totals, 2.5);
+  const totalHiDetail = percentileDetailed(totals, 97.5);
+  const avgLoDetail = percentileDetailed(avgs, 2.5);
+  const avgHiDetail = percentileDetailed(avgs, 97.5);
   const totalPoint = pnl.reduce((s, v) => s + v, 0);
   return {
     b,
     n,
     totalPoint,
-    totalCI: [percentile(totals, 2.5), percentile(totals, 97.5)],
+    totalCI: [totalLoDetail.result, totalHiDetail.result],
     avgPoint: totalPoint / n,
-    avgCI: [percentile(avgs, 2.5), percentile(avgs, 97.5)],
+    avgCI: [avgLoDetail.result, avgHiDetail.result],
     pctResamplesTotalLe0: (totals.filter((v) => v <= 0).length / b) * 100,
     pctResamplesAvgLe0: (avgs.filter((v) => v <= 0).length / b) * 100,
+    seed,
+    firstReplicate,
+    totalLoDetail,
+    totalHiDetail,
+    avgLoDetail,
+    avgHiDetail,
   };
 }
 

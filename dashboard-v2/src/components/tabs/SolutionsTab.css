@@ -1,3 +1,9 @@
+/* Same min-width:0 fix as .derivation-card below, one level up -- each
+   numbered section is itself a flex item of .stats-tab. */
+.solutions-tab.stats-tab > .stat-card {
+  min-width: 0;
+}
+
 .criterion-group {
   margin-bottom: var(--space-4);
 }
@@ -16,9 +22,12 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* Single column, full-width -- these cards now contain multi-step
+   derivations with tables and long substitutions; a 320px-min 3-across grid
+   left no room for either. */
 .derivation-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
 }
 
@@ -27,11 +36,17 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: var(--space-3);
+  /* Flex items default to min-width:auto, which lets a wide intrinsic
+     content width (a long multi-term substitution) push the whole column
+     wider instead of triggering the intended internal overflow-x:auto on
+     .derivation-formula -- min-width:0 lets this box actually shrink to its
+     container so long formulas scroll inside themselves, not the page. */
+  min-width: 0;
 }
 
 .derivation-title {
-  font-size: 0.8rem;
-  margin: 0 0 var(--space-2) 0;
+  font-size: 0.85rem;
+  margin: 0 0 var(--space-3) 0;
 }
 
 .derivation-section {
@@ -53,7 +68,7 @@
 
 .derivation-vars {
   list-style: none;
-  margin: 0;
+  margin: 0 0 var(--space-2) 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -65,6 +80,7 @@
 .derivation-result {
   overflow-x: auto;
   font-size: 0.78rem;
+  margin-bottom: var(--space-2);
 }
 
 .derivation-result {
@@ -77,23 +93,105 @@
   margin: var(--space-2) 0 0 0;
 }
 
-.derivation-subcards {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+/* One numbered step within a card -- an ordered list of blocks (values
+   table, formula/substitution/result, raw-enumeration table, note,
+   cross-check), rail-accented so a long multi-step card stays scannable. */
+.derivation-step {
+  border-left: 2px solid var(--border-strong);
+  padding-left: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
-.derivation-subcard {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-left: 2px solid var(--text-muted);
-  border-radius: var(--radius);
-  padding: var(--space-2);
+.derivation-step:last-of-type {
+  margin-bottom: var(--space-3);
+}
+
+.derivation-step-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.derivation-step-num {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.derivation-step-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.derivation-step-desc {
+  font-size: 0.74rem;
+  margin: 0 0 var(--space-2) 0;
+}
+
+.derivation-table-details {
+  margin-bottom: var(--space-2);
+}
+
+.derivation-table-details summary {
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  padding: var(--space-1) 0;
+}
+
+.derivation-table-details[open] summary {
+  margin-bottom: var(--space-1);
+}
+
+.derivation-table-details .table-container table,
+.derivation-card > .derivation-step .table-container table {
   font-size: 0.72rem;
 }
 
-.derivation-subcard .derivation-formula,
-.derivation-subcard .derivation-result {
-  font-size: 0.7rem;
-  margin-top: var(--space-1);
+.derivation-row-observed td {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.derivation-row-excluded td {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.derivation-row-bracket td {
+  color: var(--text-secondary);
+}
+
+.derivation-note {
+  font-size: 0.72rem;
+  margin: 0 0 var(--space-2) 0;
+}
+
+.derivation-note-caveat {
+  border-left: 2px solid var(--warning);
+  padding-left: var(--space-2);
+}
+
+.derivation-crosscheck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 0.72rem;
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-1);
+  border-radius: var(--radius);
+}
+
+.derivation-crosscheck-values {
+  font-variant-numeric: tabular-nums;
+}
+
+.derivation-crosscheck-source {
+  flex-basis: 100%;
 }
