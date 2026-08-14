@@ -17,7 +17,7 @@ import pandas as pd
 from scipy import stats as sstats
 import importlib.util
 
-spec = importlib.util.spec_from_file_location("bot", "src/Binance backtest bot.py")
+spec = importlib.util.spec_from_file_location("bot", "research_analysis.py")
 bot = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bot)
 

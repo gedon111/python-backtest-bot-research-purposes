@@ -6,3 +6,17 @@ __pycache__/
 .gitignore
 dashboard-v2/node_modules
 dashboard-v2/dist
+
+# Never bake credentials into the image layer. The final image comment in
+# the Dockerfile no longer claims to copy credentials -- pass them at
+# `docker run` time instead, via `-e` env vars or a `-v` mount over
+# `SERVICE KEY/`. Mirrors the same exclusions in .gitignore.
+SERVICE KEY/
+.env
+.env.*
+!.env.example
+
+# Not needed at runtime; keeps the build context (and layer cache
+# invalidation surface) smaller.
+scratch/
+.claude/

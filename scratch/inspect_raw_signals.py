@@ -1,7 +1,7 @@
 import pandas as pd
 import importlib.util
 
-spec = importlib.util.spec_from_file_location("bot", "src/Binance backtest bot.py")
+spec = importlib.util.spec_from_file_location("bot", "research_analysis.py")
 bot = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bot)
 
@@ -12,7 +12,7 @@ obs = bot.compute_smc(df)
 
 # Check qualifying indicator signals
 signals = []
-start_bar = bot.SWING_SIZE + 5
+start_bar = bot.SWING_STRUCTURE_LOOKBACK_BARS + 5
 for i in range(start_bar, len(df)):
     close = float(df.at[i, 'close'])
     hist = float(df.at[i, 'MACD_hist'])

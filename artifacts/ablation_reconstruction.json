@@ -20,8 +20,8 @@
       },
       "locked": {
         "n": 140,
-        "win_rate": 60.0,
-        "total_return": -14.63
+        "win_rate_pct": 60.0,
+        "total_return_pct": -14.63
       },
       "status_vs_locked": "DIVERGE",
       "bootstrap_vs_baseline": {
@@ -54,8 +54,8 @@
       },
       "locked": {
         "n": 138,
-        "win_rate": 55.07,
-        "total_return": -25.5
+        "win_rate_pct": 55.07,
+        "total_return_pct": -25.5
       },
       "status_vs_locked": "DIVERGE",
       "bootstrap_vs_baseline": {

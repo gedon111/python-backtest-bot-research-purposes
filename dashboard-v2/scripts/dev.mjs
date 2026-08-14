@@ -1,11 +1,11 @@
 // Orchestrator for `npm run dev`: makes sure the Python backend
-// (export_gui_data.py) is up on 127.0.0.1:8765 before starting Vite, so the
+// (research_analysis.py --serve) is up on 127.0.0.1:8765 before starting Vite, so the
 // dev-server proxy in vite.config.ts always has something to talk to.
 //
 // - If a backend is already reachable (started separately, e.g. via
-//   `python export_gui_data.py` or `Run_Dashboard.py`), it is left alone and
+//   `python research_analysis.py --serve` or `Run_All.py`), it is left alone and
 //   never killed on exit.
-// - Otherwise this spawns `python export_gui_data.py --no-browser` from the
+// - Otherwise this spawns `python research_analysis.py --serve --no-browser` from the
 //   repo root, waits for it to become reachable, and kills it on exit.
 // - `npm run dev:vite-only` bypasses all of this and runs plain `vite`, for
 //   anyone actively iterating on the backend separately.
@@ -55,8 +55,8 @@ function resolvePython() {
 }
 
 function startBackend(pythonCmd) {
-  console.log(`[dev] starting backend: ${pythonCmd} export_gui_data.py --no-browser`)
-  const child = spawn(pythonCmd, ['export_gui_data.py', '--no-browser'], {
+  console.log(`[dev] starting backend: ${pythonCmd} research_analysis.py --serve --no-browser`)
+  const child = spawn(pythonCmd, ['research_analysis.py', '--serve', '--no-browser'], {
     cwd: repoRoot,
     shell: false,
     windowsHide: true,

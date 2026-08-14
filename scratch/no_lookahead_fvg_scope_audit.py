@@ -36,7 +36,7 @@ if __debug__:
     sys.exit(1)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-bot_path = os.path.join(BASE_DIR, "src", "Binance backtest bot.py")
+bot_path = os.path.join(BASE_DIR, "research_analysis.py")
 CANDLES_CACHE_PATH = os.path.join(BASE_DIR, "artifacts", "candles.csv")
 
 spec = importlib.util.spec_from_file_location("bot_scope", bot_path)

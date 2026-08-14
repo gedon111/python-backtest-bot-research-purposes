@@ -1,9 +1,8 @@
 {
-  "min_ob_quality": 0,
-  "bootstrap": {
+  "bootstrap_ci": {
+    "n": 27,
     "b": 10000,
     "seed": 42,
-    "n": 27,
     "total_return_point_pct": 30.306456356031937,
     "total_return_ci_pct": [
       5.9866116295368155,
@@ -26,8 +25,8 @@
         "sd_true": 1.182231458800881,
         "n_false": 23,
         "sd_false": 2.567007402373479,
-        "observed_diff_pct": -0.7398224498276162,
-        "mde_pct": 2.2341109175382656,
+        "observed_diff": -0.7398224498276162,
+        "mde": 2.2341109175382656,
         "detectable": false
       },
       "LargeBar": {
@@ -35,8 +34,8 @@
         "sd_true": 2.7061765000447906,
         "n_false": 7,
         "sd_false": 1.3906866729118907,
-        "observed_diff_pct": 0.23201292464061718,
-        "mde_pct": 2.2455655783753854,
+        "observed_diff": 0.23201292464061718,
+        "mde": 2.2455655783753854,
         "detectable": false
       },
       "FVG": {
@@ -44,8 +43,8 @@
         "sd_true": 3.0590081540493084,
         "n_false": 16,
         "sd_false": 1.9222669656929892,
-        "observed_diff_pct": 0.5574517467176601,
-        "mde_pct": 2.9136877127450345,
+        "observed_diff": 0.5574517467176601,
+        "mde": 2.9136877127450345,
         "detectable": false
       },
       "LiqSweep": {
@@ -53,8 +52,8 @@
         "sd_true": 2.7597776733835957,
         "n_false": 12,
         "sd_false": 1.9245555353531651,
-        "observed_diff_pct": -0.7404730301759611,
-        "mde_pct": 2.531395710810557,
+        "observed_diff": -0.7404730301759611,
+        "mde": 2.531395710810557,
         "detectable": false
       },
       "VolExpansion": {
@@ -62,8 +61,8 @@
         "sd_true": 2.927074019497352,
         "n_false": 12,
         "sd_false": 1.5678845000698036,
-        "observed_diff_pct": -0.7782727506480802,
-        "mde_pct": 2.468003073903855,
+        "observed_diff": -0.7782727506480802,
+        "mde": 2.468003073903855,
         "detectable": false
       }
     }

@@ -2,77 +2,124 @@
 research_analysis.py
 =====================
 
-Consolidated, defense-readable reference implementation of the full research
-pipeline behind the ISEF paper "Harnessing Bitcoin Volatility": a rule-based
-BTC/USDT strategy (MACD + KDJ + ATR + SMC Order Blocks) backtested on 4-hour
-candles, Jan 2022 - Jan 2026, plus the ablation study and every statistical
-test used to evaluate the results.
+THE single, canonical entrypoint for the full research pipeline behind the
+ISEF paper "Harnessing Bitcoin Volatility": a rule-based BTC/USDT strategy
+(MACD + KDJ + ATR + SMC Order Blocks) backtested on 4-hour candles, Jan 2022
+- Jan 2026. This one file IS the backtest engine, the statistics pipeline,
+the database manager, and the dashboard's live HTTP server -- not a
+reference copy alongside separately-maintained originals.
+
+    python research_analysis.py                 run the offline stats pipeline
+    python research_analysis.py --serve          export artifacts/DB + start
+                                                  the dashboard server (port 8765)
 
 WHAT THIS FILE IS
 ------------------
-A single-file, heavily-commented CONSOLIDATION of logic that otherwise lives
-scattered across ~11 files in this repository (the core engine in
-`src/Binance backtest bot.py`, the ablation reconstruction, and eight
-`analysis/*.py` scripts). It exists so a judge or reviewer can read one file
-top to bottom and see exactly how every reported number is produced, without
-chasing definitions across the repository.
+A single-file, heavily-commented CONSOLIDATION of logic that previously lived
+scattered across ~15 files in this repository. Every function is declared
+once, documented individually (NumPy-style docstring + "Statistical/
+analytical question answered" + provenance note), and grouped into numbered
+sections (banner comments below) rather than left scattered across modules.
+The superseded original files (`src/Binance backtest bot.py`, `db_manager.py`,
+`export_gui_data.py`, `Run_All.py`'s former target, and the `analysis/*.py`
+scripts) have been moved to `legacy_pre_consolidation/`
+at the repo root -- a git-ignored, disk-only backup, not part of the running
+system or the repository history going forward. Two of the retired
+`analysis/*.py` scripts (`oos_validation_analysis.py`'s 8-year backfill audit,
+`export_extended_candles.py`'s live-pull builder) were occasional manual
+audit tools even before this consolidation, not part of the routine
+export/`--serve` pipeline -- they were not ported, and remain available only
+in `legacy_pre_consolidation/` if that audit is ever rerun by hand.
 
 WHAT THIS FILE IS NOT
 ----------------------
-- It is NOT a rewrite. Every formula, threshold, and control-flow branch is
+- It is NOT a rewrite of the strategy. Every formula, threshold, and
+  control-flow branch of the protected core logic (compute_indicators(),
+  compute_smc(), simulate_trades(), the kdj_reset_* exit state machine) is
   reproduced from the original source unchanged; only variable names,
-  organization, and comments were added/cleaned up for readability. Where an
+  organization, comments, and physical file location changed. Where an
   original file's docstring already explained a design decision, that
   explanation is preserved here (sometimes verbatim) rather than re-derived.
-- It does NOT replace the original scripts. `Run_All.py`, `export_gui_data.py`,
-  the Google Sheets export code, and the live dashboard all continue to run
-  from the original files, unmodified. This file is an additive, standalone
-  artifact for reading and re-running the paper's methodology end to end.
-- The one exception is `spearman_correlation()`: no `.py` file in this
-  repository previously computed Spearman's rho (only Pearson existed,
-  published Spearman figures were computed ad hoc and only recorded in
-  markdown docs). That function is new code -- a thin `scipy.stats.spearmanr`
-  wrapper mirroring the existing Pearson call exactly -- added here to fill
-  that gap, not extracted from an existing script.
+- The plumbing around that core (GSheet export, the HTTP server, database
+  I/O, live Binance pulls) WAS reorganized -- relocated, de-duplicated
+  (e.g. dynamic per-script "load the strategy module" indirection removed,
+  since the strategy IS this module now), and in a few cases simplified
+  (subprocess+JSON round-trips to analysis/*.py scripts replaced by direct
+  in-process function calls) -- but not behaviorally changed. Every such
+  change is called out at its point of use.
+- The one exception that is genuinely new analysis, not a port: `spearman_
+  correlation()`. No file in this repository previously computed Spearman's
+  rho (only Pearson existed); it's a thin `scipy.stats.spearmanr` wrapper
+  mirroring the existing Pearson call.
 
-SOURCE FILES CONSOLIDATED
---------------------------
-  src/Binance backtest bot.py        -> Sections 2-3 (engine)
-  analysis/ablation_reconstruction.py -> Section 4 (ablation)
-  analysis/bootstrap_power_analysis.py -> Section 5 (bootstrap CI, MDE/power)
-  analysis/benchmark_dca_analysis.py  -> Section 5 (Pearson corr, Sharpe/
-                                          Sortino/max-drawdown, DCA blend)
-  analysis/fee_slippage_analysis.py   -> Section 5 (fee/slippage scenarios)
-  analysis/oos_validation_analysis.py -> Section 5 (forward OOS, 8yr backfill)
-  analysis/paper_sync_report.py       -> Section 5 (locked-figure sync check)
-  analysis/export_trades_and_results.py -> Section 5 (full trade/results table)
-  analysis/benchmark_vs_passive.py    -> Section 5 (strategy vs DCA vs B&H)
-  analysis/regime_breakdown_analysis.py -> Section 5 (macro-regime tagging)
-  analysis/_json_utils.py             -> Section 1 (shared JSON export helper)
+SECTION MAP
+------------
+  1    Imports, constants, shared utilities (json_safe, report_stat)
+  1B   Database manager (Candle/OrderBlock/OBTouch/Trade ORM, init/session/clear)
+  2    Data loading / preprocessing
+  3    Strategy / backtest engine (protected core logic, see above)
+  3B   Live data pull (get_candles) + Google Sheets export plumbing
+  4    Ablation study (three-arm design)
+  5    Statistical test primitives (binomial/Fisher/Welch/bootstrap/etc.)
+  5B   Application-level analyses (benchmark/DCA/fee-slippage/regime/OOS/
+       paper-sync/benchmark-vs-passive)
+  6    Dashboard artifact export + database persistence
+  7    HTTP server / frontend endpoints (what dashboard-v2 talks to)
+  8    Main execution block / CLI (default stats pipeline, or --serve)
 
 OFFLINE BY DEFAULT
 -------------------
-Every section below runs strictly offline against `artifacts/candles.csv`
-(and `artifacts/candles_extended.json` for the 2018-2022 formulation-period
-window), matching this repository's offline-only convention. The one
-disclosed exception -- the forward-OOS section's live Binance pull -- is
-gated behind an explicit `--include-oos-live` CLI flag, off by default, so a
-bare `python research_analysis.py` never touches the network.
+The default (no `--serve`) stats pipeline runs strictly offline against
+`artifacts/candles.csv` (and `artifacts/candles_extended.json` for the
+2018-2022 formulation-period window). The one disclosed exception --
+run_forward_oos_validation()'s live Binance pull -- is gated behind an
+explicit `--include-oos-live` CLI flag, off by default, so a bare
+`python research_analysis.py` never touches the network. `--serve` mode
+does pull live candles (get_candles(), falling back to the local cache on
+failure) since exporting a fresh dashboard snapshot is its whole purpose.
 
-NO STRATEGY LOGIC, THRESHOLD, OR FORMULA CHANGES were made while writing this
-file. If you are comparing this file against the originals and find a
-discrepancy, that is a transcription bug in THIS file, not a revision to the
-paper's methodology -- report it rather than "fixing" either side silently.
+NO STRATEGY LOGIC, THRESHOLD, OR FORMULA CHANGES were made to the protected
+core (see "WHAT THIS FILE IS NOT" above). If you are comparing this file
+against `legacy_pre_consolidation/`'s originals and find a discrepancy in
+that core logic, that is a transcription bug in THIS file, not a revision to
+the paper's methodology -- report it rather than "fixing" either side
+silently.
 """
 
 import argparse
+import glob
+import hashlib
+import http.server
 import importlib.util
 import json
 import os
+import re
+import socketserver
+import sys
+import threading
+import webbrowser
+from datetime import datetime, timezone
+from urllib.parse import urlparse, parse_qs
 
+import gspread
 import numpy as np
 import pandas as pd
+from binance.client import Client
+from gspread_formatting import CellFormat, Color, TextFormat, format_cell_ranges
+from oauth2client.service_account import ServiceAccountCredentials
 from scipy import stats as scipy_stats
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    create_engine,
+    text,
+)
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 
 # ============================================================================
@@ -119,7 +166,6 @@ LOCKED_ABLATION_ARMS = {
 
 ARTIFACTS_CANDLES_CSV = "artifacts/candles.csv"
 ARTIFACTS_CANDLES_EXTENDED_JSON = "artifacts/candles_extended.json"
-STRATEGY_ENGINE_PATH = "src/Binance backtest bot.py"
 
 
 def json_safe(value):
@@ -176,37 +222,245 @@ def write_json_results(data, path):
     print(f"\n[json-out] wrote {path}")
 
 
-# ============================================================================
-# SECTION 2: DATA LOADING / PREPROCESSING
-# ============================================================================
-
-def load_strategy_engine_module():
+def report_stat(name, inputs, outputs):
     """
-    Dynamically load src/Binance backtest bot.py as an importable module.
+    Print one labeled block of a statistical result to the terminal, showing
+    both the named inputs a test/computation was called with and everything
+    it computed -- never just the headline number.
 
-    Statistical question answered: none -- infrastructure only.
+    Statistical question answered: none -- this is the single shared
+    terminal-reporting utility used by every stats-producing function in
+    this file, so that "what did this test take as input and what did it
+    compute" is always visible on stdout, not just written to a results
+    dict. Introduced during the single-file consolidation so that terminal
+    output formatting isn't repeated ad hoc at each call site.
 
-    Why dynamic loading instead of a normal import: the source file's name
-    contains a space ("Binance backtest bot.py"), which is not a valid
-    Python module name/identifier, so it cannot be imported with a plain
-    `import` statement. This mirrors the loading pattern already used by
-    every analysis/*.py script in this repository (see e.g.
-    analysis/ablation_reconstruction.py's load_bot()).
+    Formatting convention
+    ----------------------
+    - Every float value (input or output) is printed to 10 decimal places
+      (`.10f`), per this project's terminal-reporting requirement.
+    - Integers (trade counts, sample sizes, seeds, resample counts) are
+      printed as plain integers, not padded with decimals.
+    - Booleans and strings are printed as-is.
+    - NaN/None print as "NaN" rather than raising.
+
+    Parameters
+    ----------
+    name : str
+        Label for this result block, e.g. "Binomial test (q>=0 baseline)".
+    inputs : dict
+        The named arguments/data the computation was actually called with,
+        e.g. {"win_count": 19, "trade_count": 27, "null_win_probability": 0.5}.
+    outputs : dict
+        Everything the computation produced, e.g.
+        {"p_one_sided": 0.02604..., "p_two_sided": 0.05208...}.
+    """
+    def _fmt(value):
+        if isinstance(value, bool):
+            return str(value)
+        if isinstance(value, (int, np.integer)):
+            return str(int(value))
+        if isinstance(value, (float, np.floating)):
+            if pd.isna(value):
+                return "NaN"
+            return f"{float(value):.10f}"
+        if value is None:
+            return "NaN"
+        return str(value)
+
+    print(f"\n[stat] {name}")
+    if inputs:
+        print("  inputs:")
+        for key, value in inputs.items():
+            print(f"    {key:<28} = {_fmt(value)}")
+    if outputs:
+        print("  computed:")
+        for key, value in outputs.items():
+            print(f"    {key:<28} = {_fmt(value)}")
+
+
+# ============================================================================
+# SECTION 1B: DATABASE MANAGER
+# ============================================================================
+# Consolidated from db_manager.py (now retired to legacy_pre_consolidation/).
+# SQLAlchemy ORM schema + session/lifecycle helpers for the SQLite (default)
+# or arbitrary DATABASE_URL-backed database that stores per-run candles,
+# detected Order Blocks, OB touch events, and simulated trades -- the same
+# data the dashboard-v2 frontend's live /api/trades and /api/iterations
+# routes query (see Section 8's HTTP server). Schema is reproduced verbatim
+# from db_manager.py; no column, index, or table was added/removed/renamed.
+
+Base = declarative_base()
+
+
+class Candle(Base):
+    """One OHLCV bar plus its computed indicators, keyed by (time, symbol,
+    interval). Populated by export_artifacts() (Section 7) from the same
+    DataFrame simulate_trades() operates on."""
+
+    __tablename__ = "candles"
+
+    time = Column(Integer, primary_key=True)
+    symbol = Column(String(20), primary_key=True)
+    interval = Column(String(10), primary_key=True)
+    open = Column(Float, nullable=False)
+    high = Column(Float, nullable=False)
+    low = Column(Float, nullable=False)
+    close = Column(Float, nullable=False)
+    volume = Column(Float, nullable=False)
+    macd = Column(Float)
+    macd_signal = Column(Float)
+    macd_hist = Column(Float)
+    k = Column(Float)
+    d = Column(Float)
+    j = Column(Float)
+    atr_14 = Column(Float)
+    atr_200 = Column(Float)
+    volume_ma_ratio = Column(Float)
+    taker_buy_ratio = Column(Float)
+    body_wick_ratio = Column(Float)
+    time_hour = Column(Integer)
+    time_day_of_week = Column(Integer)
+
+    __table_args__ = (
+        Index("idx_candles_sym_int_time", "symbol", "interval", "time"),
+    )
+
+
+class OrderBlock(Base):
+    """One detected SMC Order Block, including its 5 independent quality
+    criteria and the legacy composite 0-5 score (see CLAUDE.md Known bug
+    #1 -- the composite score is still stored/computed but is no longer
+    used as an ordinal threshold for analysis)."""
+
+    __tablename__ = "order_blocks"
+
+    ob_id = Column(Integer, primary_key=True, autoincrement=True)
+    symbol = Column(String(20), nullable=False)
+    interval = Column(String(10), nullable=False)
+    type = Column(String(10), nullable=False)  # 'DEMAND' or 'SUPPLY'
+    top = Column(Float, nullable=False)
+    bottom = Column(Float, nullable=False)
+    created_at = Column(Integer, nullable=False)  # bar index
+    ob_bar = Column(Integer, nullable=False)  # bar index
+    level = Column(String(10), nullable=False)  # 'internal' or 'swing'
+    structure = Column(String(10), nullable=False)  # 'CHoCH' or 'BOS'
+    mitigated_at = Column(Integer)  # bar index or NULL
+    quality = Column(Integer, nullable=False)  # composite 0-5 (legacy, see above)
+    quality_displacement = Column(Boolean, nullable=False)
+    quality_large_bar = Column(Boolean, nullable=False)
+    quality_fvg = Column(Boolean, nullable=False)
+    quality_liquidity_sweep = Column(Boolean, nullable=False)
+    quality_volume_expansion = Column(Boolean, nullable=False)
+
+    __table_args__ = (
+        Index("idx_obs_sym_int", "symbol", "interval"),
+        Index("idx_obs_created", "created_at"),
+    )
+
+
+class OBTouch(Base):
+    """One bar where price touched an Order Block, with the indicator
+    snapshot at that touch -- FK'd to the OrderBlock it belongs to."""
+
+    __tablename__ = "ob_touches"
+
+    touch_id = Column(Integer, primary_key=True, autoincrement=True)
+    ob_id = Column(Integer, ForeignKey("order_blocks.ob_id"), nullable=False)
+    time = Column(Integer, nullable=False)  # bar index / timestamp
+    touch_price = Column(Float, nullable=False)
+    macd = Column(Float)
+    macd_signal = Column(Float)
+    macd_hist = Column(Float)
+    k = Column(Float)
+    d = Column(Float)
+    j = Column(Float)
+    k_accel = Column(Float)
+    atr_14 = Column(Float)
+    atr_200 = Column(Float)
+
+    __table_args__ = (
+        Index("idx_touches_ob_id", "ob_id"),
+        Index("idx_touches_time", "time"),
+    )
+
+
+class Trade(Base):
+    """One simulated trade from simulate_trades(), FK'd to its entry and
+    (optional) structural-TP Order Blocks, keyed additionally by the
+    min_ob_quality threshold used for that simulation run."""
+
+    __tablename__ = "trades"
+
+    trade_id = Column(Integer, primary_key=True, autoincrement=True)
+    symbol = Column(String(20), nullable=False)
+    interval = Column(String(10), nullable=False)
+    side = Column(String(10), nullable=False)  # 'LONG' or 'SHORT'
+    min_ob_quality = Column(Integer, nullable=False)  # quality threshold used
+    entry_time = Column(Integer, nullable=False)  # bar index / timestamp
+    exit_time = Column(Integer, nullable=False)  # bar index / timestamp
+    entry_price = Column(Float, nullable=False)
+    exit_price = Column(Float, nullable=False)
+    stop_loss = Column(Float, nullable=False)
+    take_profit = Column(Float, nullable=False)
+    pnl_pct = Column(Float, nullable=False)
+    hold_bars = Column(Integer, nullable=False)
+    exit_reason = Column(String(50), nullable=False)
+    entry_ob_id = Column(Integer, ForeignKey("order_blocks.ob_id"), nullable=False)
+    tp_ob_id = Column(Integer, ForeignKey("order_blocks.ob_id"), nullable=True)
+
+    __table_args__ = (
+        Index("idx_trades_sym_int", "symbol", "interval"),
+        Index("idx_trades_entry_time", "entry_time"),
+    )
+
+
+def get_db_url():
+    """Retrieve the database URL from the DATABASE_URL env var, falling back
+    to the local SQLite file `backtest_results.db` at the repo root."""
+    return os.getenv("DATABASE_URL", "sqlite:///backtest_results.db")
+
+
+def init_db(db_url=None):
+    """Create the engine and all tables (if they don't already exist).
+
+    Parameters
+    ----------
+    db_url : str, optional
+        Defaults to get_db_url() (env var or local SQLite file).
 
     Returns
     -------
-    module
-        The loaded strategy-engine module, exposing compute_indicators(),
-        compute_smc(), simulate_trades(), etc. Note: this file defines its
-        OWN copies of those functions in Section 3 below (for readability);
-        this loader is used only where a section needs to cross-check its
-        own output against the original file's actual behavior at runtime.
+    sqlalchemy.Engine
     """
-    spec = importlib.util.spec_from_file_location("bot", STRATEGY_ENGINE_PATH)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    if db_url is None:
+        db_url = get_db_url()
+    engine = create_engine(db_url, echo=False)
+    Base.metadata.create_all(engine)
+    return engine
 
+
+def get_session(engine):
+    """Return a new SQLAlchemy session bound to `engine`."""
+    Session = sessionmaker(bind=engine)
+    return Session()
+
+
+def clear_db(engine):
+    """Delete all rows from candles/order_blocks/ob_touches/trades, in
+    FK-safe order (children before parents), ahead of a fresh export run."""
+    tables = ["ob_touches", "trades", "order_blocks", "candles"]
+    with engine.begin() as conn:
+        for table in tables:
+            try:
+                conn.execute(text(f"DELETE FROM {table}"))
+            except Exception as e:
+                print(f"Warning: Failed to clear table {table}: {e}")
+
+
+# ============================================================================
+# SECTION 2: DATA LOADING / PREPROCESSING
+# ============================================================================
 
 def load_candles(path=ARTIFACTS_CANDLES_CSV):
     """
@@ -1084,12 +1338,16 @@ def _check_short_exit_conditions(df, i, close, entry_price, stop_loss_price, tak
 
 def _record_closed_trade(closed_trades, df, i, side, entry_idx, entry_price, exit_price, stop_loss_price,
                           take_profit_price, pnl_pct, exit_reason, current_entry_ob, current_tp_ob,
-                          entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality):
+                          entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality, kdj_exit_window):
     """
-    Append one closed-trade record (26 fields, identical schema for LONG and
+    Append one closed-trade record (27 fields, identical schema for LONG and
     SHORT) to `closed_trades`, and mark the closing bar's Trade_Status.
     Reproduced unchanged from the nested close_trade() closures inside
-    simulate_trades()'s LONG and SHORT branches.
+    simulate_trades()'s LONG and SHORT branches, plus one addition:
+    `kdj_exit_window` records the frozen-at-entry KDJ-reset period (`w` in
+    CLAUDE.md's "KDJ architecture" section, `entry_idx - triggering_OB_bar`
+    when an OB triggered the trade) so it's visible per-trade downstream
+    instead of only recomputable from entry_idx/entry_ob_bar by hand.
 
     Statistical/analytical question answered: none -- output-record
     construction. This is the exact per-trade schema every downstream
@@ -1118,6 +1376,7 @@ def _record_closed_trade(closed_trades, df, i, side, entry_idx, entry_price, exi
         "tp_ob_type": (current_tp_ob.get("type") if (entry_tp_is_structural and current_tp_ob) else None),
         "hold_bars": i - entry_idx,
         "exit_reason": exit_reason,
+        "kdj_exit_window": kdj_exit_window,
     })
 
 
@@ -1155,7 +1414,7 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
     pandas.DataFrame
         The input `df` annotated with per-bar Trade_Status/Entry_Price/etc.
         columns, plus three items attached via df.attrs: 'trade_stats' (a
-        summary dict), 'trades_df' (one row per closed trade, 26 fields),
+        summary dict), 'trades_df' (one row per closed trade, 27 fields),
         and 'touches_df' (one row per bar an active Order Block's price zone
         was touched, regardless of whether it triggered an entry).
     """
@@ -1319,7 +1578,7 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
                 _record_closed_trade(
                     closed_trades, df, i, "LONG", entry_idx, entry_price, close, stop_loss_price,
                     take_profit_price, exit_pnl_pct, exit_reason, current_entry_ob, current_tp_ob,
-                    entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality,
+                    entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality, kdj_state["period"],
                 )
                 position = None
                 current_entry_ob = None
@@ -1345,7 +1604,7 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
                 _record_closed_trade(
                     closed_trades, df, i, "SHORT", entry_idx, entry_price, close, stop_loss_price,
                     take_profit_price, exit_pnl_pct, exit_reason, current_entry_ob, current_tp_ob,
-                    entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality,
+                    entry_tp_is_structural, entry_tp_ob_bar, entry_tp_ob_quality, kdj_state["period"],
                 )
                 position = None
                 current_entry_ob = None
@@ -1413,6 +1672,604 @@ def run_quality_sweep(df, levels=(0, 1, 2, 3)):
             "Win Rate (%)": stats.get("Win Rate (%)", 0.0),
         })
     return pd.DataFrame(sweep_rows)
+
+
+# ============================================================================
+# SECTION 3B: LIVE DATA PULL + GOOGLE SHEETS EXPORT PLUMBING
+# ============================================================================
+# Consolidated from src/Binance backtest bot.py (now retired to
+# legacy_pre_consolidation/, renamed "Binance backtest bot (legacy).py").
+# Pure IO/formatting plumbing -- none of it computes strategy math, so it is
+# outside CLAUDE.md's "no strategy logic changes" protection and was safe to
+# relocate. Two deliberate, disclosed adjustments were made purely because
+# this code now lives at the repo root instead of src/ (one directory level
+# shallower) and because research_analysis.py promises to never touch the
+# network on a bare import:
+#   1. BASE_DIR's dirname() nesting was reduced by one level to match this
+#      file's new location (SERVICE KEY/ still resolves to the same
+#      repo-root folder as before).
+#   2. The Binance Client() is now constructed lazily on first use
+#      (_get_binance_client()) instead of at import time, so importing this
+#      file never makes a network call even without API keys configured --
+#      the original module-level `client = Client(...)` could raise before
+#      any function was even called.
+# Every formula/threshold inside get_candles()'s UTC+8 shift and the GSheet
+# formatting functions is reproduced unchanged.
+
+# Repo root -- this file lives at the repo root directly (unlike the retired
+# src/Binance backtest bot.py, which needed one extra dirname() hop).
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Keep real Binance keys in environment variables.
+BINANCE_API_KEY_ENV = "BINANCE_API_KEY"
+BINANCE_API_SECRET_ENV = "BINANCE_API_SECRET"
+
+# Use environment variables in production; placeholder below is safe for upload.
+GOOGLE_SERVICE_KEY_PATH = os.getenv(
+    "GOOGLE_SERVICE_KEY_PATH",
+    os.path.join(BASE_DIR, "SERVICE KEY", "your-service-account-key.json"),
+)
+GOOGLE_SHEET_ID = "1UXw_eTEVjV7lfwmVpLq9z2BWC8WShUFclD3xVkT4MdA"
+
+_binance_client = None
+
+
+def resolve_google_service_key_path():
+    """
+    Auto-discover a Google service-account JSON key under `SERVICE KEY/`.
+
+    Statistical question answered: none -- IO plumbing for the (optional)
+    Google Sheets export path.
+
+    Prefers GOOGLE_SERVICE_KEY_PATH if it's set to a real (non-placeholder)
+    file that exists; otherwise picks the most-recently-modified `*.json`
+    key file under `SERVICE KEY/` whose filename doesn't contain "disabled"
+    or "not working" -- this repo's convention for marking a dead key
+    in-place rather than deleting it. "Newest file wins" matches how this
+    repo rotates credentials (drop a new key in, no need to touch code).
+    """
+    configured = GOOGLE_SERVICE_KEY_PATH
+    placeholder = configured.endswith("your-service-account-key.json")
+    if not placeholder and os.path.isfile(configured):
+        return configured
+
+    candidates = [
+        c for c in glob.glob(os.path.join(BASE_DIR, "SERVICE KEY", "*.json"))
+        if "disabled" not in os.path.basename(c).lower()
+        and "not working" not in os.path.basename(c).lower()
+    ]
+    if candidates:
+        return max(candidates, key=os.path.getmtime)
+    return configured
+
+
+def _get_binance_client():
+    """Lazily construct (and cache) the python-binance REST client, so that
+    importing this module never touches the network -- only calling
+    get_candles() or run_forward_oos_validation() etc. does."""
+    global _binance_client
+    if _binance_client is None:
+        api_key = os.getenv(BINANCE_API_KEY_ENV)
+        api_secret = os.getenv(BINANCE_API_SECRET_ENV)
+        _binance_client = Client(api_key, api_secret)
+    return _binance_client
+
+
+def get_candles(symbol="BTCUSDT", interval=Client.KLINE_INTERVAL_4HOUR,
+                 start_time=None, end_time=None):
+    """
+    Pull paginated OHLCV klines from the Binance REST API into a DataFrame.
+
+    Statistical question answered: none -- raw data acquisition. This is
+    the ONE function (besides the forward-OOS/backfill-audit live-pull
+    functions in Section 5B) that touches the network; every other analysis
+    in this file runs offline against artifacts/candles.csv.
+
+    Parameters
+    ----------
+    symbol : str
+    interval : str
+        A `Client.KLINE_INTERVAL_*` constant.
+    start_time, end_time : str or pandas.Timestamp, optional
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns: open_time (UTC+8-shifted, matching this project's
+        historical candle-cache convention), open, high, low, close,
+        volume, num_trades, taker_buy_base.
+    """
+    client = _get_binance_client()
+    if isinstance(start_time, str):
+        start_time = pd.to_datetime(start_time)
+    if isinstance(end_time, str):
+        end_time = pd.to_datetime(end_time)
+
+    start_ms = int(start_time.timestamp() * 1000) if start_time else 0
+    end_ms = int(end_time.timestamp() * 1000) if end_time else None
+
+    candles = []
+    while True:
+        batch = client.get_klines(
+            symbol=symbol, interval=interval,
+            startTime=start_ms, endTime=end_ms, limit=1000)
+        if not batch:
+            break
+        candles.extend(batch)
+        last_time = batch[-1][0]
+        if end_ms and last_time >= end_ms:
+            break
+        start_ms = last_time + 1
+
+    df = pd.DataFrame(candles, columns=[
+        "open_time", "open", "high", "low", "close", "volume",
+        "close_time", "quote_asset_volume", "num_trades",
+        "taker_buy_base", "taker_buy_quote", "ignore"])
+    df = df[["open_time", "open", "high", "low", "close", "volume",
+             "num_trades", "taker_buy_base"]].copy()
+    df["open_time"] = (pd.to_datetime(df["open_time"], unit="ms")
+                        + pd.Timedelta(hours=8))
+    for col in ["open", "high", "low", "close", "volume", "num_trades", "taker_buy_base"]:
+        df[col] = df[col].astype(float)
+    return df.reset_index(drop=True)
+
+
+# --- Google Sheets export: generic per-sheet helpers -----------------------
+
+def _get_or_create_sheet(workbook, title, rows=50000, cols=30):
+    try:
+        ws = workbook.worksheet(title)
+    except gspread.exceptions.WorksheetNotFound:
+        ws = workbook.add_worksheet(title=title, rows=rows, cols=cols)
+    ws.resize(rows=rows, cols=cols)
+    return ws
+
+
+def _format_df_for_export(df):
+    """Curated-column formatting for the (legacy, no-longer-default)
+    per-quality-threshold sheet export -- see push_all_thresholds_to_gsheet()."""
+    columns_to_export = [
+        "open_time", "open", "high", "low", "close",
+        "MACD", "MACD_signal", "MACD_hist",
+        "K", "D", "J",
+        "ATR", "ATR_200",
+        "Active_Supply", "Active_Demand",
+        "Entry_Price", "Stop_Loss", "Take_Profit", "Exit_Price",
+        "Trade_Status", "Running_PnL_%",
+    ]
+    df_copy = df[columns_to_export].copy()
+    df_copy.rename(columns={
+        "open_time": "Date/Time",
+        "open": "Open",
+        "high": "High",
+        "low": "Low",
+        "close": "Close",
+        "ATR": "ATR (14)",
+        "ATR_200": "ATR (200)",
+        "Active_Supply": "Supply Zone",
+        "Active_Demand": "Demand Zone",
+        "Entry_Price": "Entry Price",
+        "Stop_Loss": "Stop Loss",
+        "Take_Profit": "Take Profit",
+        "Exit_Price": "Exit Price",
+        "Trade_Status": "Trade Status",
+        "Running_PnL_%": "Running PnL %",
+    }, inplace=True)
+
+    df_copy["Date/Time"] = (pd.to_datetime(df_copy["Date/Time"], errors="coerce")
+                             .dt.strftime("%Y-%m-%d %H:%M:%S"))
+    for col in ["Entry Price", "Stop Loss", "Take Profit", "Exit Price"]:
+        df_copy[col] = df_copy[col].apply(
+            lambda x: f"{x:.4f}" if pd.notnull(x) else "")
+    for col in ["ATR (14)", "ATR (200)"]:
+        df_copy[col] = df_copy[col].apply(
+            lambda x: f"{x:.4f}" if pd.notnull(x) else "")
+    df_copy["Running PnL %"] = df_copy["Running PnL %"].apply(
+        lambda x: f"{x:.4f}%" if pd.notnull(x) and isinstance(x, (float, int)) else "")
+    df_copy = df_copy.astype(object).where(pd.notnull(df_copy), "")
+    return df_copy
+
+
+def _format_df_for_export_full(df):
+    """Exports EVERY column present on the fully-simulated dataframe -- not
+    the curated subset _format_df_for_export() selects. Column set is read
+    from df.columns directly (not hardcoded), so nothing is silently
+    dropped if compute_indicators()/simulate_trades() ever add a column.
+    Used for the Candles gsheet tabs, where "as detailed as possible, don't
+    hide any data" is the explicit requirement."""
+    df_copy = df.copy()
+    for col in df_copy.columns:
+        if pd.api.types.is_datetime64_any_dtype(df_copy[col]):
+            df_copy[col] = df_copy[col].dt.strftime("%Y-%m-%d %H:%M:%S")
+        elif pd.api.types.is_float_dtype(df_copy[col]):
+            df_copy[col] = df_copy[col].round(6)
+    if "Running_PnL_%" in df_copy.columns:
+        df_copy["Running_PnL_%"] = df_copy["Running_PnL_%"].apply(
+            lambda x: f"{x:.4f}%" if pd.notnull(x) and isinstance(x, (float, int)) else "")
+    df_copy = df_copy.rename(columns={"Trade_Status": "Trade Status", "Running_PnL_%": "Running PnL %"})
+    df_copy = df_copy.astype(object).where(pd.notnull(df_copy), "")
+    return df_copy
+
+
+def _write_sheet(ws, df_copy):
+    ws.clear()
+    ws.update([df_copy.columns.values.tolist()] + df_copy.values.tolist())
+
+
+def _apply_pnl_formatting(ws, df_copy):
+    closed_kw = [
+        "HIT STOP LOSS", "HIT TAKE PROFIT",
+        "TRAILING EXIT (50% RETRACE)", "KDJ RESET EXIT", "ATR MOVE EXIT",
+    ]
+    pnl_col = df_copy.columns.get_loc("Running PnL %") + 1
+
+    ranges = []
+    for idx, (pnl, status) in enumerate(
+            zip(df_copy["Running PnL %"], df_copy["Trade Status"]), start=2):
+        if status in closed_kw and pnl not in ("", "nan%"):
+            try:
+                val = float(pnl.strip("%"))
+                color = Color(0, 1, 0) if val > 0 else Color(1, 0, 0)
+                ranges.append((f"{chr(64 + pnl_col)}{idx}",
+                               CellFormat(backgroundColor=color)))
+            except ValueError:
+                pass
+    if ranges:
+        format_cell_ranges(ws, ranges)
+
+    closed_pnls = []
+    for pnl, status in zip(df_copy["Running PnL %"], df_copy["Trade Status"]):
+        if status in closed_kw and pnl not in ("", "nan%"):
+            try:
+                closed_pnls.append(float(pnl.strip("%")))
+            except ValueError:
+                pass
+
+    if closed_pnls:
+        total = len(closed_pnls)
+        tot_pnl = sum(closed_pnls)
+        avg_pnl = tot_pnl / total
+        wins = len([p for p in closed_pnls if p > 0])
+        wr = wins / total * 100 if total > 0 else 0
+        nr = len(df_copy) + 2
+        cl = chr(64 + pnl_col)
+        ws.update(values=[
+            [f"Total Trades: {total}"],
+            [f"Total Net Return: {tot_pnl:.4f}%"],
+            [f"Avg Return/Trade: {avg_pnl:.4f}%"],
+            [f"Win Rate: {wr:.4f}%"],
+        ], range_name=f"{cl}{nr}:{cl}{nr + 3}")
+        sc = Color(0, 1, 0) if tot_pnl > 0 else Color(1, 0, 0)
+        format_cell_ranges(ws, [
+            (f"{cl}{nr}:{cl}{nr + 3}", CellFormat(backgroundColor=sc))
+        ])
+
+
+def _write_summary_sheet(workbook, sweep_results):
+    needed_rows = len(sweep_results) + 5
+    needed_cols = 7
+    ws = _get_or_create_sheet(workbook, "Summary — Quality Sweep",
+                               rows=needed_rows, cols=needed_cols)
+    ws.clear()
+
+    header = [
+        "Min OB Quality",
+        "Total Trades",
+        "Total Net Return (%)",
+        "Avg Return / Trade (%)",
+        "Win Rate (%)",
+    ]
+    rows = [header]
+    for r in sweep_results:
+        rows.append([
+            str(r["quality"]),
+            str(r["total_trades"]),
+            f"{r['total_return']:.4f}",
+            f"{r['avg_return']:.4f}",
+            f"{r['win_rate']:.4f}",
+        ])
+
+    ws.update(rows)
+
+    format_cell_ranges(ws, [
+        ("A1:E1", CellFormat(
+            textFormat=TextFormat(bold=True),
+            backgroundColor=Color(0.18, 0.46, 0.71),
+        ))
+    ])
+
+    for i, r in enumerate(sweep_results, start=2):
+        color = Color(0.88, 0.95, 0.83) if r["total_return"] >= 0 else Color(0.98, 0.88, 0.88)
+        format_cell_ranges(ws, [(f"A{i}:E{i}", CellFormat(backgroundColor=color))])
+
+    print(f"  Summary sheet written ({len(sweep_results)} rows).")
+
+
+def _authorize_gsheet_workbook():
+    scope = ["https://spreadsheets.google.com/feeds",
+             "https://www.googleapis.com/auth/drive"]
+    key_path = resolve_google_service_key_path()
+    if key_path.endswith("your-service-account-key.json") or not os.path.isfile(key_path):
+        raise ValueError(
+            "Set GOOGLE_SERVICE_KEY_PATH (env var) or place a valid *.json key file in "
+            "SERVICE KEY/."
+        )
+    if not GOOGLE_SHEET_ID:
+        raise ValueError("GOOGLE_SHEET_ID is missing.")
+
+    creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
+    gc = gspread.authorize(creds)
+    return gc.open_by_key(GOOGLE_SHEET_ID)
+
+
+def push_all_thresholds_to_gsheet(raw_df, levels=None, precomputed_dfs=None):
+    """Legacy per-quality-threshold sheet export ("Quality 0".."Quality 3" +
+    a sweep-summary sheet). Superseded by push_trades_and_results_to_gsheet()
+    (see CLAUDE.md's "Google Sheets pipeline" section) -- kept defined for
+    reference but NOT called by --serve's default push path. Do not re-wire
+    it back in without asking; it was deliberately superseded, not
+    deprecated by accident."""
+    if levels is None:
+        levels = [0, 1, 2, 3]
+
+    workbook = _authorize_gsheet_workbook()
+    sweep_results = []
+
+    for q in levels:
+        sheet_title = f"Quality {q}"
+        if precomputed_dfs and q in precomputed_dfs:
+            print(f"\n[{sheet_title}] Using precomputed simulation...")
+            sim_df = precomputed_dfs[q]
+        else:
+            print(f"\n[{sheet_title}] Running simulation...")
+            sim_df = simulate_trades(raw_df.copy(), min_ob_quality=q)
+
+        stats = sim_df.attrs.get("trade_stats", {})
+
+        print(f"  Trades: {stats.get('Total Trades', 0)}  |  "
+              f"Return: {stats.get('Total Net Return (%)', 0):.4f}%  |  "
+              f"Win Rate: {stats.get('Win Rate (%)', 0):.4f}%")
+
+        df_copy = _format_df_for_export(sim_df)
+        needed_rows = len(df_copy) + 10
+        needed_cols = len(df_copy.columns) + 2
+        ws = _get_or_create_sheet(workbook, sheet_title, rows=needed_rows, cols=needed_cols)
+
+        print(f"  Writing {len(df_copy)} rows to '{sheet_title}'...")
+        _write_sheet(ws, df_copy)
+        _apply_pnl_formatting(ws, df_copy)
+        print(f"  '{sheet_title}' done.")
+
+        sweep_results.append({
+            "quality": q,
+            "total_trades": int(stats.get("Total Trades", 0)),
+            "total_return": float(stats.get("Total Net Return (%)", 0.0)),
+            "avg_return": float(stats.get("Avg Return/Trade (%)", 0.0)),
+            "win_rate": float(stats.get("Win Rate (%)", 0.0)),
+        })
+
+    print("\n[Summary] Writing quality sweep comparison sheet...")
+    _write_summary_sheet(workbook, sweep_results)
+    print("\nCheck GSHEET: All threshold sheets exported successfully.")
+    return sweep_results
+
+
+# --- Google Sheets export: benchmark-vs-passive -----------------------------
+_BENCHMARK_SHEET_HEADER = ["Arm", "Total Return %", "Final Capital $", "Sharpe", "Sortino", "Max Drawdown %",
+                           "% Time In-Market", "Starting Capital", "Window Start", "Window End"]
+
+
+def _benchmark_row_to_sheet_row(r, window):
+    return [
+        r["arm"], f"{r['total_return_pct']:.4f}", f"{r['final_capital']:.2f}", f"{r['sharpe']:.4f}",
+        f"{r['sortino']:.4f}", f"{r['max_drawdown_pct']:.4f}",
+        f"{r['time_in_market_pct']:.4f}", r["starting_capital"],
+        window["window_start"], window["window_end"],
+    ]
+
+
+def _write_benchmark_sheet(workbook, title, window, blocks):
+    """blocks: list of (label, rows) pairs, each rows a list of per-arm dicts
+    matching run_benchmark_vs_passive()'s row shape (arm, total_return_pct,
+    final_capital, sharpe, sortino, max_drawdown_pct, time_in_market_pct,
+    starting_capital)."""
+    all_rows = [[f"Window: {window['window_start']} .. {window['window_end']}"], []]
+    header_row_idxs = []
+    data_rows = []
+    for label, rows in blocks:
+        all_rows.append([label])
+        all_rows.append(_BENCHMARK_SHEET_HEADER)
+        header_row_idxs.append(len(all_rows))
+        for r in rows:
+            all_rows.append(_benchmark_row_to_sheet_row(r, window))
+            data_rows.append((len(all_rows), r))
+        all_rows.append([])
+
+    needed_rows = len(all_rows) + 5
+    needed_cols = len(_BENCHMARK_SHEET_HEADER) + 2
+    ws = _get_or_create_sheet(workbook, title, rows=needed_rows, cols=needed_cols)
+    ws.clear()
+    ws.update(all_rows)
+
+    header_end_col = gspread.utils.rowcol_to_a1(1, len(_BENCHMARK_SHEET_HEADER)).rstrip("0123456789")
+    format_cell_ranges(ws, [
+        (f"A{i}:{header_end_col}{i}", CellFormat(
+            textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+            backgroundColor=Color(0.18, 0.46, 0.71),
+        )) for i in header_row_idxs
+    ])
+    return_col = _BENCHMARK_SHEET_HEADER.index("Total Return %") + 1
+    capital_col = _BENCHMARK_SHEET_HEADER.index("Final Capital $") + 1
+    ranges = []
+    for row_idx, r in data_rows:
+        color = Color(0.85, 0.95, 0.85) if r["total_return_pct"] >= 0 else Color(0.98, 0.88, 0.88)
+        ranges.append((gspread.utils.rowcol_to_a1(row_idx, return_col), CellFormat(backgroundColor=color)))
+        ranges.append((gspread.utils.rowcol_to_a1(row_idx, capital_col), CellFormat(backgroundColor=color)))
+    if ranges:
+        format_cell_ranges(ws, ranges)
+
+    print(f"  '{title}' done.")
+
+
+def push_benchmark_vs_passive_to_gsheet(benchmark_result):
+    """benchmark_result: the dict run_benchmark_vs_passive() returns
+    (top-level keys: starting_capital, fee_model, main_window,
+    formulation_period_window)."""
+    workbook = _authorize_gsheet_workbook()
+
+    main_w = benchmark_result["main_window"]
+    _write_benchmark_sheet(
+        workbook, "Benchmark 2022-2026", main_w,
+        [
+            ("GROSS (no fees/slippage -- matches the locked +30.31% headline convention)", main_w["gross"]),
+            ("FEE-ADJUSTED (strategy: round-trip drag/trade; DCA/B&H: one-sided buy markup)",
+             main_w["fee_adjusted"]),
+        ],
+    )
+
+    form_w = benchmark_result["formulation_period_window"]
+    _write_benchmark_sheet(
+        workbook, "Benchmark 2018-2022 (Formulation)", form_w,
+        [("GROSS -- formulation period, NOT out-of-sample, NOT the 2026 forward-OOS test", form_w["gross"])],
+    )
+
+    print("\nCheck GSHEET: benchmark-vs-passive sheets exported successfully.")
+
+
+# --- Google Sheets export: trades + results ---------------------------------
+# Current, wired-in default (see CLAUDE.md "Google Sheets pipeline"). Writes
+# the full per-trade log + results summary to four tabs (Trades/Results x
+# 2022-2026 and 2018-2022) and actively deletes the old per-quality-threshold
+# sheets on every push.
+_TRADE_SHEET_COLUMNS = [
+    "side", "entry_idx", "entry_time", "exit_idx", "exit_time",
+    "entry", "exit", "stop_loss", "take_profit", "pnl_pct", "hold_bars", "exit_reason", "kdj_exit_window",
+    "entry_ob_bar", "entry_ob_created_at", "entry_ob_type", "entry_ob_level", "entry_ob_quality",
+    "entry_ob_quality_displacement", "entry_ob_quality_large_bar", "entry_ob_quality_fvg",
+    "entry_ob_quality_liquidity_sweep", "entry_ob_quality_volume_expansion",
+    "entry_ob_displacement_max_body_move", "entry_ob_displacement_threshold",
+    "entry_ob_large_bar_range", "entry_ob_large_bar_threshold",
+    "entry_ob_fvg_max_gap",
+    "entry_ob_liquidity_sweep_ob_extreme", "entry_ob_liquidity_sweep_prior_10bar_extreme",
+    "entry_ob_volume", "entry_ob_volume_avg_20bar", "entry_ob_volume_ratio", "entry_ob_body_ratio",
+    "tp_is_structural", "tp_ob_bar", "tp_ob_created_at", "tp_ob_type", "tp_ob_level", "tp_ob_quality",
+]
+
+_OLD_QUALITY_SWEEP_SHEET_TITLES = [
+    "Quality 0", "Quality 1", "Quality 2", "Quality 3", "Quality 4",
+    "Summary — Quality Sweep",
+]
+
+
+def _delete_worksheet_if_exists(workbook, title):
+    try:
+        ws = workbook.worksheet(title)
+    except gspread.exceptions.WorksheetNotFound:
+        return False
+    workbook.del_worksheet(ws)
+    return True
+
+
+def _clean_old_quality_sweep_sheets(workbook):
+    removed = [t for t in _OLD_QUALITY_SWEEP_SHEET_TITLES if _delete_worksheet_if_exists(workbook, t)]
+    if removed:
+        print(f"  Removed old per-quality-threshold sheet(s): {', '.join(removed)}")
+
+
+def _write_trades_sheet(workbook, title, trades):
+    header = _TRADE_SHEET_COLUMNS
+    rows = [header]
+    for r in trades:
+        rows.append([r.get(c, "") if r.get(c) is not None else "" for c in header])
+
+    needed_rows = len(rows) + 5
+    needed_cols = len(header) + 2
+    ws = _get_or_create_sheet(workbook, title, rows=needed_rows, cols=needed_cols)
+    ws.clear()
+    ws.update(rows)
+
+    header_end = gspread.utils.rowcol_to_a1(1, len(header))
+    format_cell_ranges(ws, [
+        (f"A1:{header_end}", CellFormat(
+            textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+            backgroundColor=Color(0.18, 0.46, 0.71),
+        ))
+    ])
+    pnl_col = header.index("pnl_pct") + 1
+    ranges = []
+    for i, r in enumerate(trades, start=2):
+        pnl = r.get("pnl_pct")
+        if pnl is not None:
+            color = Color(0.85, 0.95, 0.85) if pnl > 0 else Color(0.98, 0.88, 0.88)
+            ranges.append((gspread.utils.rowcol_to_a1(i, pnl_col), CellFormat(backgroundColor=color)))
+    if ranges:
+        format_cell_ranges(ws, ranges)
+
+    print(f"  '{title}' done ({len(trades)} trades).")
+
+
+def _write_results_sheet(workbook, title, window, results):
+    header_row_idx = 3
+    rows = [[f"Window: {window['window_start']} .. {window['window_end']}"], [], ["Metric", "Value"]]
+    for k, v in results.items():
+        rows.append([k, v])
+
+    needed_rows = len(rows) + 5
+    ws = _get_or_create_sheet(workbook, title, rows=needed_rows, cols=4)
+    ws.clear()
+    ws.update(rows)
+
+    format_cell_ranges(ws, [
+        (f"A{header_row_idx}:B{header_row_idx}", CellFormat(
+            textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+            backgroundColor=Color(0.18, 0.46, 0.71),
+        ))
+    ])
+    metric_names = list(results.keys())
+    if "Total Net Return (%)" in metric_names:
+        row_idx = header_row_idx + 1 + metric_names.index("Total Net Return (%)")
+        val = results["Total Net Return (%)"]
+        color = Color(0.85, 0.95, 0.85) if val >= 0 else Color(0.98, 0.88, 0.88)
+        format_cell_ranges(ws, [(f"A{row_idx}:B{row_idx}", CellFormat(backgroundColor=color))])
+    print(f"  '{title}' done.")
+
+
+def push_trades_and_results_to_gsheet(export_result):
+    """export_result: the dict build_trades_and_results_table() (Section 5B)
+    returns (top-level keys: main_window, formulation_period_window, each
+    with label/window_start/window_end/trades/results)."""
+    workbook = _authorize_gsheet_workbook()
+    _clean_old_quality_sweep_sheets(workbook)
+
+    main_w = export_result["main_window"]
+    _write_trades_sheet(workbook, "Trades 2022-2026", main_w["trades"])
+    _write_results_sheet(workbook, "Results 2022-2026", main_w, main_w["results"])
+
+    form_w = export_result["formulation_period_window"]
+    _write_trades_sheet(workbook, "Trades 2018-2022", form_w["trades"])
+    _write_results_sheet(workbook, "Results 2018-2022", form_w, form_w["results"])
+
+    print("\nCheck GSHEET: trades + results sheets exported successfully.")
+
+
+# --- Google Sheets export: candles ------------------------------------------
+def push_candles_to_gsheet(candles_result):
+    """candles_result: dict with top-level keys main_window,
+    formulation_period_window, each {label, rows} -- rows already shaped by
+    _format_df_for_export_full()."""
+    workbook = _authorize_gsheet_workbook()
+
+    for key, title in [("main_window", "Candles 2022-2026"), ("formulation_period_window", "Candles 2018-2022")]:
+        df_copy = pd.DataFrame(candles_result[key]["rows"])
+        needed_rows = len(df_copy) + 10
+        needed_cols = len(df_copy.columns) + 2
+        ws = _get_or_create_sheet(workbook, title, rows=needed_rows, cols=needed_cols)
+        print(f"  Writing {len(df_copy)} rows to '{title}'...")
+        _write_sheet(ws, df_copy)
+        _apply_pnl_formatting(ws, df_copy)
+        print(f"  '{title}' done.")
+
+    print("\nCheck GSHEET: candle-level sheets exported successfully.")
 
 
 # ============================================================================
@@ -1514,7 +2371,7 @@ def ablation_entry_short_ok(macd_hist_current, macd_hist_prev_bar, macd_hist_two
     return True
 
 
-def run_ablation_arm(strategy_engine, df, stop_mode):
+def run_ablation_arm(df, stop_mode):
     """
     Simulate one indicators-only ablation arm bar by bar.
 
@@ -1525,14 +2382,12 @@ def run_ablation_arm(strategy_engine, df, stop_mode):
 
     Parameters
     ----------
-    strategy_engine : module
-        The loaded src/Binance backtest bot.py module (used for
-        kdj_reset_init/update/exit -- reused unmodified from the OB-gated
-        engine, not reimplemented).
     df : pandas.DataFrame
         Candle data with indicators already computed.
     stop_mode : str
-        'flat_atr' (Arm 2) or 'swing_pivot' (Arm 3).
+        'flat_atr' (Arm 2) or 'swing_pivot' (Arm 3). Reuses this file's own
+        kdj_reset_init/update/exit (Section 3), unmodified from the
+        OB-gated engine, not reimplemented.
 
     Returns
     -------
@@ -1581,7 +2436,7 @@ def run_ablation_arm(strategy_engine, df, stop_mode):
                         position = "LONG"
                         entry_price, stop_loss_price, take_profit_price = close, stop_loss_candidate, take_profit_candidate
                         entry_atr, peak_pnl_pct, entry_idx = atr_14, 0.0, i
-                        kdj_state = strategy_engine.kdj_reset_init(df, i, ob_bar=None)
+                        kdj_state = kdj_reset_init(df, i, ob_bar=None)
 
             if position is None and ablation_entry_short_ok(
                     macd_hist_current, macd_hist_prev_bar, macd_hist_two_bars_ago,
@@ -1599,7 +2454,7 @@ def run_ablation_arm(strategy_engine, df, stop_mode):
                         position = "SHORT"
                         entry_price, stop_loss_price, take_profit_price = close, stop_loss_candidate, take_profit_candidate
                         entry_atr, peak_pnl_pct, entry_idx = atr_14, 0.0, i
-                        kdj_state = strategy_engine.kdj_reset_init(df, i, ob_bar=None)
+                        kdj_state = kdj_reset_init(df, i, ob_bar=None)
 
         elif position == "LONG":
             pnl_pct = (close - entry_price) / entry_price * 100
@@ -1617,8 +2472,8 @@ def run_ablation_arm(strategy_engine, df, stop_mode):
                 position = None
                 continue
 
-            kdj_state = strategy_engine.kdj_reset_update(kdj_state, df, i, "LONG")
-            if (i - entry_idx) >= 3 and strategy_engine.kdj_reset_exit(kdj_state, "LONG"):
+            kdj_state = kdj_reset_update(kdj_state, df, i, "LONG")
+            if (i - entry_idx) >= 3 and kdj_reset_exit(kdj_state, "LONG"):
                 record_exit("KDJ RESET EXIT", pnl_pct)
                 position = None
                 continue
@@ -1654,8 +2509,8 @@ def run_ablation_arm(strategy_engine, df, stop_mode):
                 position = None
                 continue
 
-            kdj_state = strategy_engine.kdj_reset_update(kdj_state, df, i, "SHORT")
-            if (i - entry_idx) >= 3 and strategy_engine.kdj_reset_exit(kdj_state, "SHORT"):
+            kdj_state = kdj_reset_update(kdj_state, df, i, "SHORT")
+            if (i - entry_idx) >= 3 and kdj_reset_exit(kdj_state, "SHORT"):
                 record_exit("KDJ RESET EXIT", pnl_pct)
                 position = None
                 continue
@@ -1770,7 +2625,7 @@ def bootstrap_ablation_arm_vs_baseline(arm_pnl_values, baseline_n, baseline_win_
     }
 
 
-def run_ablation_study(strategy_engine, df, bootstrap_resamples=2000, seed=42):
+def run_ablation_study(df, bootstrap_resamples=2000, seed=42):
     """
     Run both ablation arms end to end: OB-gated baseline (for comparison),
     Arm 2 (flat-ATR stop), Arm 3 (swing-pivot stop), each with a
@@ -1786,8 +2641,6 @@ def run_ablation_study(strategy_engine, df, bootstrap_resamples=2000, seed=42):
 
     Parameters
     ----------
-    strategy_engine : module
-        Loaded src/Binance backtest bot.py module.
     df : pandas.DataFrame
         Candle data with indicators already computed.
     bootstrap_resamples : int, default 2000
@@ -1811,7 +2664,7 @@ def run_ablation_study(strategy_engine, df, bootstrap_resamples=2000, seed=42):
 
     for stop_mode, label in (("flat_atr", "Arm 2 (flat-ATR stop)"), ("swing_pivot", "Arm 3 (swing-pivot stop)")):
         print(f"[ablation] Running indicators-only {label}...")
-        arm_trades = run_ablation_arm(strategy_engine, df, stop_mode)
+        arm_trades = run_ablation_arm(df, stop_mode)
         arm_summary = summarize_trade_pool(arm_trades)
 
         locked = LOCKED_ABLATION_ARMS[stop_mode]
@@ -2714,7 +3567,7 @@ def run_regime_breakdown(df, trades_df, ath_seed=69000.0, bear_threshold_pct=-40
     }
 
 
-def run_forward_oos_validation(strategy_engine, start_date="2022-01-01 00:00:00", oos_end_date="2026-07-31 23:59:59"):
+def run_forward_oos_validation(start_date="2022-01-01 00:00:00", oos_end_date="2026-07-31 23:59:59"):
     """
     Pull fresh BTC/USDT 4H candles live from Binance through a fixed,
     closed historical end date, confirm the locked 27-trade baseline
@@ -2741,8 +3594,6 @@ def run_forward_oos_validation(strategy_engine, start_date="2022-01-01 00:00:00"
 
     Parameters
     ----------
-    strategy_engine : module
-        Loaded src/Binance backtest bot.py module (used for get_candles()).
     start_date : str, default "2022-01-01 00:00:00"
         Matches the locked baseline's start.
     oos_end_date : str, default "2026-07-31 23:59:59"
@@ -2754,8 +3605,8 @@ def run_forward_oos_validation(strategy_engine, start_date="2022-01-01 00:00:00"
         bars_pulled, integrity_check (bool), regression_check (bool),
         oos_trades (list), oos_summary (dict or None).
     """
-    fresh_candles = strategy_engine.get_candles(
-        symbol="BTCUSDT", interval=strategy_engine.Client.KLINE_INTERVAL_4HOUR,
+    fresh_candles = get_candles(
+        symbol="BTCUSDT", interval=Client.KLINE_INTERVAL_4HOUR,
         start_time=start_date, end_time=oos_end_date,
     )
 
@@ -2804,7 +3655,7 @@ def run_forward_oos_validation(strategy_engine, start_date="2022-01-01 00:00:00"
     }
 
 
-def run_paper_sync_check(strategy_engine, df):
+def run_paper_sync_check(df):
     """
     Recompute every checkable headline figure fresh from data+code, then
     cross-check each against this file's own LOCKED_* constants (Section 1
@@ -2828,9 +3679,6 @@ def run_paper_sync_check(strategy_engine, df):
 
     Parameters
     ----------
-    strategy_engine : module
-        Loaded src/Binance backtest bot.py module (used only for its
-        compute_smc(), to get quality-criteria counts on Order Blocks).
     df : pandas.DataFrame
         Candle data with indicators already computed.
 
@@ -2839,7 +3687,7 @@ def run_paper_sync_check(strategy_engine, df):
     dict
         checks (list of {metric, locked, live, status}), any_mismatch (bool).
     """
-    order_blocks = strategy_engine.compute_smc(df)
+    order_blocks = compute_smc(df)
     total_obs = len(order_blocks)
     fvg_true_count = sum(1 for ob in order_blocks if ob.get("quality_fvg"))
     fvg_true_pct = fvg_true_count / total_obs * 100 if total_obs else None
@@ -2871,6 +3719,339 @@ def run_paper_sync_check(strategy_engine, df):
     ]
     any_mismatch = any(c["status"] == "MISMATCH" for c in checks)
     return {"checks": checks, "any_mismatch": any_mismatch}
+
+
+# --- CLAUDE.md prose cross-check + markdown report --------------------------
+# Unlike run_paper_sync_check() above (which compares against this file's own
+# LOCKED_* constants), this section regex-parses CLAUDE.md's actual prose at
+# runtime, so it also catches CLAUDE.md wording drift, not just code drift --
+# a capability run_paper_sync_check() explicitly does not have (see its
+# docstring). Ported near-verbatim from analysis/paper_sync_report.py (now
+# retired to legacy_pre_consolidation/), since this is the one analysis/*.py
+# script called routinely by the export/--serve pipeline (Section 7), not an
+# occasional manual audit tool. Writes artifacts/paper_sync_report.md.
+
+CLAUDE_MD_PATH = os.path.join(BASE_DIR, "CLAUDE.md")
+PAPER_SYNC_REPORT_DEFAULT_OUT_PATH = os.path.join(BASE_DIR, "artifacts", "paper_sync_report.md")
+
+_PAPER_SYNC_CRITERIA_COLUMNS = {
+    "Displacement": "entry_ob_quality_displacement",
+    "LargeBar": "entry_ob_quality_large_bar",
+    "FVG": "entry_ob_quality_fvg",
+    "LiqSweep": "entry_ob_quality_liquidity_sweep",
+    "VolExpansion": "entry_ob_quality_volume_expansion",
+}
+_PAPER_SYNC_OB_QUALITY_FIELDS = {
+    "Displacement": "quality_displacement",
+    "LargeBar": "quality_large_bar",
+    "FVG": "quality_fvg",
+    "LiqSweep": "quality_liquidity_sweep",
+    "VolExpansion": "quality_volume_expansion",
+}
+
+
+def _paper_sync_threshold_sweep(df):
+    """Full q0-q5 sweep with binomial tests at every threshold (not just the
+    q>=0 baseline run_paper_sync_check() checks)."""
+    rows = []
+    for q in range(6):
+        sim_df = simulate_trades(df.copy(), min_ob_quality=q)
+        trades_df = sim_df.attrs.get("trades_df", pd.DataFrame())
+        n = len(trades_df)
+        if n == 0:
+            rows.append({"q": q, "n": 0})
+            continue
+        wins = int((trades_df["pnl_pct"] > 0).sum())
+        binomial_result = binomial_test(wins, n)
+        rows.append({
+            "q": q, "n": n, "wins": wins, "losses": n - wins,
+            "win_rate": wins / n * 100, "total_return": float(trades_df["pnl_pct"].sum()),
+            "avg_return": float(trades_df["pnl_pct"].mean()),
+            "sd": float(trades_df["pnl_pct"].std()) if n > 1 else float("nan"),
+            "p_one_sided": binomial_result["p_one_sided"], "p_two_sided": binomial_result["p_two_sided"],
+        })
+    return rows
+
+
+def _paper_sync_ob_population(order_blocks):
+    total = len(order_blocks)
+    counts = {name: sum(1 for ob in order_blocks if ob.get(field))
+              for name, field in _PAPER_SYNC_OB_QUALITY_FIELDS.items()}
+    quality_distribution = {q: 0 for q in range(6)}
+    for ob in order_blocks:
+        quality_distribution[int(ob.get("quality", 0))] += 1
+    return {"total": total, "criteria_true_counts": counts, "quality_distribution": quality_distribution}
+
+
+def _paper_sync_criteria_tests(trades_df):
+    results = {}
+    for name, col in _PAPER_SYNC_CRITERIA_COLUMNS.items():
+        true_pnl = trades_df.loc[trades_df[col] == True, "pnl_pct"]
+        false_pnl = trades_df.loc[trades_df[col] == False, "pnl_pct"]
+        true_n, false_n = len(true_pnl), len(false_pnl)
+        true_wins, false_wins = int((true_pnl > 0).sum()), int((false_pnl > 0).sum())
+        fisher_p = fisher_exact_test(
+            true_wins, true_n - true_wins, false_wins, false_n - false_wins,
+        ) if true_n and false_n else float("nan")
+        welch_result = welch_t_test(true_pnl.tolist(), false_pnl.tolist()) if true_n > 1 and false_n > 1 else None
+        results[name] = {
+            "true_n": true_n, "true_wins": true_wins,
+            "false_n": false_n, "false_wins": false_wins,
+            "fisher_p": fisher_p,
+            "welch_t": welch_result["t_statistic"] if welch_result else float("nan"),
+            "welch_p": welch_result["p_value"] if welch_result else float("nan"),
+        }
+    return results
+
+
+def _parse_claude_md_locked_results():
+    """Regex-parse CLAUDE.md's "Locked results" prose into a dict of live-
+    comparable values. Returns (locked_dict, raw_text)."""
+    with open(CLAUDE_MD_PATH, "r", encoding="utf-8") as f:
+        raw_text = f.read()
+
+    locked = {}
+    checks = [
+        ("baseline_trades", r"Baseline \(min_ob_quality=0\):\s*(\d+)\s*trades", int),
+        ("baseline_win_rate", r"(\d+\.\d+)%\s*win rate", float),
+        ("baseline_total_return", r"\+(\d+\.\d+)%\s*total net\s*\n?\s*return", float),
+        ("baseline_avg_return", r"\+(\d+\.\d+)%\s*avg return/trade", float),
+        ("baseline_sd", r"SD\s*(\d+\.\d+)%", float),
+        ("baseline_p_one_sided", r"One-sided binomial p\s*=\s*(\d+\.\d+)", float),
+        ("baseline_p_two_sided", r"two-sided\s*(\d+\.\d+)\)\s*for the q>=0 baseline", float),
+        ("total_obs", r"(\d+)\s*detected Order Blocks", int),
+        ("fvg_true_count", r"FVG criterion true for\s*(\d+)\s*\(", int),
+        ("fvg_true_pct", r"FVG criterion true for\s*\d+\s*\((\d+\.\d+)%\)", float),
+        ("bar_count", r"(\d[\d,]*)\s*bars \(1,461 days", lambda s: int(s.replace(",", ""))),
+    ]
+    for key, pattern, cast in checks:
+        m = re.search(pattern, raw_text)
+        locked[key] = cast(m.group(1)) if m else None
+
+    qdist_m = re.search(
+        r"OB quality distribution \(post-fix.*?\):\s*"
+        r"q0=(\d+), q1=(\d+),\s*\n?\s*q2=(\d+), q3=(\d+), q4=(\d+), q5=(\d+)",
+        raw_text,
+    )
+    locked["quality_distribution"] = (
+        {i: int(qdist_m.group(i + 1)) for i in range(6)} if qdist_m else None
+    )
+
+    ablation_a_m = re.search(
+        r"Ablation A \(indicators-only, entry-ATR stop\):\s*(\d+) trades,\s*(\d+\.\d+)%,\s*(-?\d+\.\d+)%", raw_text)
+    ablation_b_m = re.search(
+        r"Ablation B \(indicators-only, swing-pivot stop\):\s*(\d+) trades,\s*(\d+\.\d+)%,\s*(-?\d+\.\d+)%", raw_text)
+    locked["ablation_a"] = (
+        {"n": int(ablation_a_m.group(1)), "win_rate": float(ablation_a_m.group(2)),
+         "total_return": float(ablation_a_m.group(3))} if ablation_a_m else None
+    )
+    locked["ablation_b"] = (
+        {"n": int(ablation_b_m.group(1)), "win_rate": float(ablation_b_m.group(2)),
+         "total_return": float(ablation_b_m.group(3))} if ablation_b_m else None
+    )
+    return locked, raw_text
+
+
+class _PaperSyncCheck:
+    """One locked-vs-live row in the paper-sync report table."""
+
+    def __init__(self, metric, locked_val, live_val, fmt=None, tol=None):
+        self.metric = metric
+        self.locked_val = locked_val
+        self.live_val = live_val
+        self.fmt = fmt or (lambda v: str(v))
+        self.tol = tol
+
+    @property
+    def status(self):
+        if self.locked_val is None:
+            return "NO-PARSE"
+        if self.live_val is None:
+            return "NO-DATA"
+        if self.tol is not None:
+            ok = abs(float(self.locked_val) - float(self.live_val)) <= self.tol
+        else:
+            ok = self.locked_val == self.live_val
+        return "MATCH" if ok else "MISMATCH"
+
+    def row(self):
+        locked_s = self.fmt(self.locked_val) if self.locked_val is not None else "(not found in CLAUDE.md)"
+        live_s = self.fmt(self.live_val) if self.live_val is not None else "(not computed)"
+        mark = {"MATCH": "MATCH", "MISMATCH": "MISMATCH -- STOP", "NO-PARSE": "NO-PARSE",
+                "NO-DATA": "NO-DATA"}[self.status]
+        return f"| {self.metric} | {locked_s} | {live_s} | {mark} |"
+
+
+def generate_paper_sync_report(out_path=PAPER_SYNC_REPORT_DEFAULT_OUT_PATH, verbose=True):
+    """
+    Recompute every checkable headline figure fresh from data+code, cross-
+    check each against a live regex-parse of CLAUDE.md's own "Locked
+    results" prose, write the markdown report to out_path, and return
+    (report_text, mismatches, checks).
+
+    Statistical/analytical question answered: none directly -- a
+    reproducibility/correctness check, same posture as run_paper_sync_check()
+    but comparing against CLAUDE.md's actual current wording (catches prose
+    drift too) instead of this file's own LOCKED_* constants. Never edits
+    CLAUDE.md or "corrects" a mismatch itself -- a MISMATCH is a correctness
+    finding for a human to review, per CLAUDE.md's own rule on newly found
+    bugs.
+
+    Parameters
+    ----------
+    out_path : str
+    verbose : bool
+
+    Returns
+    -------
+    (report_text: str, mismatches: list, checks: list)
+    """
+    generated_at = datetime.now(timezone.utc).isoformat()
+
+    def log(msg):
+        if verbose:
+            print(msg)
+
+    log("[paper_sync_report] Loading candles...")
+    raw_df = load_candles()
+    bar_count = len(raw_df)
+
+    log("[paper_sync_report] Computing indicators and Order Blocks...")
+    base_df = compute_indicators(raw_df.copy())
+    order_blocks = compute_smc(base_df)
+    ob_population = _paper_sync_ob_population(order_blocks)
+
+    log("[paper_sync_report] Running q0-q5 threshold sweep...")
+    sweep_rows = _paper_sync_threshold_sweep(base_df)
+
+    log("[paper_sync_report] Running per-criterion Fisher/Welch tests on the q>=0 baseline...")
+    q0_sim = simulate_trades(base_df.copy(), min_ob_quality=0)
+    q0_trades = q0_sim.attrs.get("trades_df", pd.DataFrame())
+    criteria_tests = _paper_sync_criteria_tests(q0_trades)
+
+    log("[paper_sync_report] Parsing CLAUDE.md locked results...")
+    locked, _ = _parse_claude_md_locked_results()
+
+    q0 = next(r for r in sweep_rows if r["q"] == 0)
+    checks = [
+        _PaperSyncCheck("Bar count", locked.get("bar_count"), bar_count),
+        _PaperSyncCheck("Baseline (q>=0) trades", locked.get("baseline_trades"), q0.get("n")),
+        _PaperSyncCheck("Baseline win rate (%)", locked.get("baseline_win_rate"), q0.get("win_rate"),
+                         fmt=lambda v: f"{v:.2f}", tol=0.01),
+        _PaperSyncCheck("Baseline total net return (%)", locked.get("baseline_total_return"), q0.get("total_return"),
+                         fmt=lambda v: f"{v:.2f}", tol=0.01),
+        _PaperSyncCheck("Baseline avg return/trade (%)", locked.get("baseline_avg_return"), q0.get("avg_return"),
+                         fmt=lambda v: f"{v:.2f}", tol=0.01),
+        _PaperSyncCheck("Baseline SD (%)", locked.get("baseline_sd"), q0.get("sd"),
+                         fmt=lambda v: f"{v:.2f}", tol=0.01),
+        _PaperSyncCheck("Baseline p (one-sided)", locked.get("baseline_p_one_sided"), q0.get("p_one_sided"),
+                         fmt=lambda v: f"{v:.3f}", tol=0.001),
+        _PaperSyncCheck("Total detected Order Blocks", locked.get("total_obs"), ob_population["total"]),
+        _PaperSyncCheck("FVG-true count", locked.get("fvg_true_count"), ob_population["criteria_true_counts"]["FVG"]),
+    ]
+    fvg_pct_live = (ob_population["criteria_true_counts"]["FVG"] / ob_population["total"] * 100) if ob_population["total"] else None
+    checks.append(_PaperSyncCheck("FVG-true (%)", locked.get("fvg_true_pct"), fvg_pct_live,
+                                   fmt=lambda v: f"{v:.1f}", tol=0.05))
+    qdist_locked = locked.get("quality_distribution") or {}
+    for q in range(6):
+        checks.append(_PaperSyncCheck(f"OB quality distribution q{q}", qdist_locked.get(q),
+                                       ob_population["quality_distribution"][q]))
+
+    welch_ps_all5 = [v["welch_p"] for v in criteria_tests.values()]
+    welch_range_all5 = (min(welch_ps_all5), max(welch_ps_all5)) if welch_ps_all5 else (None, None)
+
+    lines = [
+        "# Paper/codebase sync report", "",
+        f"Generated: {generated_at}", "",
+        "Recomputed live from `artifacts/candles.csv` and this file's own strategy-engine "
+        "functions, then cross-checked against the figures parsed out of `CLAUDE.md`'s "
+        "\"Locked results\" section. A MISMATCH row is a correctness finding, not something "
+        "this script resolves automatically -- see `CLAUDE.md`'s rule on newly found bugs.",
+        "", "## Cross-check summary", "",
+        "| Metric | Locked (CLAUDE.md) | Live (this run) | Status |",
+        "|---|---|---|---|",
+    ]
+    lines.extend(c.row() for c in checks)
+    lines.append("")
+
+    lines.append("## Full q0-q5 threshold sweep (live)")
+    lines.append("")
+    lines.append("| q | N | Wins | Losses | Win rate | Total return | Avg/trade | SD | p (one-sided) | p (two-sided) |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|")
+    for r in sweep_rows:
+        if r.get("n", 0) == 0:
+            lines.append(f"| {r['q']} | 0 | - | - | - | - | - | - | - | - |")
+            continue
+        sd_s = f"{r['sd']:.2f}" if not np.isnan(r["sd"]) else "n/a (n=1)"
+        lines.append(
+            f"| {r['q']} | {r['n']} | {r['wins']} | {r['losses']} | {r['win_rate']:.2f}% | "
+            f"{r['total_return']:+.2f}% | {r['avg_return']:+.4f}% | {sd_s} | "
+            f"{r['p_one_sided']:.4f} | {r['p_two_sided']:.4f} |"
+        )
+    lines.append("")
+
+    lines.append("## Per-criterion Fisher's exact + Welch's t-test (live, q>=0 baseline)")
+    lines.append("")
+    lines.append("| Criterion | True n (wins) | False n (wins) | Fisher p | Welch t | Welch p |")
+    lines.append("|---|---|---|---|---|---|")
+    for name in _PAPER_SYNC_CRITERIA_COLUMNS:
+        r = criteria_tests[name]
+        lines.append(
+            f"| {name} | {r['true_n']} ({r['true_wins']}) | {r['false_n']} ({r['false_wins']}) | "
+            f"{r['fisher_p']:.4f} | {r['welch_t']:+.4f} | {r['welch_p']:.4f} |"
+        )
+    lines.append("")
+    if welch_range_all5[0] is not None:
+        lines.append(
+            f"Welch p-value range across all 5 criteria: "
+            f"**{welch_range_all5[0]:.4f}-{welch_range_all5[1]:.4f}**."
+        )
+    lines.append("")
+
+    lines.append("## Ablation A/B -- passthrough from CLAUDE.md, UNVERIFIED this run")
+    lines.append("")
+    lines.append(
+        "No function in this file reproduces these figures from current code -- the "
+        "originating script was never committed. Printed here only as cited from "
+        "`CLAUDE.md`, not independently recomputed."
+    )
+    lines.append("")
+    a, b = locked.get("ablation_a"), locked.get("ablation_b")
+    lines.append("| Configuration | N | Win rate | Total return |")
+    lines.append("|---|---|---|---|")
+    if a:
+        lines.append(f"| Indicators-only (entry-ATR stop) | {a['n']} | {a['win_rate']:.2f}% | {a['total_return']:+.2f}% |")
+    if b:
+        lines.append(f"| Indicators-only (swing-pivot stop) | {b['n']} | {b['win_rate']:.2f}% | {b['total_return']:+.2f}% |")
+    lines.append("")
+
+    report_text = "\n".join(lines)
+    mismatches = [c for c in checks if c.status == "MISMATCH"]
+
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(report_text)
+    log(f"[paper_sync_report] Wrote {out_path}")
+
+    no_parse = [c for c in checks if c.status == "NO-PARSE"]
+    if no_parse and verbose:
+        print("[paper_sync_report] WARNING: could not parse the following figures out of "
+              "CLAUDE.md (regex no longer matches its current wording):")
+        for c in no_parse:
+            print(f"  - {c.metric}")
+
+    if mismatches and verbose:
+        print("\n" + "=" * 70)
+        print("[paper_sync_report] STOP: live-recomputed figures disagree with "
+              "CLAUDE.md's locked results.")
+        print("This is a correctness finding, not something to silently reconcile.")
+        print("=" * 70)
+        for c in mismatches:
+            print(f"  - {c.metric}: locked={c.locked_val!r} live={c.live_val!r}")
+    elif verbose:
+        print("[paper_sync_report] All parsed CLAUDE.md figures match live recomputation.")
+
+    return report_text, mismatches, checks
 
 
 FORMULATION_PERIOD_PREFIX_BARS = 8750  # artifacts/candles_extended_manifest.json: segment_bar_counts.prefix_pre_2022
@@ -3195,7 +4376,729 @@ def build_trades_and_results_table(df, trades_df):
 
 
 # ============================================================================
-# SECTION 6: MAIN EXECUTION BLOCK
+# SECTION 6: DASHBOARD ARTIFACT EXPORT + DATABASE PERSISTENCE
+# ============================================================================
+# Consolidated from export_gui_data.py (now retired to
+# legacy_pre_consolidation/). Computes the same JSON/CSV artifact files and
+# SQL database rows dashboard-v2 and the Section 7 HTTP server depend on --
+# same file paths, same schema, same column sets -- so dashboard-v2's
+# frontend code needs zero changes. Two simplifications versus the original,
+# both disclosed:
+#   1. `db_manager.X` calls become direct calls to Section 1B's Candle/
+#      OrderBlock/OBTouch/Trade/init_db/get_session/clear_db -- same
+#      schema, no behavior change, just no more separate-module indirection.
+#   2. The three Google Sheets pushes and the four statistical-artifact
+#      JSON files were previously computed by shelling out to analysis/*.py
+#      scripts as subprocesses and round-tripping through a JSON file. They
+#      are now computed in-process by calling this file's own Section 4/5B
+#      functions directly (run_benchmark_vs_passive(), build_trades_and_
+#      results_table(), run_bootstrap_ci(), etc.) -- same figures, no
+#      subprocess/file round-trip. Every push remains non-fatal: a failure
+#      in one is reported and skipped, never aborts the rest.
+
+SCHEMA_VERSION = "1.0.0"
+DEFAULT_ARTIFACT_LEVELS = [0, 1, 2, 3]
+
+
+def to_native(value):
+    """
+    Convert a single numpy/pandas scalar to its native Python equivalent,
+    passing through everything else (including strings/dicts) unchanged.
+
+    Statistical question answered: none -- serialization utility. Distinct
+    from json_safe() (Section 1): json_safe() stringifies anything it
+    doesn't recognize (safe as a json.dump default=), while to_native() is
+    used per-cell while building a plain Python dict of trade/candle
+    records, where an unrecognized type should pass through untouched, not
+    become a string.
+    """
+    if pd.isna(value):
+        return None
+    if isinstance(value, (np.bool_, bool)):
+        return bool(value)
+    if isinstance(value, (np.integer,)):
+        return int(value)
+    if isinstance(value, (np.floating,)):
+        return float(value)
+    return value
+
+
+def normalize_records(records):
+    """Apply to_native() to every value in a list of dict records (e.g. from
+    DataFrame.to_dict(orient="records"))."""
+    return [{key: to_native(value) for key, value in row.items()} for row in records]
+
+
+def hash_payload(payload):
+    """SHA-256 of a canonical (sorted-keys, no whitespace) JSON encoding of
+    `payload` -- used by build_verification_report() so a reader can confirm
+    two independently-generated exports produced byte-identical data
+    without diffing the full payload."""
+    canonical = json.dumps(payload, sort_keys=True, default=json_safe, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def build_artifact_manifest(symbol, timeframe, start, end, levels, candle_count):
+    """Top-level manifest.json content: run parameters + candle count.
+    Read directly by dashboard-v2 (GET /artifacts/manifest.json)."""
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "start_time": start,
+        "end_time": end,
+        "levels": levels,
+        "candle_count": candle_count,
+    }
+
+
+def build_verification_report(manifest, candles, runs_by_threshold):
+    """
+    Build verification_report.json: source-data sanity checks (symbol/
+    timeframe match, candle presence, date range) plus SHA-256 hashes of the
+    OHLC series, indicator series, and each quality-threshold's Order-Block/
+    trade/stats payload -- so a reader (or a future run) can confirm
+    deterministic reproduction without re-diffing the full data.
+
+    Statistical question answered: none -- data-integrity/reproducibility
+    check, not an analysis.
+    """
+    ohlc_payload = [
+        {"time": c["time"], "open": c["open"], "high": c["high"], "low": c["low"], "close": c["close"]}
+        for c in candles
+    ]
+    indicator_payload = [
+        {"time": c["time"], "MACD": c["MACD"], "MACD_signal": c["MACD_signal"], "MACD_hist": c["MACD_hist"],
+         "K": c["K"], "D": c["D"], "J": c["J"], "ATR": c["ATR"], "ATR_200": c["ATR_200"]}
+        for c in candles
+    ]
+
+    run_hashes = {}
+    for level, run in runs_by_threshold.items():
+        run_hashes[str(level)] = {
+            "orderblocks_hash": hash_payload(run["obs"]),
+            "trades_hash": hash_payload(run["trades"]),
+            "stats_hash": hash_payload(run["stats"]),
+        }
+
+    return {
+        "status": "pass",
+        "notes": [
+            "TradingView alignment target: BTCUSDT Binance 4H candles.",
+            "Cross-source TradingView API pull is not used; this report validates deterministic "
+            "Binance snapshot + recalculation consistency.",
+        ],
+        "source_checks": {
+            "symbol_match": manifest["symbol"] == "BTCUSDT",
+            "timeframe_match": manifest["timeframe"] == "4h",
+            "has_candles": len(candles) > 0,
+            "first_candle_utc": datetime.fromtimestamp(candles[0]["time"], timezone.utc).isoformat() if candles else None,
+            "last_candle_utc": datetime.fromtimestamp(candles[-1]["time"], timezone.utc).isoformat() if candles else None,
+        },
+        "snapshot_hashes": {
+            "ohlc_hash": hash_payload(ohlc_payload),
+            "indicator_hash": hash_payload(indicator_payload),
+        },
+        "recalculation_hashes_by_threshold": run_hashes,
+    }
+
+
+def export_dashboard_artifacts(symbol="BTCUSDT", timeframe="4h", start="2022-01-01 00:00:00",
+                                end="2026-01-01 00:00:00", levels=None, default_view_quality=1,
+                                output_dir="artifacts", db_url=None, export_gsheet=False):
+    """
+    Full dashboard-artifact export: pull (or load cached) candles, compute
+    indicators, run simulate_trades() at every requested min_ob_quality
+    threshold, write every JSON/CSV artifact dashboard-v2 and Section 7's
+    HTTP server read, and persist candles/Order-Blocks/touches/trades to the
+    SQL database. Optionally also pushes to Google Sheets.
+
+    Statistical question answered: none directly -- this is the export/
+    persistence step; simulate_trades() (Section 3) does the actual
+    backtesting.
+
+    Ported from export_gui_data.py's export_artifacts(), flattened from an
+    argparse Namespace into explicit parameters to match this file's style.
+
+    Parameters
+    ----------
+    symbol, timeframe : str
+    start, end : str
+        Passed to get_candles() if a live pull is attempted.
+    levels : list of int, optional
+        min_ob_quality thresholds to simulate. Defaults to [0, 1, 2, 3].
+    default_view_quality : int, default 1
+        Which threshold's Trade_Status populates candles.json's default view.
+    output_dir : str, default "artifacts"
+    db_url : str, optional
+        Defaults to get_db_url() (Section 1B).
+    export_gsheet : bool, default False
+        Also push to Google Sheets via push_all_gsheet_exports().
+
+    Returns
+    -------
+    (manifest: dict, threshold_runs: list, verification_report: dict)
+    """
+    if levels is None:
+        levels = list(DEFAULT_ARTIFACT_LEVELS)
+    interval_map = {"4h": Client.KLINE_INTERVAL_4HOUR}
+    if timeframe not in interval_map:
+        raise ValueError(f"Unsupported timeframe: {timeframe}")
+
+    print("Fetching candles...")
+    try:
+        base_df = get_candles(symbol=symbol, interval=interval_map[timeframe], start_time=start, end_time=end)
+    except Exception as e:
+        print(f"Warning: Failed to fetch candles from API ({e}). Attempting to load from local cache...")
+        cache_path = os.path.join(output_dir, "candles.csv")
+        if os.path.isfile(cache_path):
+            base_df = pd.read_csv(cache_path)
+            base_df["open_time"] = pd.to_datetime(base_df["open_time"])
+        else:
+            raise FileNotFoundError(f"No local candles cache found at {cache_path} and API connection failed.")
+
+    print("Computing indicators...")
+    base_df = compute_indicators(base_df)
+    base_df["time"] = base_df["open_time"].apply(lambda x: int(x.timestamp()))
+
+    candle_cols = ["time", "open_time", "open", "high", "low", "close", "volume",
+                   "MACD", "MACD_signal", "MACD_hist", "K", "D", "J", "ATR", "ATR_200", "Trade_Status"]
+
+    runs_by_threshold = {}
+    threshold_runs = []
+    sim_dfs = {}
+    for level in levels:
+        print(f"Running simulation for min_ob_quality={level}...")
+        sim_df = simulate_trades(base_df.copy(), min_ob_quality=level)
+        sim_dfs[level] = sim_df
+        stats = sim_df.attrs.get("trade_stats", {})
+        trades_df = sim_df.attrs.get("trades_df", pd.DataFrame())
+        obs = compute_smc(sim_df)
+        trades = normalize_records(trades_df.to_dict(orient="records")) if not trades_df.empty else []
+        obs = normalize_records(obs)
+        stats = {k: to_native(v) for k, v in stats.items()}
+
+        runs_by_threshold[level] = {"obs": obs, "trades": trades, "stats": stats}
+        threshold_runs.append({
+            "min_quality": level, "trade_stats": stats,
+            "trade_count": len(trades), "orderblock_count": len(obs),
+        })
+
+    if default_view_quality in sim_dfs:
+        base_df["Trade_Status"] = sim_dfs[default_view_quality]["Trade_Status"]
+    else:
+        base_df["Trade_Status"] = ""
+    base_df["Trade_Status"] = base_df["Trade_Status"].fillna("")
+
+    candles = normalize_records(base_df[candle_cols].to_dict(orient="records"))
+
+    manifest = build_artifact_manifest(symbol, timeframe, start, end, levels, len(candles))
+    verification_report = build_verification_report(manifest, candles, runs_by_threshold)
+
+    os.makedirs(output_dir, exist_ok=True)
+    with open(os.path.join(output_dir, "manifest.json"), "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, default=json_safe)
+    with open(os.path.join(output_dir, "candles.json"), "w", encoding="utf-8") as f:
+        json.dump(candles, f, indent=2, default=json_safe)
+    with open(os.path.join(output_dir, "threshold_runs.json"), "w", encoding="utf-8") as f:
+        json.dump(threshold_runs, f, indent=2, default=json_safe)
+    with open(os.path.join(output_dir, "runs_by_threshold.json"), "w", encoding="utf-8") as f:
+        json.dump(runs_by_threshold, f, indent=2, default=json_safe)
+    with open(os.path.join(output_dir, "verification_report.json"), "w", encoding="utf-8") as f:
+        json.dump(verification_report, f, indent=2, default=json_safe)
+
+    candles_df = pd.DataFrame(candles)
+    candles_df.to_csv(os.path.join(output_dir, "candles.csv"), index=False)
+    pd.DataFrame(threshold_runs).to_csv(os.path.join(output_dir, "threshold_runs.csv"), index=False)
+    default_run = runs_by_threshold.get(default_view_quality, runs_by_threshold[levels[0]])
+    pd.DataFrame(default_run["trades"]).to_csv(os.path.join(output_dir, "trades_default_view.csv"), index=False)
+    pd.DataFrame(default_run["obs"]).to_csv(os.path.join(output_dir, "orderblocks_default_view.csv"), index=False)
+
+    # --- Database export -----------------------------------------------
+    print("Connecting to SQL database...")
+    resolved_db_url = db_url if db_url else get_db_url()
+    try:
+        engine = init_db(resolved_db_url)
+        clear_db(engine)  # Fresh run, clear old values
+        session = get_session(engine)
+
+        print("Saving candles to database...")
+        candles_to_save = []
+        for _, row in base_df.iterrows():
+            candles_to_save.append(Candle(
+                time=int(row["time"]), symbol=symbol, interval=timeframe,
+                open=float(row["open"]), high=float(row["high"]), low=float(row["low"]),
+                close=float(row["close"]), volume=float(row["volume"]),
+                macd=float(row["MACD"]) if pd.notnull(row["MACD"]) else None,
+                macd_signal=float(row["MACD_signal"]) if pd.notnull(row["MACD_signal"]) else None,
+                macd_hist=float(row["MACD_hist"]) if pd.notnull(row["MACD_hist"]) else None,
+                k=float(row["K"]) if pd.notnull(row["K"]) else None,
+                d=float(row["D"]) if pd.notnull(row["D"]) else None,
+                j=float(row["J"]) if pd.notnull(row["J"]) else None,
+                atr_14=float(row["ATR"]) if pd.notnull(row["ATR"]) else None,
+                atr_200=float(row["ATR_200"]) if pd.notnull(row["ATR_200"]) else None,
+                volume_ma_ratio=float(row["volume_ma_ratio"]) if pd.notnull(row.get("volume_ma_ratio")) else None,
+                taker_buy_ratio=float(row["taker_buy_ratio"]) if pd.notnull(row.get("taker_buy_ratio")) else None,
+                body_wick_ratio=float(row["body_wick_ratio"]) if pd.notnull(row.get("body_wick_ratio")) else None,
+                time_hour=int(row["time_hour"]) if pd.notnull(row.get("time_hour")) else None,
+                time_day_of_week=int(row["time_day_of_week"]) if pd.notnull(row.get("time_day_of_week")) else None,
+            ))
+        session.bulk_save_objects(candles_to_save)
+        session.commit()
+
+        print("Saving order blocks to database...")
+        first_level = levels[0]
+        obs_raw = compute_smc(sim_dfs[first_level])
+
+        ob_lookup = {}
+        for ob in obs_raw:
+            ob_model = OrderBlock(
+                symbol=symbol, interval=timeframe, type=ob["type"],
+                top=float(ob["top"]), bottom=float(ob["bottom"]),
+                created_at=int(ob["created_at"]), ob_bar=int(ob["ob_bar"]),
+                level=ob["level"], structure=ob["structure"],
+                mitigated_at=int(ob["mitigated_at"]) if (pd.notnull(ob.get("mitigated_at")) and ob["mitigated_at"] < len(base_df)) else None,
+                quality=int(ob["quality"]),
+                quality_displacement=bool(ob.get("quality_displacement", False)),
+                quality_large_bar=bool(ob.get("quality_large_bar", False)),
+                quality_fvg=bool(ob.get("quality_fvg", False)),
+                quality_liquidity_sweep=bool(ob.get("quality_liquidity_sweep", False)),
+                quality_volume_expansion=bool(ob.get("quality_volume_expansion", False)),
+            )
+            session.add(ob_model)
+            session.flush()  # Flush to generate ob_id
+            ob_lookup[(ob["created_at"], ob["ob_bar"], ob["type"], ob["level"])] = ob_model.ob_id
+        session.commit()
+
+        print("Saving OB touch events to database...")
+        touches_df = sim_dfs[first_level].attrs.get("touches_df", pd.DataFrame())
+        if not touches_df.empty:
+            touches_to_save = []
+            for _, touch in touches_df.iterrows():
+                ob_key = (int(touch["ob_created_at"]), int(touch["ob_bar"]), touch["ob_type"], touch["ob_level"])
+                ob_id = ob_lookup.get(ob_key)
+                if ob_id is None:
+                    continue
+                touches_to_save.append(OBTouch(
+                    ob_id=ob_id, time=int(touch["time"]), touch_price=float(touch["touch_price"]),
+                    macd=float(touch["macd"]) if pd.notnull(touch["macd"]) else None,
+                    macd_signal=float(touch["macd_signal"]) if pd.notnull(touch["macd_signal"]) else None,
+                    macd_hist=float(touch["macd_hist"]) if pd.notnull(touch["macd_hist"]) else None,
+                    k=float(touch["k"]) if pd.notnull(touch["k"]) else None,
+                    d=float(touch["d"]) if pd.notnull(touch["d"]) else None,
+                    j=float(touch["j"]) if pd.notnull(touch["j"]) else None,
+                    k_accel=float(touch["k_accel"]) if pd.notnull(touch["k_accel"]) else None,
+                    atr_14=float(touch["atr_14"]) if pd.notnull(touch["atr_14"]) else None,
+                    atr_200=float(touch["atr_200"]) if pd.notnull(touch["atr_200"]) else None,
+                ))
+            session.bulk_save_objects(touches_to_save)
+            session.commit()
+
+        print("Saving trades to database...")
+        trades_to_save = []
+        for level in levels:
+            trades_df = sim_dfs[level].attrs.get("trades_df", pd.DataFrame())
+            if trades_df.empty:
+                continue
+            for _, tr in trades_df.iterrows():
+                entry_key = (int(tr["entry_ob_created_at"]), int(tr["entry_ob_bar"]), tr["entry_ob_type"], tr["entry_ob_level"])
+                entry_ob_id = ob_lookup.get(entry_key)
+                if entry_ob_id is None:
+                    continue
+                tp_ob_id = None
+                if tr.get("tp_is_structural") and pd.notnull(tr.get("tp_ob_created_at")):
+                    tp_key = (int(tr["tp_ob_created_at"]), int(tr["tp_ob_bar"]), tr["tp_ob_type"], tr["tp_ob_level"])
+                    tp_ob_id = ob_lookup.get(tp_key)
+                trades_to_save.append(Trade(
+                    symbol=symbol, interval=timeframe, side=tr["side"], min_ob_quality=int(level),
+                    entry_time=int(base_df.loc[int(tr["entry_idx"]), "time"]),
+                    exit_time=int(base_df.loc[int(tr["exit_idx"]), "time"]),
+                    entry_price=float(tr["entry"]), exit_price=float(tr["exit"]),
+                    stop_loss=float(tr["stop_loss"]), take_profit=float(tr["take_profit"]),
+                    pnl_pct=float(tr["pnl_pct"]), hold_bars=int(tr["hold_bars"]), exit_reason=tr["exit_reason"],
+                    entry_ob_id=entry_ob_id, tp_ob_id=tp_ob_id,
+                ))
+        if trades_to_save:
+            session.bulk_save_objects(trades_to_save)
+            session.commit()
+
+        print("Database save completed successfully.")
+    except Exception as e:
+        import traceback
+        print(f"Warning: Failed to save results to database ({e})")
+        traceback.print_exc()
+
+    if export_gsheet:
+        print("Exporting to Google Sheets (optional mode)...")
+        push_all_gsheet_exports(output_dir)
+
+    return manifest, threshold_runs, verification_report
+
+
+def push_all_gsheet_exports(output_dir="artifacts"):
+    """
+    Compute and push all three Google Sheets exports (candles, trades+
+    results, benchmark-vs-passive) in-process, using this file's own
+    Section 3B push_*_to_gsheet() writers and Section 4/5B analysis
+    functions directly -- no subprocess, no intermediate JSON file, unlike
+    the export_gui_data.py pipeline this replaces (which shelled out to
+    analysis/*.py scripts and read their --json-out files back in). Each
+    push is independent and non-fatal: a failure in one is reported and
+    skipped, never aborts the others.
+    """
+    df_main = compute_indicators(load_candles())
+    df_formulation = compute_indicators(load_formulation_period_window())
+    sim_main = simulate_trades(df_main.copy(), min_ob_quality=0)
+    sim_form = simulate_trades(df_formulation.copy(), min_ob_quality=0)
+    trades_main = sim_main.attrs["trades_df"]
+    trades_form = sim_form.attrs["trades_df"]
+
+    try:
+        candles_result = {
+            "main_window": {"label": MAIN_WINDOW_LABEL,
+                             "rows": _format_df_for_export_full(sim_main).to_dict(orient="records")},
+            "formulation_period_window": {"label": FORMULATION_WINDOW_LABEL,
+                                           "rows": _format_df_for_export_full(sim_form).to_dict(orient="records")},
+        }
+        push_candles_to_gsheet(candles_result)
+    except Exception as e:
+        print(f"\n[WARNING] Skipping candle-level gsheet push: {e}")
+
+    try:
+        main_trades_table, main_results = build_trades_and_results_table(df_main, trades_main)
+        form_trades_table, form_results = build_trades_and_results_table(df_formulation, trades_form)
+        export_result = {
+            "main_window": {
+                "label": MAIN_WINDOW_LABEL, "window_start": str(df_main["open_time"].iloc[0]),
+                "window_end": str(df_main["open_time"].iloc[-1]),
+                "trades": main_trades_table.to_dict(orient="records"), "results": main_results,
+            },
+            "formulation_period_window": {
+                "label": FORMULATION_WINDOW_LABEL, "window_start": str(df_formulation["open_time"].iloc[0]),
+                "window_end": str(df_formulation["open_time"].iloc[-1]),
+                "trades": form_trades_table.to_dict(orient="records"), "results": form_results,
+            },
+        }
+        push_trades_and_results_to_gsheet(export_result)
+    except Exception as e:
+        print(f"\n[WARNING] Skipping trades+results gsheet push: {e}")
+
+    try:
+        benchmark_result = run_benchmark_vs_passive(df_main, trades_main, df_formulation, trades_form)
+        push_benchmark_vs_passive_to_gsheet(benchmark_result)
+    except Exception as e:
+        print(f"\n[WARNING] Skipping benchmark-vs-passive gsheet push: {e}")
+
+
+def write_statistical_artifacts(df, baseline_trades, output_dir="artifacts"):
+    """
+    Write the same JSON artifacts export_gui_data.py's run_statistical_
+    artifacts() previously produced by shelling out to bootstrap_power_
+    analysis.py / fee_slippage_analysis.py / ablation_reconstruction.py /
+    benchmark_vs_passive.py -- computed in-process here instead, calling
+    this file's own Section 4/5B functions directly.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Main-window candles with indicators already computed.
+    baseline_trades : pandas.DataFrame
+        The q>=0 baseline trade log for `df`.
+    output_dir : str, default "artifacts"
+    """
+    write_json_results(
+        {"bootstrap_ci": run_bootstrap_ci(baseline_trades), "mde_power": run_mde_power_report(baseline_trades)},
+        os.path.join(output_dir, "bootstrap_power_analysis.json"),
+    )
+    write_json_results(
+        run_fee_slippage_sensitivity(baseline_trades),
+        os.path.join(output_dir, "fee_slippage_analysis.json"),
+    )
+    write_json_results(
+        run_ablation_study(df),
+        os.path.join(output_dir, "ablation_reconstruction.json"),
+    )
+    df_formulation = compute_indicators(load_formulation_period_window())
+    sim_form = simulate_trades(df_formulation.copy(), min_ob_quality=0)
+    write_json_results(
+        run_benchmark_vs_passive(df, baseline_trades, df_formulation, sim_form.attrs["trades_df"]),
+        os.path.join(output_dir, "benchmark_vs_passive.json"),
+    )
+
+
+# ============================================================================
+# SECTION 7: HTTP SERVER / FRONTEND ENDPOINTS
+# ============================================================================
+# Consolidated from export_gui_data.py's main() (now retired to
+# legacy_pre_consolidation/). Same port (8765), same route table, same
+# static-file mapping for dashboard-v2/dist/ under /dashboard/ and
+# artifacts/*.json under /artifacts/ -- dashboard-v2's existing
+# src/api/client.ts needs ZERO changes to talk to this server instead of
+# the retired one. `db_manager.X` calls become direct calls to Section 1B's
+# ORM classes/session helpers.
+
+DASHBOARD_DIST_DIR = os.path.join("dashboard-v2", "dist")
+
+
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+
+
+class DashboardRequestHandler(http.server.SimpleHTTPRequestHandler):
+    """Serves dashboard-v2's built static assets under /dashboard/, every
+    artifacts/*.json|csv file as a plain static file (Python's built-in
+    static-file serving, unchanged), and the dynamic /api/* routes below."""
+
+    def log_message(self, format, *args):
+        pass
+
+    def translate_path(self, path):
+        parsed_path = urlparse(path).path
+        if parsed_path in ("/dashboard", "/dashboard/"):
+            return os.path.join(os.getcwd(), DASHBOARD_DIST_DIR, "index.html")
+        if parsed_path.startswith("/dashboard/"):
+            rel = parsed_path[len("/dashboard/"):]
+            candidate = os.path.join(os.getcwd(), DASHBOARD_DIST_DIR, rel)
+            if os.path.isfile(candidate):
+                return candidate
+            # Bare/unknown sub-path under /dashboard/ -- this app has no
+            # client-side routing (tabs are React state, not URL paths), so
+            # falling back to index.html here is the standard, harmless SPA
+            # convention rather than a 404 on a hard reload.
+            return os.path.join(os.getcwd(), DASHBOARD_DIST_DIR, "index.html")
+        return super().translate_path(path)
+
+    def do_GET(self):
+        if self.path == "/api/iterations":
+            self.handle_get_iterations()
+        elif self.path == "/api/get_theme":
+            self.handle_get_theme()
+        elif self.path.startswith("/api/trades"):
+            self.handle_get_trades()
+        else:
+            super().do_GET()
+
+    def do_POST(self):
+        if self.path == "/api/push_gsheet":
+            self.handle_push_gsheet()
+        elif self.path == "/api/save_theme":
+            self.handle_save_theme()
+        else:
+            self.send_error(404, "Endpoint not found")
+
+    def handle_get_trades(self):
+        """GET /api/trades[?min_ob_quality=N] -- live DB-backed route (not a
+        static file): joins Trade to OrderBlock for the quality-criteria
+        booleans dashboard-v2's Stats tab needs."""
+        try:
+            query_params = parse_qs(urlparse(self.path).query)
+            min_ob_quality_str = query_params.get("min_ob_quality", [None])[0]
+            min_ob_quality = None
+            if min_ob_quality_str is not None:
+                try:
+                    min_ob_quality = int(min_ob_quality_str)
+                except ValueError:
+                    pass
+
+            engine = init_db()
+            session = get_session(engine)
+            query = session.query(
+                Trade, OrderBlock.quality, OrderBlock.quality_displacement, OrderBlock.quality_large_bar,
+                OrderBlock.quality_fvg, OrderBlock.quality_liquidity_sweep, OrderBlock.quality_volume_expansion,
+            ).join(OrderBlock, Trade.entry_ob_id == OrderBlock.ob_id)
+            if min_ob_quality is not None:
+                query = query.filter(Trade.min_ob_quality == min_ob_quality)
+            results = query.all()
+
+            trades_data = []
+            for trade, quality, disp, lb, fvg, liq, vol in results:
+                trades_data.append({
+                    "trade_id": trade.trade_id, "side": trade.side, "min_ob_quality": trade.min_ob_quality,
+                    "entry_time": trade.entry_time, "exit_time": trade.exit_time,
+                    "entry_price": trade.entry_price, "exit_price": trade.exit_price,
+                    "stop_loss": trade.stop_loss, "take_profit": trade.take_profit,
+                    "pnl_pct": trade.pnl_pct, "hold_bars": trade.hold_bars, "exit_reason": trade.exit_reason,
+                    "entry_ob_id": trade.entry_ob_id, "tp_ob_id": trade.tp_ob_id,
+                    "quality_score": quality,
+                    "quality_displacement": bool(disp) if disp is not None else False,
+                    "quality_large_bar": bool(lb) if lb is not None else False,
+                    "quality_fvg": bool(fvg) if fvg is not None else False,
+                    "quality_liquidity_sweep": bool(liq) if liq is not None else False,
+                    "quality_volume_expansion": bool(vol) if vol is not None else False,
+                })
+            session.close()
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(trades_data, default=json_safe).encode("utf-8"))
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self.send_error(500, f"Database error: {e}")
+
+    def handle_get_iterations(self):
+        """GET /api/iterations -- synthesizes a single 'Heuristic Base'
+        pseudo-iteration record from the DB's trades, for a dashboard UI
+        panel that predates this project dropping its ML-iteration feature
+        (see CLAUDE.md's db_manager note: the MLIteration table itself was
+        already removed; this route just no longer has real iterations to
+        report, so it fabricates one static baseline entry)."""
+        try:
+            engine = init_db()
+            session = get_session(engine)
+            trades = []
+            try:
+                trades = session.query(Trade).all()
+            except Exception as e:
+                print(f"Warning: failed to query trades table: {e}")
+
+            base_metrics = {}
+            for q in [0, 1, 2, 3]:
+                q_trades = [t for t in trades if t.min_ob_quality == q]
+                count = len(q_trades)
+                pnl = sum(t.pnl_pct for t in q_trades)
+                win_count = sum(1 for t in q_trades if t.pnl_pct > 0)
+                wr = (win_count / count * 100) if count > 0 else 0.0
+                base_metrics[f"q{q}"] = {
+                    "base_trades": count, "base_pnl": pnl, "base_wr": wr,
+                    "tuned_trades": count, "tuned_pnl": pnl, "tuned_wr": wr,
+                }
+
+            base_iter = {
+                "iteration_id": 0, "label": "Heuristic Base (No ML)", "created_at": 1782016399,
+                "model_type": "Heuristic Base",
+                "parameters": {
+                    "sl_ratio_min": MIN_STOP_LOSS_DISTANCE_RATIO, "kdj_j_long_cap": KDJ_J_LONG_CAP,
+                    "kdj_k_long_cap": KDJ_K_LONG_CAP, "kdj_k_short_floor": KDJ_K_SHORT_FLOOR,
+                    "kdj_j_short_cap": KDJ_J_SHORT_CAP, "atr_mult_exit": ATR_MULT_EXIT,
+                    "atr_mult_be": ATR_MULT_BREAKEVEN, "rr_min": MIN_RISK_REWARD_RATIO,
+                    "classifier_threshold": 0.5,
+                },
+                "metrics": base_metrics,
+                "pattern_diff": {
+                    "tuned_parameters": {
+                        "sl_ratio_min": MIN_STOP_LOSS_DISTANCE_RATIO, "kdj_j_long_cap": KDJ_J_LONG_CAP,
+                        "kdj_k_long_cap": KDJ_K_LONG_CAP, "kdj_k_short_floor": KDJ_K_SHORT_FLOOR,
+                        "kdj_j_short_cap": KDJ_J_SHORT_CAP, "atr_mult_exit": ATR_MULT_EXIT,
+                        "atr_mult_be": ATR_MULT_BREAKEVEN, "rr_min": MIN_RISK_REWARD_RATIO,
+                    },
+                    "pnl_improvement_pct": 0.0, "reweighted_failures_count": 0,
+                },
+            }
+            session.close()
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps([base_iter]).encode("utf-8"))
+        except Exception as e:
+            self.send_error(500, f"Database error: {e}")
+
+    def handle_get_theme(self):
+        try:
+            theme_path = "chart_theme.json"
+            if os.path.isfile(theme_path):
+                with open(theme_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            else:
+                data = {
+                    "pageTheme": "light",
+                    "dataColors": {
+                        "candleUp": "#26a69a", "candleDown": "#ef5350", "candleWick": "#475569",
+                        "demand": "#0d9488", "supply": "#ea580c", "macd": "#1d4ed8", "macdSignal": "#f97316",
+                        "macdHist": "#10b981", "kdjK": "#0d9488", "kdjD": "#3b82f6", "kdjJ": "#ec4899",
+                        "atr14": "#8b5cf6", "atr200": "#6b7280",
+                    },
+                }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode("utf-8"))
+        except Exception as e:
+            self.send_error(500, f"Error getting theme: {e}")
+
+    def handle_save_theme(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body.decode("utf-8"))
+            with open("chart_theme.json", "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
+        except Exception as e:
+            self.send_error(500, f"Error saving theme: {e}")
+
+    def handle_push_gsheet(self):
+        try:
+            print("[Dashboard Server] Exporting to Google Sheets...")
+            push_all_gsheet_exports("artifacts")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "Success", "message": "Google Sheets updated."}).encode("utf-8"))
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self.send_error(500, f"Google Sheets Sync failed: {e}")
+
+
+def run_dashboard_server(host=None, port=8765, open_browser=True):
+    """
+    Start the dashboard HTTP server (Section 7) on a background thread and
+    block, printing the URL and opening a browser tab unless suppressed.
+
+    Parameters
+    ----------
+    host : str, optional
+        Defaults to the DASHBOARD_HOST env var, or "127.0.0.1" (loopback-
+        only, so a native run isn't reachable from the LAN). The Dockerfile
+        sets DASHBOARD_HOST=0.0.0.0 -- a container's loopback interface is
+        not what `docker run -p` forwards host traffic to.
+    port : int, default 8765
+    open_browser : bool, default True
+    """
+    if host is None:
+        host = os.environ.get("DASHBOARD_HOST", "127.0.0.1")
+
+    print(f"\n[Dashboard] Starting local web server on http://{host}:{port} ...")
+
+    def serve():
+        with ThreadingHTTPServer((host, port), DashboardRequestHandler) as httpd:
+            httpd.serve_forever()
+
+    server_thread = threading.Thread(target=serve, daemon=True)
+    server_thread.start()
+
+    dashboard_index = os.path.join(DASHBOARD_DIST_DIR, "index.html")
+    if not os.path.isfile(dashboard_index):
+        print(
+            f"\n[ERROR] {dashboard_index} not found -- the dashboard hasn't been built.\n"
+            f"  Run: cd dashboard-v2 && npm run build\n"
+            f"  The API server is still running on http://{host}:{port}/ for debugging, "
+            f"but no browser window will open."
+        )
+    elif not open_browser:
+        print(f"[Dashboard] Server ready at http://{host}:{port}/dashboard/ (browser suppressed)")
+    else:
+        url = f"http://{host}:{port}/dashboard/"
+        print(f"[Dashboard] Opening dashboard in browser: {url}")
+        webbrowser.open(url)
+
+    print("\nPress Ctrl+C to stop the server and exit.")
+    try:
+        while True:
+            threading.Event().wait(1)
+    except KeyboardInterrupt:
+        print("\nExiting.")
+
+
+# ============================================================================
+# SECTION 8: MAIN EXECUTION BLOCK
 # ============================================================================
 
 def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000, seed=42, json_out=None):
@@ -3234,7 +5137,6 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
     print("\n[1/10] Loading candles and computing indicators...")
     df = load_candles()
     df = compute_indicators(df)
-    strategy_engine = load_strategy_engine_module()
 
     print("[2/10] Running OB-gated baseline backtest (min_ob_quality=0)...")
     baseline_sim = simulate_trades(df.copy(), min_ob_quality=0)
@@ -3244,29 +5146,60 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
         f"Baseline trade count changed: expected {LOCKED_BASELINE_TRADE_COUNT}, "
         f"got {baseline_stats['Total Trades']}. This is a correctness finding -- stop and report it."
     )
-    print(f"  N={baseline_stats['Total Trades']}  win_rate={baseline_stats['Win Rate (%)']:.2f}%  "
-          f"total_return={baseline_stats['Total Net Return (%)']:+.2f}%  "
-          f"avg_return={baseline_stats['Avg Return/Trade (%)']:+.4f}%  "
-          f"SD={baseline_trades['pnl_pct'].std():.4f}%")
+    report_stat(
+        "Baseline OB-gated backtest (min_ob_quality=0)",
+        inputs={"min_ob_quality": 0, "n_bars": len(df)},
+        outputs={
+            "total_trades": baseline_stats["Total Trades"],
+            "win_rate_pct": baseline_stats["Win Rate (%)"],
+            "total_net_return_pct": baseline_stats["Total Net Return (%)"],
+            "avg_return_per_trade_pct": baseline_stats["Avg Return/Trade (%)"],
+            "sd_return_pct": baseline_trades["pnl_pct"].std(),
+        },
+    )
     results["baseline"] = baseline_stats
 
     print("[3/10] Running the three-arm ablation study...")
-    results["ablation"] = run_ablation_study(strategy_engine, df, bootstrap_resamples=2000, seed=seed)
+    results["ablation"] = run_ablation_study(df, bootstrap_resamples=2000, seed=seed)
 
     print("[4/10] Running core statistical tests on the baseline...")
-    binomial_result = binomial_test(int((baseline_trades["pnl_pct"] > 0).sum()), len(baseline_trades))
-    print(f"  Binomial p: one-sided={binomial_result['p_one_sided']:.4f}  two-sided={binomial_result['p_two_sided']:.4f}")
+    baseline_wins = int((baseline_trades["pnl_pct"] > 0).sum())
+    binomial_result = binomial_test(baseline_wins, len(baseline_trades))
+    report_stat(
+        "Binomial test (q>=0 baseline win rate vs. 50% null)",
+        inputs={"win_count": baseline_wins, "trade_count": len(baseline_trades), "null_win_probability": 0.5},
+        outputs={"p_one_sided": binomial_result["p_one_sided"], "p_two_sided": binomial_result["p_two_sided"]},
+    )
     criteria_significance = run_criteria_significance_tests(baseline_trades)
     for name, r in criteria_significance.items():
-        print(f"  {name:<14} Fisher p={r['fisher_p']:.4f}  Welch t={r['welch_t']:+.4f}  Welch p={r['welch_p']:.4f}")
+        report_stat(
+            f"Per-criterion significance: {name}",
+            inputs={"criterion": name, "true_n": r["true_n"], "true_wins": r["true_wins"],
+                    "false_n": r["false_n"], "false_wins": r["false_wins"]},
+            outputs={"fisher_p": r["fisher_p"], "welch_t": r["welch_t"], "welch_p": r["welch_p"]},
+        )
     bootstrap_ci = run_bootstrap_ci(baseline_trades, bootstrap_resamples, seed)
-    print(f"  Bootstrap 95% CI on total return: [{bootstrap_ci['total_return_ci_pct'][0]:+.2f}%, "
-          f"{bootstrap_ci['total_return_ci_pct'][1]:+.2f}%]  (B={bootstrap_resamples:,}, seed={seed})")
+    report_stat(
+        "Bootstrap 95% CI on baseline total/avg return",
+        inputs={"n_trades": len(baseline_trades), "bootstrap_resamples": bootstrap_resamples, "seed": seed},
+        outputs={
+            "total_return_ci_low_pct": bootstrap_ci["total_return_ci_pct"][0],
+            "total_return_ci_high_pct": bootstrap_ci["total_return_ci_pct"][1],
+            "avg_return_ci_low_pct": bootstrap_ci["avg_return_ci_pct"][0],
+            "avg_return_ci_high_pct": bootstrap_ci["avg_return_ci_pct"][1],
+        },
+    )
     mde_report = run_mde_power_report(baseline_trades)
     pearson_result = pearson_correlation(baseline_trades["hold_bars"].values, baseline_trades["pnl_pct"].values)
     spearman_result = spearman_correlation(baseline_trades["hold_bars"].values, baseline_trades["pnl_pct"].values)
-    print(f"  hold_bars vs pnl_pct: Pearson r={pearson_result['r']:+.4f} (p={pearson_result['p_value']:.4f})  "
-          f"Spearman rho={spearman_result['rho']:+.4f} (p={spearman_result['p_value']:.4f})")
+    report_stat(
+        "hold_bars vs. pnl_pct correlation (baseline trades)",
+        inputs={"n_trades": len(baseline_trades)},
+        outputs={
+            "pearson_r": pearson_result["r"], "pearson_p_value": pearson_result["p_value"],
+            "spearman_rho": spearman_result["rho"], "spearman_p_value": spearman_result["p_value"],
+        },
+    )
     results["statistical_tests"] = {
         "binomial": binomial_result, "criteria_significance": criteria_significance,
         "bootstrap_ci": bootstrap_ci, "mde_power": mde_report,
@@ -3274,23 +5207,36 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
     }
 
     print("[5/10] Running benchmark vs. buy-and-hold...")
-    results["benchmark_vs_buy_and_hold"] = run_benchmark_vs_buy_and_hold(df, baseline_trades)
+    benchmark_vs_bh = run_benchmark_vs_buy_and_hold(df, baseline_trades)
+    report_stat(
+        "Strategy vs. buy-and-hold benchmark",
+        inputs={"n_trades": len(baseline_trades), "n_bars": len(df)},
+        outputs={
+            **{f"strategy_{k}": v for k, v in benchmark_vs_bh["strategy"].items()},
+            **{f"buy_and_hold_{k}": v for k, v in benchmark_vs_bh["buy_and_hold"].items()},
+            **{f"correlation_{k}": v for k, v in benchmark_vs_bh["correlation"].items()},
+        },
+    )
+    results["benchmark_vs_buy_and_hold"] = benchmark_vs_bh
 
     print("[6/10] Running DCA-blend complementary-sleeve analysis...")
     results["dca_blend"] = run_dca_blend_analysis(df, baseline_trades)
 
     print("[7/10] Running fee/slippage sensitivity scenarios...")
     fee_slippage_scenarios = run_fee_slippage_sensitivity(baseline_trades)
-    for scenario in fee_slippage_scenarios[:3]:
-        print(f"  {scenario['label'][:60]:<60}  total_return={scenario['total_return_pct']:+.2f}%  "
-              f"win_rate={scenario['win_rate_pct']:.2f}%")
+    for scenario in fee_slippage_scenarios:
+        report_stat(
+            f"Fee/slippage scenario: {scenario['label']}",
+            inputs={"n_trades": len(baseline_trades)},
+            outputs={"total_return_pct": scenario["total_return_pct"], "win_rate_pct": scenario["win_rate_pct"]},
+        )
     results["fee_slippage_sensitivity"] = fee_slippage_scenarios
 
     print("[8/10] Running macro-regime breakdown...")
     results["regime_breakdown"] = run_regime_breakdown(df, baseline_trades)
 
     print("[9/10] Running paper/codebase sync check...")
-    sync_check = run_paper_sync_check(strategy_engine, df)
+    sync_check = run_paper_sync_check(df)
     if sync_check["any_mismatch"]:
         print("  >>> MISMATCH found -- a live-recomputed figure disagrees with a locked constant.")
         print("  >>> This is a correctness finding to report, not to silently reconcile.")
@@ -3309,9 +5255,15 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
     print(f"  Formulation-period reconciliation vs. published figures: "
           f"{'MATCH' if reconciliation else ('DIVERGE' if reconciliation is False else 'SKIPPED (no published artifact found)')}")
     benchmark_vs_passive = run_benchmark_vs_passive(df, baseline_trades, formulation_df, formulation_trades)
-    for arm in benchmark_vs_passive["main_window"]["gross"]:
-        print(f"  [main window, gross] {arm['arm']:<24} total_return={arm['total_return_pct']:+.2f}%  "
-              f"final_capital=${arm['final_capital']:,.2f}")
+    for window_key, window_label in (("main_window", "main window"), ("formulation_period_window", "formulation window")):
+        for arm in benchmark_vs_passive[window_key]["gross"]:
+            report_stat(
+                f"Benchmark-vs-passive, GROSS, {window_label}: {arm['arm']}",
+                inputs={"starting_capital": arm["starting_capital"]},
+                outputs={"total_return_pct": arm["total_return_pct"], "final_capital": arm["final_capital"],
+                         "sharpe": arm["sharpe"], "sortino": arm["sortino"],
+                         "max_drawdown_pct": arm["max_drawdown_pct"], "time_in_market_pct": arm["time_in_market_pct"]},
+            )
     results["benchmark_vs_passive"] = benchmark_vs_passive
     results["formulation_window_reconciliation"] = reconciliation
 
@@ -3324,7 +5276,7 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
 
     if include_oos_live:
         print("\n[bonus] Running forward out-of-sample validation (LIVE Binance pull)...")
-        oos_result = run_forward_oos_validation(strategy_engine)
+        oos_result = run_forward_oos_validation()
         print(f"  Integrity check: {'PASS' if oos_result['integrity_check'] else 'FAIL'}  "
               f"Regression check: {'PASS' if oos_result['regression_check'] else 'FAIL'}  "
               f"OOS trades: {len(oos_result['oos_trades'])}")
@@ -3342,12 +5294,65 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
     return results
 
 
+def run_serve_mode(cli_args):
+    """
+    `--serve` entrypoint: the single-file equivalent of what
+    Run_All.py + export_gui_data.py previously did as separate processes.
+    Exports dashboard artifacts + database rows
+    (Section 6), regenerates the paper-sync report and statistical-artifact
+    JSON files, optionally pushes to Google Sheets, then starts the HTTP
+    server (Section 7) dashboard-v2 talks to -- all from this one file, one
+    process.
+    """
+    print("Loading candles and running the dashboard export pipeline...")
+    manifest, threshold_runs, verification_report = export_dashboard_artifacts(
+        symbol=cli_args.symbol, timeframe=cli_args.timeframe, start=cli_args.start, end=cli_args.end,
+        levels=cli_args.levels, default_view_quality=cli_args.default_view_quality,
+        output_dir=cli_args.output_dir, db_url=cli_args.db_url, export_gsheet=cli_args.export_gsheet,
+    )
+    print("\n=== Export Complete ===")
+    print(f"Symbol/Timeframe: {manifest['symbol']} {manifest['timeframe']}")
+    print(f"Candles: {manifest['candle_count']}")
+    print(f"Thresholds: {', '.join(str(x['min_quality']) for x in threshold_runs)}")
+    print(f"Verification: {verification_report['status']}")
+    print(f"Artifacts directory: {cli_args.output_dir}")
+
+    print("\nRegenerating paper/codebase sync report...")
+    try:
+        _, mismatches, _ = generate_paper_sync_report(
+            out_path=os.path.join(cli_args.output_dir, "paper_sync_report.md"))
+        if mismatches:
+            print(f"\n[WARNING] paper_sync_report.md found {len(mismatches)} mismatch(es) "
+                  f"against CLAUDE.md's locked results.")
+    except Exception as e:
+        print(f"\n[WARNING] Skipping paper_sync_report.md: failed to generate ({e}).")
+
+    print("\nRegenerating statistical-artifact JSON files...")
+    try:
+        df = compute_indicators(load_candles())
+        baseline_sim = simulate_trades(df.copy(), min_ob_quality=0)
+        write_statistical_artifacts(df, baseline_sim.attrs["trades_df"], output_dir=cli_args.output_dir)
+    except Exception as e:
+        print(f"\n[WARNING] Skipping statistical-artifact JSON files: {e}")
+
+    if cli_args.no_server:
+        print("\nSkipping local dashboard web server (--no-server was set).")
+        return
+
+    run_dashboard_server(port=8765, open_browser=not cli_args.no_browser)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Run the full consolidated research pipeline: strategy backtest, ablation study, "
-                     "and every statistical test used in the paper.",
+        description="research_analysis.py -- single-file backtest engine, statistics pipeline, "
+                     "database manager, and dashboard HTTP server for the ISEF paper's research codebase.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument("--serve", action="store_true",
+                         help="Export dashboard artifacts + database rows, then start the dashboard HTTP "
+                              "server (what Run_All.py/export_gui_data.py used to do). Without "
+                              "this flag, runs the offline statistics pipeline only (default behavior).")
+    # --- Statistics-pipeline flags (default mode) ---------------------------
     parser.add_argument("--include-oos-live", action="store_true",
                          help="Also run the forward out-of-sample validation, which makes a live Binance API "
                               "call (the one disclosed exception to this file's offline-by-default design). "
@@ -3357,11 +5362,31 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=42, help="RNG seed for all bootstrap resampling (default: 42).")
     parser.add_argument("--json-out", type=str, default=None,
                          help="Optional path to write every section's results as one JSON file.")
+    # --- --serve-mode flags (mirror export_gui_data.py's former CLI) --------
+    parser.add_argument("--symbol", default="BTCUSDT")
+    parser.add_argument("--timeframe", default="4h")
+    parser.add_argument("--start", default="2022-01-01 00:00:00")
+    parser.add_argument("--end", default="2026-01-01 00:00:00")
+    parser.add_argument("--levels", default="0,1,2,3", help="Comma-separated min OB quality levels.")
+    parser.add_argument("--default-view-quality", type=int, default=1)
+    parser.add_argument("--output-dir", default="artifacts")
+    parser.add_argument("--export-gsheet", action="store_true")
+    parser.add_argument("--db-url", default=None, help="SQLAlchemy database URL connection string.")
+    parser.add_argument("--no-server", action="store_true", help="Skip launching the local dashboard web server.")
+    parser.add_argument("--no-browser", action="store_true",
+                         help="Start the server but don't auto-open a browser tab (used by dashboard-v2's "
+                              "`npm run dev`).")
     cli_args = parser.parse_args()
+    cli_args.levels = [int(x.strip()) for x in cli_args.levels.split(",") if x.strip()] or DEFAULT_ARTIFACT_LEVELS
+    if cli_args.default_view_quality not in cli_args.levels:
+        cli_args.default_view_quality = cli_args.levels[0]
 
-    run_full_analysis_pipeline(
-        include_oos_live=cli_args.include_oos_live,
-        bootstrap_resamples=cli_args.bootstrap_n,
-        seed=cli_args.seed,
-        json_out=cli_args.json_out,
-    )
+    if cli_args.serve:
+        run_serve_mode(cli_args)
+    else:
+        run_full_analysis_pipeline(
+            include_oos_live=cli_args.include_oos_live,
+            bootstrap_resamples=cli_args.bootstrap_n,
+            seed=cli_args.seed,
+            json_out=cli_args.json_out,
+        )

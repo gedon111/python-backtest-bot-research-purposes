@@ -1,11 +1,5 @@
 {
   "starting_capital": 10000.0,
-  "fee_model": {
-    "taker_fee_bps_per_side": 5.0,
-    "slippage_bps_per_side": 5.0,
-    "strategy_round_trip_drag_pct": 0.2,
-    "buy_and_hold_style_one_side_drag_pct": 0.1
-  },
   "main_window": {
     "label": "locked baseline window",
     "window_start": "2022-01-01 08:00:00",

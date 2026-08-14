@@ -5,6 +5,52 @@ BTC/USDT strategy (MACD + KDJ + ATR + SMC Order Blocks) on 4h candles,
 Jan 2022 - Jan 2026. This is a scientific artifact, not a production system.
 Correctness and auditability outrank performance, elegance, and convenience.
 
+## Architecture - single-file consolidation (2026-08-13)
+
+`research_analysis.py` (repo root) is now THE canonical entrypoint: backtest
+engine, statistics pipeline, database manager, and the dashboard's live HTTP
+server, all in one file, one process. `python research_analysis.py` runs the
+offline stats pipeline; `python research_analysis.py --serve` exports
+artifacts + database rows and starts the dashboard server on port 8765
+(replaces `Run_All.py`'s former target).
+
+The previously-scattered originals (`src/Binance backtest bot.py`,
+`db_manager.py`, `export_gui_data.py`, all 12 `analysis/*.py` scripts) were
+moved to `legacy_pre_consolidation/` at the repo root - a git-ignored,
+disk-only backup, not part of the running system or tracked in git going
+forward. `src/Binance backtest bot.py` was renamed
+`Binance backtest bot (legacy).py` inside that folder. Two of the retired
+`analysis/*.py` scripts (`oos_validation_analysis.py`'s 8-year backfill
+audit, `export_extended_candles.py`'s live-pull builder) were occasional
+manual audit tools even before this consolidation and were NOT ported into
+`research_analysis.py` - they remain available only in
+`legacy_pre_consolidation/` if that audit is ever rerun by hand.
+`scratch/regression.py` and the other `scratch/*.py` audit scripts were
+repointed to dynamically load `research_analysis.py` instead of the retired
+`src/Binance backtest bot.py`.
+
+This was a refactor, not a strategy change: `compute_indicators()`,
+`compute_smc()`, `simulate_trades()`, and the `kdj_reset_*` exit state
+machine are reproduced unchanged inside `research_analysis.py` (verified
+byte-identical against `scratch/regression.py`'s golden-master fixtures
+before and after the move). See `research_analysis.py`'s own module
+docstring for the full section map.
+
+### `Run_Dashboard.py` removed (2026-08-14)
+
+`Run_Dashboard.py` was deleted - it was a near-duplicate of `Run_All.py`
+(same `ensure_dashboard_built()` logic) whose only real differences were
+passing `--export-gsheet` through and pausing on error for a Windows
+double-click launch. `Run_All.py` is now the single runner script: it
+installs Python deps (`pip install -r requirements.txt`), installs
+dashboard-v2's npm deps (`npm ci`, only when `node_modules` is missing) and
+builds it (only when `dist` is missing/stale), then runs
+`research_analysis.py --serve --levels 0,1,2,3` - a fresh clone needs
+nothing preinstalled beyond Python/pip and Node/npm themselves. Google
+Sheets export has no dedicated runner script anymore; run
+`python research_analysis.py --serve --export-gsheet` directly for that
+(as already documented in README.md's flags table).
+
 ## Locked results - must not change
 
 These numbers appear in the paper. Any code change that alters them is a bug in
@@ -30,7 +76,8 @@ the change, not an improvement:
 - Dataset: artifacts/candles.csv, 8,767 bars (1,461 days incl. 2024 leap day
   x 6 bars/day, plus one boundary-inclusive endpoint bar). NOT 8,760 - the
   paper's original figure was arithmetic, since corrected. Do not trim bars.
-- Benchmark-vs-passive (analysis/benchmark_vs_passive.py, $10,000 notional
+- Benchmark-vs-passive (research_analysis.py's run_benchmark_vs_passive(),
+  Section 5B, originally analysis/benchmark_vs_passive.py, $10,000 notional
   starting capital, gross unless stated): 2022-2026 window - OB-gated
   strategy +30.31% -> $13,417.77 (Sharpe 1.114, Sortino 2.727, MaxDD -6.46%,
   2.63% time-in-market); Weekly DCA into BTC +123.13% -> $22,312.94 (Sharpe
@@ -49,20 +96,26 @@ scratch/regression.py is the golden master; fixtures in scratch/fixtures/.
 Run it after EVERY change. Any diff = revert the change.
 It aligns trades by entry_idx and names the first divergent trade.
 --generate regenerates fixtures. Never run it without asking first.
+As of the single-file consolidation it dynamically loads `research_analysis.py`
+(repo root), not the retired `src/Binance backtest bot.py`.
 
 ## Google Sheets pipeline
 
 Current, wired-in push (both `--export-gsheet` CLI flag and the dashboard's
-push-to-gsheet button call all three of these, via `export_gui_data.py`):
-`push_candles_to_gsheet` (2 tabs, ALL 26 sim-dataframe columns per bar, not a
-curated subset - see `_format_df_for_export_full` in
-`src/Binance backtest bot.py`), `push_trades_and_results_to_gsheet` (4 tabs,
-full 39-column trade schema including numeric OB-criteria diagnostics
-alongside the booleans, cross-checked 260/260 against the locked booleans -
-see `analysis/export_trades_and_results.py`), `push_benchmark_vs_passive_to_gsheet`
-(2 tabs, gross + fee-adjusted blocks). The OLD `push_all_thresholds_to_gsheet`
-(per-quality-threshold, per-bar "Quality 0".."Quality 3" sheets) is left
-defined in `src/Binance backtest bot.py` but is no longer called by default -
+push-to-gsheet button call `push_all_gsheet_exports()` in
+`research_analysis.py`, Section 6): `push_candles_to_gsheet` (2 tabs, ALL
+26 sim-dataframe columns per bar, not a curated subset - see
+`_format_df_for_export_full`, Section 3B), `push_trades_and_results_to_gsheet`
+(4 tabs, full 40-column trade schema including numeric OB-criteria
+diagnostics alongside the booleans, plus `kdj_exit_window` - the frozen-at-
+entry KDJ-reset period `w` from `kdj_reset_init()`, added 2026-08-14 so it's
+visible per-trade instead of only derivable from entry_idx/entry_ob_bar by
+hand), `push_benchmark_vs_passive_to_gsheet`
+(2 tabs, gross + fee-adjusted blocks) - all three computed in-process now
+(no more subprocess + JSON round-trip through `analysis/*.py`, which is
+retired). The OLD `push_all_thresholds_to_gsheet` (per-quality-threshold,
+per-bar "Quality 0".."Quality 3" sheets) is left defined in
+`research_analysis.py` (Section 3B) but is no longer called by default -
 its sheets are actively deleted from the live workbook on every push. Do not
 re-wire it back in without asking; it was deliberately superseded, not
 deprecated by accident.

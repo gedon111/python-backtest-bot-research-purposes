@@ -1,510 +1,608 @@
-Binance Backtest Bot (Compliance Version)
+# Binance Backtest Bot (Compliance Version)
 
-This project is a Python backtest and reporting bot that pulls BTC/USDT market data, computes indicators, simulates SMC trades, and hosts an interactive visual dashboard.
+A Python research toolkit that backtests a rule-based BTC/USDT trading
+strategy (MACD + KDJ + ATR + Smart Money Concepts order blocks) on 4-hour
+candles, then serves the results through a local interactive dashboard. It
+also includes a full statistical-significance and robustness suite
+(binomial/Fisher/Welch tests, bootstrap confidence intervals, correlation
+analysis, power/MDE analysis, fee/slippage sensitivity, regime breakdown,
+out-of-sample validation, and benchmark-vs-passive comparisons).
+
+**This is a research/reporting artifact for an ISEF science-fair paper, not
+a live-trading system.** It simulates trades against historical data and
+reports the results; it never places, or is designed to place, real orders.
+Correctness and auditability of the backtest outrank performance or
+convenience — see `CLAUDE.md` for the project's locked results, disclosed
+bugs, and hard rules, and `CHANGELOG.md` for the full dated history of
+corrections and audit findings.
 
 ---
 
-## 🚀 Quick Start: How to Run the Dashboard
+## Contents
 
-The easiest way to run the entire project is using the automated dashboard launcher. This will run the backtests, compile the trade data, start a local server, and open the visual interface in your browser.
+- [Requirements](#requirements)
+- [Project layout](#project-layout)
+- [Running without Docker](#running-without-docker)
+- [Running with Docker](#running-with-docker)
+- [Migrating to a new machine](#migrating-to-a-new-machine)
+- [Verifying the backtest engine is untouched](#verifying-the-backtest-engine-is-untouched)
+- [Data pipeline overview](#data-pipeline-overview)
+- [Strategy logic (detailed)](#strategy-logic-detailed)
+- [Statistical analyses (part of `research_analysis.py`)](#statistical-analyses-part-of-research_analysispy)
+- [`research_analysis.py` — the single entrypoint](#research_analysispy--the-single-entrypoint)
+- [Security and credentials](#security-and-credentials)
+- [Known limitations / future work](#known-limitations--future-work)
 
-### 1. Install Dependencies
-```bash
-pip install -r requirements.txt
+---
+
+## Requirements
+
+### To run without Docker
+
+| Requirement | Version tested against this repo | Needed for |
+|---|---|---|
+| Python | **3.11 or newer** (this repo is developed and tested on 3.14.3) | Everything — backtest engine, analysis scripts, dashboard backend |
+| pip | any recent version | Installing `requirements.txt` |
+| Node.js | **20 or newer** (tested on 24.14.0) | Building `dashboard-v2` (`npm run build`, invoked automatically) or running its dev server |
+| npm | ships with Node.js (tested on 11.9.0) | Same as above |
+| OS | Windows, macOS, or Linux | No OS-specific code paths; tested on Windows 11 |
+
+All Python dependencies are pinned in `requirements.txt` (`pandas 3.0.0`,
+`numpy 2.4.2`, `scipy 1.18.0`, `python-binance 1.0.34`, `oauth2client
+4.1.3`, `gspread 6.2.1`, `gspread-formatting 1.2.1`, `SQLAlchemy 2.0.50`).
+This is the single source of truth — the Docker build installs from the
+same file, so the two paths cannot drift apart. **Nothing needs to be
+installed beyond `requirements.txt` to view the dashboard or reproduce the
+locked backtest results, and no API keys are ever required** — the repo
+ships a committed candle cache (`artifacts/candles.csv`) and SQLite
+database (`backtest_results.db`) that every run falls back to if it can't
+reach Binance (see [Running without Docker](#running-without-docker) for
+exactly when that fallback triggers).
+
+### To run with Docker
+
+| Requirement | Notes |
+|---|---|
+| Docker | Any version supporting multi-stage builds (tested on Docker 29.4.2 / Docker Desktop) |
+
+Docker builds everything (Python deps + the `dashboard-v2` frontend) inside
+the image — no local Python or Node.js install needed on the host at all.
+
+### Optional (only if you need Google Sheets export)
+
+- A Google Cloud service-account JSON key + a target Google Sheet (for
+  `GOOGLE_SERVICE_KEY_PATH` / `GOOGLE_SHEET_ID`) — only needed to push
+  results to Google Sheets (`--export-gsheet`).
+- `BINANCE_API_KEY` / `BINANCE_API_SECRET` are read from the environment
+  and passed to the Binance client, but the pipeline only ever calls
+  `get_klines` (a public, unauthenticated endpoint) — candle data has
+  worked with no keys set at all in every test run, including inside a
+  freshly built Docker container with no credentials mounted. Set them
+  only if you have a specific reason to (e.g. wanting requests attributed
+  to your own account for Binance's rate-limit accounting).
+
+---
+
+## Project layout
+
 ```
-`requirements.txt` is the single source of truth for Python dependencies --
-the `Dockerfile` installs from the same file, so both paths stay in sync.
-
-### 2. Run the Dashboard Launcher
-Simply run the runner script:
-```bash
-python Run_Dashboard.py
+.
+├── research_analysis.py          # THE single-file entrypoint: backtest
+│                                  # engine (indicators, SMC/order-block
+│                                  # detection, simulate_trades()), every
+│                                  # statistical test, the SQLAlchemy
+│                                  # database manager, Google Sheets export,
+│                                  # and the dashboard's live HTTP server.
+│                                  # `python research_analysis.py` runs the
+│                                  # offline stats pipeline; `--serve` exports
+│                                  # artifacts/DB and starts the dashboard
+│                                  # server (see below).
+├── dashboard-v2/                 # React + Vite + Lightweight Charts
+│                                  # frontend (dark, terminal-style UI)
+├── Run_All.py                    # THE entry point: installs Python deps
+│                                  # (pip) and dashboard-v2's npm deps/build
+│                                  # if needed, then runs the pipeline and
+│                                  # serves the dashboard. This is what
+│                                  # Docker runs. No Google Sheets export
+│                                  # (run research_analysis.py directly for
+│                                  # that - see below).
+├── artifacts/                    # Committed, regeneratable pipeline output
+│                                  # (candles.csv, per-quality-level trade
+│                                  # logs, JSON for the dashboard/analysis)
+├── backtest_results.db           # Committed SQLite export of the same data
+├── legacy_pre_consolidation/     # Git-ignored, disk-only backup of the
+│                                  # pre-consolidation files this repo used
+│                                  # to run from (src/Binance backtest bot.py,
+│                                  # db_manager.py, export_gui_data.py,
+│                                  # analysis/*.py) — not part of the running
+│                                  # system, kept only as a reference copy.
+├── scratch/                      # Git-ignored, one-off audit/investigation
+│                                  # scripts (not part of the shipped
+│                                  # pipeline; see CODEBASE_MAP.md)
+├── docs/                         # Paper drafts and reference documents
+├── SERVICE KEY/                  # (git-ignored) Google service-account
+│                                  # JSON goes here — never committed
+├── requirements.txt               # Pinned Python deps (source of truth)
+├── Dockerfile / .dockerignore    # Container build
+├── CLAUDE.md                     # Locked results, disclosed bugs, hard
+│                                  # project rules (for both humans and AI
+│                                  # assistants working in this repo)
+└── CHANGELOG.md                  # Full dated history of README/doc
+                                    # corrections and audit findings
 ```
-* **Offline Mode (Default)**: The script will load from the local candles cache, build the dashboard if needed, and immediately launch the web UI at `http://127.0.0.1:8765/dashboard/`.
-* **Online Mode (Binance API & Google Sheets Export)**: To pull live data and upload results to Google Sheets, set the following environment variables first (see `.env.example` for the full list -- this project does not auto-load a `.env` file, so set these in your shell/session):
+
+---
+
+## Running without Docker
+
+### 1. Clone and enter the repo
+
+```bash
+git clone <this-repo-url>
+cd "Binance Backtest Bot Package (compliance ver)"
+```
+
+### 2. (Recommended) Create a virtual environment
+
+```bash
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# macOS/Linux
+source .venv/bin/activate
+```
+
+### 3. Run the launcher
+
+```bash
+python Run_All.py
+```
+
+This is a fresh-clone-to-running-dashboard one-liner: it installs Python
+dependencies (`pip install -r requirements.txt`), installs and builds
+`dashboard-v2` if its npm deps/build output are missing or stale, runs the
+full pipeline (fetch/load candles → compute indicators → detect order
+blocks → simulate trades at quality levels `0,1,2,3` → write `artifacts/*`
+and `backtest_results.db`), starts a local server, and opens your browser to
+`http://127.0.0.1:8765/dashboard/`. (If you'd rather manage the virtual
+environment/npm install yourself first, `pip install -r requirements.txt`
+and `cd dashboard-v2 && npm ci` remain valid — `Run_All.py` just skips
+whichever of those steps is already satisfied.)
+
+- **Candle fetch is network-first, cache-fallback — not offline by
+  default.** Every run first tries a live Binance `get_klines` pull over
+  the requested date range (this works with no API keys at all, since
+  candle data is a public endpoint — `python-binance`'s `Client(None,
+  None)` still succeeds). **Only if that live call raises an exception**
+  (no network, blocked egress, Binance unreachable) does it fall back to
+  the committed `artifacts/candles.csv` cache. On a normal machine with
+  internet access, this means every run re-pulls live data and can take a
+  couple of minutes and print little output in between (see
+  `PYTHONUNBUFFERED=1` in the Docker section for why `docker logs` can look
+  quiet during this). No API keys are required either way. Either data
+  source reproduces the paper's locked results — Binance does not revise
+  historical candles (verified; see `CHANGELOG.md`'s `oos_validation_analysis.py`
+  entries) — so a live pull over the same date range and the committed
+  cache agree exactly; a machine with no network access simply falls back
+  to the cache automatically instead of raising an error.
+- **Google Sheets export**: not attempted by `Run_All.py` at all — run
+  `python research_analysis.py --serve --export-gsheet` directly instead
+  (see the flags table below), gated behind the credentials below. Set the
+  following environment variables *before* running (this project does
+  **not** auto-load a `.env` file — copy `.env.example` to `.env` for your
+  own reference only, then export the real values into your shell):
+
   ```bash
-  # Optional: Binance Keys
+  # Windows (cmd)
   set BINANCE_API_KEY=your_key
   set BINANCE_API_SECRET=your_secret
-
-  # Optional: Google Sheets Credentials
-  set GOOGLE_SERVICE_KEY_PATH=path/to/service-key.json
+  set GOOGLE_SERVICE_KEY_PATH=SERVICE KEY\your-service-account-key.json
   set GOOGLE_SHEET_ID=your_sheet_id
+
+  # Windows (PowerShell)
+  $env:BINANCE_API_KEY = "your_key"
+  $env:BINANCE_API_SECRET = "your_secret"
+  $env:GOOGLE_SERVICE_KEY_PATH = "SERVICE KEY\your-service-account-key.json"
+  $env:GOOGLE_SHEET_ID = "your_sheet_id"
+
+  # macOS/Linux
+  export BINANCE_API_KEY=your_key
+  export BINANCE_API_SECRET=your_secret
+  export GOOGLE_SERVICE_KEY_PATH="SERVICE KEY/your-service-account-key.json"
+  export GOOGLE_SHEET_ID=your_sheet_id
   ```
 
-### 2b. Frontend Dev Mode (Hot Reload)
-For active frontend work on `dashboard-v2/`, run its Vite dev server instead
-of (or alongside) `Run_Dashboard.py`:
+  If any of these are unset, the backtest pipeline is unaffected (candle
+  fetch and simulation need none of them); a Google Sheets export attempt
+  without real credentials fails with a clear `ValueError` rather than
+  silently doing nothing.
+
+### Alternative: run the pipeline script directly
+
+```bash
+python research_analysis.py --serve --levels 0,1,2,3
+```
+
+Useful flags (`python research_analysis.py --help` for the full list):
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--symbol` | `BTCUSDT` | Trading pair |
+| `--timeframe` | `4h` | Candle interval |
+| `--start` / `--end` | `2022-01-01 00:00:00` / `2026-01-01 00:00:00` | Backtest date range |
+| `--levels` | `0,1,2,3` | Comma-separated min order-block quality thresholds to sweep |
+| `--default-view-quality` | `1` | Which quality level the dashboard opens to by default |
+| `--output-dir` | `artifacts` | Where JSON/CSV output is written |
+| `--export-gsheet` | off | Attempt a Google Sheets export (needs the env vars above) |
+| `--db-url` | `sqlite:///backtest_results.db` | Override the SQLAlchemy database URL |
+| `--no-server` | off | Run the pipeline only; skip starting the dashboard web server |
+| `--no-browser` | off | Start the server but don't auto-open a browser tab |
+
+### Frontend dev mode (hot reload)
+
+For active frontend work on `dashboard-v2/`, run its Vite dev server
+instead of (or alongside) `Run_All.py`:
+
 ```bash
 cd dashboard-v2
 npm install
 npm run dev
 ```
+
 `npm run dev` automatically starts the Python backend
-(`export_gui_data.py --no-browser`) if one isn't already running on port
-8765, waits for it to become ready, then starts Vite at `http://localhost:5173`
-with hot reload -- no separate terminal/manual backend step needed. If you're
-already running a backend yourself (e.g. `Run_Dashboard.py` in another
-terminal, or iterating on backend code and don't want it restarted), use
-`npm run dev:vite-only` instead, which just runs Vite against whatever
-backend is already up.
+(`research_analysis.py --serve --no-browser`) if one isn't already running
+on port 8765, waits for it to become ready, then starts Vite at
+`http://localhost:5173` with hot reload — no separate terminal/manual
+backend step needed. If you already have a backend running yourself (e.g.
+`Run_All.py` in another terminal, or you're iterating on backend code
+and don't want it restarted), use `npm run dev:vite-only` instead, which
+just runs Vite against whatever backend is already up.
 
-### 3. Run with Docker (Alternative Setup)
-Alternatively, you can build and run the project inside a Docker container. The included `Dockerfile` installs all dependencies (including NumPy, Pandas, SciPy, and SQLAlchemy) and launches the pipeline:
+Other useful `dashboard-v2` scripts: `npm run build` (production build to
+`dist/`, what `Run_All.py` invokes automatically when needed),
+`npm run typecheck`, `npm run lint`, `npm run preview`.
+
+---
+
+## Running with Docker
+
+The `Dockerfile` is a two-stage build: a `node:24-slim` stage compiles
+`dashboard-v2` to static assets, then a `python:3.14-slim` stage installs
+Python dependencies from `requirements.txt` and copies in the pre-built
+frontend. The final image needs no Node.js/npm at runtime.
+
+### 1. Build the image
+
 ```bash
-# Build the Docker image
 docker build -t binance-backtest-bot .
+```
 
-# Run the container (exposes the dashboard on port 8765)
+### 2. Run the container (no keys needed)
+
+```bash
 docker run -p 8765:8765 binance-backtest-bot
 ```
-This automatically runs the backtest simulations, saves the trade results locally to `backtest_results.db`, and launches the interactive dashboard server at `http://localhost:8765/dashboard/`.
 
-### 4. Migrating to a New Machine
+This runs the same pipeline as `python Run_All.py` inside the container and
+serves the dashboard at **`http://localhost:8765/dashboard/`**. The
+container binds the server to `0.0.0.0` internally
+(`DASHBOARD_HOST=0.0.0.0`, set in the `Dockerfile`) so `docker run -p`'s
+port forwarding reaches it — you do not need to set this yourself.
+No credentials are required to reach this point.
+
+Verified end-to-end against this exact Dockerfile: with the container's
+default network access, the pipeline pulls fresh candles live from Binance
+(no keys needed — see the Requirements section above) before serving the
+dashboard, which takes roughly 2-3 minutes and prints little in between
+until each pipeline step completes (`docker logs -f <container>` to watch
+it live — `PYTHONUNBUFFERED=1` in the `Dockerfile` keeps that output
+flowing as it happens rather than only at the end). If the container has
+no network access, the pipeline falls back to the committed
+`artifacts/candles.csv` cache automatically and finishes in seconds.
+
+### 3. Run with live Binance/Google Sheets credentials (optional)
+
+Credentials are **never baked into the image** — `.dockerignore` excludes
+`SERVICE KEY/` and `.env*` from the build context on purpose, so a
+`docker build` run by someone else can never accidentally ship your key.
+Supply them at `docker run` time instead:
+
+```bash
+docker run -p 8765:8765 \
+  -e BINANCE_API_KEY=your_key \
+  -e BINANCE_API_SECRET=your_secret \
+  -e GOOGLE_SHEET_ID=your_sheet_id \
+  -e GOOGLE_SERVICE_KEY_PATH="SERVICE KEY/your-service-account-key.json" \
+  -v "$(pwd)/SERVICE KEY:/app/SERVICE KEY:ro" \
+  binance-backtest-bot python research_analysis.py --serve --levels 0,1,2,3 --export-gsheet
+```
+
+The `-v` mount makes your local `SERVICE KEY/` folder available inside the
+container read-only, without it ever being part of an image layer. Drop
+the `-v` line and the three Google-related `-e` flags entirely if you only
+need a live Binance pull without Google Sheets export.
+
+### 4. Persist results outside the container (optional)
+
+By default, `artifacts/` and `backtest_results.db` written inside the
+container are lost when it's removed. To persist them on the host:
+
+```bash
+docker run -p 8765:8765 \
+  -v "$(pwd)/artifacts:/app/artifacts" \
+  -v "$(pwd)/backtest_results.db:/app/backtest_results.db" \
+  binance-backtest-bot
+```
+
+### Rebuilding after code changes
+
+`docker build` re-runs whenever you change source files — Docker's layer
+cache means only the `RUN npm ci` / `RUN pip install` layers are skipped
+when `package-lock.json` / `requirements.txt` haven't changed, so most
+rebuilds are fast:
+
+```bash
+docker build -t binance-backtest-bot . && docker run -p 8765:8765 binance-backtest-bot
+```
+
+---
+
+## Migrating to a new machine
+
 Everything needed to run this project is tracked in this git repository
 (source, `artifacts/candles.csv` cache, `backtest_results.db`, dashboard
-source) except two things that are deliberately git-ignored -- see
-Security and Credentials below:
+source) except two things that are deliberately git-ignored:
 
 1. `git clone` the repo on the new machine.
-2. `pip install -r requirements.txt`, or use Docker (see above) -- either
-   path installs from the same pinned `requirements.txt`.
+2. Run `python Run_All.py` (or the Docker equivalent), which installs
+   Python deps and dashboard-v2's npm deps/build itself — or install them
+   yourself first (`pip install -r requirements.txt`; `cd dashboard-v2 &&
+   npm ci`) if you'd rather. No keys are required to view the dashboard or
+   reproduce the locked backtest results; a machine with no network access
+   falls back to the committed `artifacts/candles.csv` cache automatically.
 3. **Manually** copy your Google service-account key JSON into a local
    `SERVICE KEY/` folder at the repo root (e.g. via a password manager or
-   encrypted transfer). Never commit it or send it through git -- `SERVICE
-   KEY/` is git-ignored on purpose.
-4. Only if you need live Binance pulls or Google Sheets export: set the 4
+   encrypted transfer). Never commit it or send it through git — `SERVICE
+   KEY/` is git-ignored (and Docker-ignored) on purpose.
+4. Only if you need Google Sheets export: set the 2 Google-related
    environment variables listed in `.env.example` in your shell/session
-   (this project does not auto-load a `.env` file).
-5. Run `python Run_Dashboard.py`. Offline mode works immediately from the
-   committed `artifacts/candles.csv` cache -- no keys required to view the
-   dashboard or reproduce the locked backtest results.
+   (this project does not auto-load a `.env` file), then run
+   `python research_analysis.py --serve --export-gsheet` directly (no
+   runner script does this). The 2 Binance variables are optional in every
+   case — candle data is fetched from a public endpoint that needs no key.
 
 ---
 
-## Interactive Backtest Dashboard
+## Verifying the backtest engine is untouched
 
-The project includes a high-performance web dashboard built with Lightweight Charts for visual verification of backtest results.
+`scratch/regression.py` is this repo's golden-master regression test. It
+re-runs the strategy engine against the committed fixtures in
+`scratch/fixtures/` and reports a bar-by-bar, trade-by-trade diff — any
+difference means a change altered the backtest's behavior.
 
-Key Features:
-- **Unified Crosshair Sync**: A single, synchronized vertical crosshair across all panes (Main, MACD, KDJ, ATR) for precise multi-indicator alignment.
-- **Dynamic Trade Labels**: Automatic rendering of entries and exits directly on the chart, with tooltips showing specific exit reasons (e.g., "KDJ RESET EXIT", "ATR MOVE EXIT").
-- **Persistent Layout**: Draggable pane resizers with state persistence via `localStorage`, ensuring your custom layout remains between sessions.
-- **Technical Analysis Overlays**: Real-time rendering of SMC Order Blocks, Fair Value Gaps, and structural pivots.
-- **Indicator Suite**: Fully synchronized sub-panes for MACD (Histogram/Signal), KDJ (K/D/J lines), and ATR (Current/Baseline).
+```bash
+python scratch/regression.py
+```
 
-The strategy in this file is the v9 variant documented in the source comments, with two key adjustments from prior versions:
-- Minimum SL distance filter: reject entries with risk less than 1.5% of entry.
-- KDJ reset exits are blocked for the first 3 bars after entry.
-
----
-
-File Scope
-
-Main script:
-- `src/Binance backtest bot.py`
-
-Expected local structure:
-- `SERVICE KEY/` (for Google service account json file)
-- optional local `.env` file (if your runtime loads env vars from it)
+A clean run prints a `PASS` confirming the fresh run matches the golden
+fixture exactly across all bars, indicators, and the 27-trade
+`min_ob_quality=0` baseline. Run this after any change touching
+`research_analysis.py`'s strategy engine (Sections 2-3), before trusting
+new results. **Never run it with `--generate`** (which regenerates the
+fixtures themselves) without explicit sign-off — that flag defines what
+"correct" means for every future run.
 
 ---
 
-Security and Credentials
+## Data pipeline overview
+
+1. **Fetch candles** (`get_candles`)
+   - Source: Binance `get_klines`.
+   - Default symbol/interval in main run: `BTCUSDT`, `4H`.
+   - Converts numeric columns to float; converts open time to datetime and
+     applies a `+8h` offset.
+
+2. **Compute indicators** (`compute_indicators`)
+   - MACD: `12,26,9`.
+   - KDJ: period default `9`, smoothing alpha `1/3`.
+   - ATR: period `14`. ATR_200: long volatility baseline.
+
+3. **Build market structure/order blocks** (`compute_smc`)
+   - Two structure passes: internal (`INTERNAL_SIZE=5`) and swing
+     (`SWING_SIZE=50`).
+   - Detects pivots, BOS/CHoCH crossover events, and creates order blocks
+     (type `DEMAND`/`SUPPLY`, top/bottom, creation/OB bar indexes,
+     structure metadata, 5 independent quality sub-signals plus an
+     aggregate 0-5 quality score, and a mitigation-invalidation bar).
+
+4. **Simulate trades** (`simulate_trades`)
+   - Runs bar-by-bar with no forward-looking data.
+   - Uses active, unmitigated order blocks under an age constraint
+     (`MAX_OB_AGE=500`).
+   - Supports order-block quality filtering via `min_ob_quality`.
+
+5. **Export** (`research_analysis.py`'s `export_dashboard_artifacts()`, `--serve` mode)
+   - Runs the quality sweep for the requested levels (default `0,1,2,3`).
+   - Writes `artifacts/*.json`/`*.csv` for the dashboard and
+     `backtest_results.db` (SQLite, via the database-manager section of
+     `research_analysis.py`).
+   - Optionally pushes results to Google Sheets (`--export-gsheet`).
+
+---
+
+## Strategy logic (detailed)
+
+The strategy is the v9 variant documented in the source comments, with two
+key adjustments from prior versions: a minimum stop-loss distance filter
+(reject entries with risk less than 1.5% of entry), and KDJ reset exits
+blocked for the first 3 bars after entry.
+
+### SMC and order-block quality
+
+Each order block can score up to 5 independent quality points:
+displacement confirmation, large-bar behavior, fair value gap (3-candle
+definition), liquidity sweep signal, and volume expansion/impulse body.
+Entry order blocks are filtered by `min_ob_quality` (default `1`) unless a
+quality-sweep level overrides it.
+
+### Entry model
+
+The simulation starts from `SWING_SIZE + 5` bars in, so indicator/structure
+context is established before the first possible entry.
+
+**LONG entry (all required):**
+- Price interaction with an active demand zone.
+- MACD histogram negative but rising (`hist < 0` and `hist > p_hist`), and
+  risen for at least 2 bars (`p_hist > pp_hist`).
+- KDJ: `K < 50`, `K > K_prev`, `J < 60`.
+- K-acceleration window: `1 <= k_accel <= 6`.
+- ATR regime filter: reject if `0.8 <= ATR/ATR_200 <= 1.0`.
+- Stop-loss validity: `risk > 0` and `risk / close >= 0.015`.
+- TP: structural TP from the nearest valid opposite order block when
+  available, else `entry + 2R`; reject if reward/risk < 1.5.
+
+**SHORT entry (all required):**
+- Price interaction with an active supply zone.
+- MACD histogram positive but falling (`hist > 0` and `hist < p_hist`), and
+  fallen for at least 2 bars (`p_hist < pp_hist`).
+- KDJ: `K > 50`, `J > K > D`, plus `K >= 70`, `J <= 100`.
+- K-acceleration window: `1 <= k_accel <= 6`.
+- ATR regime filter: reject if `0.8 <= ATR/ATR_200 <= 1.0`.
+- Stop-loss validity: `risk > 0` and `risk / close >= 0.015`.
+- TP: structural TP from the nearest valid opposite order block when
+  available, else `entry - 2R`; reject if reward/risk < 1.5.
+
+### Position management and exits
+
+While in position, the engine records running PnL every bar and tracks the
+peak PnL since entry. Exit conditions, evaluated at bar-close resolution:
+- **Trailing exit**: once peak PnL reaches at least 1.5%, exit on a 50%
+  retrace from that peak.
+- **KDJ reset exit**: a dynamically updated KDJ state machine seeded from
+  the static KDJ value at the entry bar, recursed with a period equal to
+  `entry_idx - triggering_OB_bar` (frozen for that trade's life). Gated to
+  fire no earlier than 3 bars after entry.
+- **ATR move exit**: closes at approximately `1.8 * ATR` favorable move.
+- **Breakeven stop**: once price reaches `2 * ATR` favorable move, the stop
+  loss moves to breakeven.
+- **Hard exits**: stop loss hit, or take profit hit.
+
+Each trade record includes side, entry/exit index and price, PnL percent,
+entry order-block metadata, whether the TP came from a structural order
+block, and hold-bar count. Aggregate stats (Total Trades, Total Net Return
+%, Avg Return/Trade %, Win Rate %) are attached to the resulting
+DataFrame's `.attrs`.
+
+> **Note on two separate KDJ systems**: entry gating always reads the
+> static, full-history KDJ(9,3,3) column. Only the post-entry exit signal
+> uses the dynamic, per-trade state machine described above. These are
+> deliberately not unified — see `CLAUDE.md`'s "KDJ architecture" section.
+
+---
+
+## Statistical analyses (part of `research_analysis.py`)
+
+Every analysis below (formerly a separate script under `analysis/`) is now
+a function inside `research_analysis.py`, run automatically as one step of
+`python research_analysis.py`'s full offline pipeline (Section 5B — see the
+file's own module docstring for the section map). They consume the existing
+backtest output (`artifacts/candles.csv`, the strategy's own trade log via
+`simulate_trades()`), never modify `simulate_trades()` itself, and never
+change a locked/reported headline number — each is an additive lens on the
+same 27-trade `min_ob_quality=0` baseline. Pass `--json-out PATH` to
+`research_analysis.py` to write every section's results as one JSON file.
+
+| Function | What it does |
+|---|---|
+| `run_fee_slippage_sensitivity()` | Applies Binance's confirmed USDT-M Futures taker fee (0.05%/side) plus a labeled conservative slippage estimate, reruns binomial/Fisher/Welch tests on the fee-adjusted PnL. |
+| `run_bootstrap_ci()` / `run_mde_power_report()` | Nonparametric percentile bootstrap (default B=10,000) for a 95% CI on total/average return; minimum-detectable-effect (MDE)/power calculation per order-block quality criterion. |
+| `run_benchmark_vs_buy_and_hold()` / `run_dca_blend_analysis()` | Strategy vs. buy-and-hold equity curve, Sharpe/Sortino/max drawdown, Pearson correlation of per-trade return vs. BTC's return over the same window, plus a DCA "complementary sleeve" blend. |
+| `run_benchmark_vs_passive()` | Dollar-denominated head-to-head: OB-gated strategy vs. weekly DCA vs. lump-sum buy-and-hold, both the locked 2022-2026 window and the 2018-2022 formulation-period window, gross and fee-adjusted. |
+| `run_regime_breakdown()` | Tags each baseline trade by macro regime under two independent methods (calendar split, and price-drawdown-from-ATH), reports win rate/return contribution per regime. |
+| `run_forward_oos_validation()` | **Makes live Binance API calls** (the one disclosed exception to the offline-only rule) — gated behind `--include-oos-live`, off by default. Forward out-of-sample test against data postdating every strategy commit. |
+| `run_paper_sync_check()` / `generate_paper_sync_report()` | Recomputes every checkable figure fresh and diffs against `CLAUDE.md`'s locked numbers; the latter also regenerates `artifacts/paper_sync_report.md` (part of `--serve` mode). |
+| `build_trades_and_results_table()` | Full trade/results table builder, including numeric order-block-criteria diagnostics. |
+
+See `CLAUDE.md` for the exact locked figures each is checked against.
+
+---
+
+## `research_analysis.py` — the single entrypoint
+
+`research_analysis.py` is THE canonical, single-file entrypoint for this
+project: the strategy/backtest engine, the database manager, every
+statistical test and downstream analysis above, the Google Sheets export,
+and the dashboard's live HTTP server, all in one file, one process — not a
+reference copy alongside separately-maintained originals. The previously
+scattered files it replaces (`src/Binance backtest bot.py`, `db_manager.py`,
+`export_gui_data.py`, `analysis/*.py`) were moved to the git-ignored
+`legacy_pre_consolidation/` folder as a disk-only backup; nothing runs from
+there anymore.
+
+```bash
+python research_analysis.py                       # full offline stats pipeline
+python research_analysis.py --json-out out.json    # also write JSON output
+python research_analysis.py --include-oos-live      # also run the one
+                                                      # network-touching
+                                                      # OOS section (off by
+                                                      # default)
+python research_analysis.py --serve                 # export artifacts/DB,
+                                                      # push to Google Sheets
+                                                      # (--export-gsheet),
+                                                      # and start the
+                                                      # dashboard server
+```
+
+---
+
+## Security and credentials
 
 The bot is designed to be upload-safe when used correctly:
 
-- **Binance keys**
-  - Read from environment variables:
-    - `BINANCE_API_KEY`
-    - `BINANCE_API_SECRET`
-  - No hardcoded Binance key in code.
+- **Binance keys** — read from environment variables `BINANCE_API_KEY` /
+  `BINANCE_API_SECRET`. No hardcoded key in code.
+- **Google Sheets credentials** — read from `GOOGLE_SERVICE_KEY_PATH` (env
+  var preferred; falls back to the placeholder path `SERVICE
+  KEY/your-service-account-key.json` in code) and `GOOGLE_SHEET_ID` (env
+  var preferred; falls back to the placeholder `your_google_sheet_id_here`).
+- **Runtime safety checks** — the export step raises a clear `ValueError`
+  if placeholders are still unchanged, instead of silently doing nothing or
+  writing to the wrong sheet.
+- **`.gitignore`/`.dockerignore`** both exclude `SERVICE KEY/*.json`,
+  `.env`, and `.env.*` (with `.env.example` explicitly re-included) —
+  credentials are never committed to git and never baked into a Docker
+  image layer.
 
-- **Google Sheets credentials**
-  - Read from:
-    - `GOOGLE_SERVICE_KEY_PATH` (env var preferred)
-    - fallback placeholder path in code:
-      - `SERVICE KEY/your-service-account-key.json`
-  - Sheet target read from:
-    - `GOOGLE_SHEET_ID` (env var preferred)
-    - fallback placeholder:
-      - `your_google_sheet_id_here`
-
-- **Runtime safety checks**
-  - Export step raises clear `ValueError` if placeholders are still unchanged.
-
-Recommended for GitHub:
-- Keep real secrets out of repository.
-- Commit placeholders/examples only.
-- Ignore `SERVICE KEY/*.json`, `.env`, and private key files in `.gitignore`.
+Recommended for anyone forking or publishing this repo: keep real secrets
+out of the repository, commit placeholders/examples only, and confirm
+`git log -- 'SERVICE KEY/'` is empty before making a private repo public
+(this repo currently has a standing, disclosed exception to that — see
+`CHANGELOG.md`'s 2026-08-01 "Credential tracking status" entry).
 
 ---
 
-Data Pipeline Overview
-
-1. Fetch candles (`get_candles`)
-   - Source: Binance `get_klines`.
-   - Default symbol/interval in main run: `BTCUSDT`, `4H`.
-   - Converts numeric columns to float.
-   - Converts open time to datetime and applies `+8h` offset.
-
-2. Compute indicators (`compute_indicators`)
-   - MACD: `12,26,9`.
-   - KDJ: period default `9`, smoothing alpha `1/3`.
-   - ATR: period `14`.
-   - ATR_200: long volatility baseline.
-
-3. Build market structure/order blocks (`compute_smc`)
-   - Two structure passes:
-     - internal (`INTERNAL_SIZE=5`)
-     - swing (`SWING_SIZE=50`)
-   - Detects pivots, BOS/CHoCH crossover events, and creates OBs.
-   - OB includes:
-     - type (`DEMAND`/`SUPPLY`)
-     - top, bottom
-     - creation and OB bar indexes
-     - structure metadata
-     - quality sub-signals and aggregate quality score (0-5)
-   - Computes mitigation invalidation bar for each OB.
-
-4. Simulate trades (`simulate_trades`)
-   - Runs bar-by-bar with no forward-looking data.
-   - Uses active, unmitigated OBs under age constraint (`MAX_OB_AGE=500`).
-   - Supports OB quality filtering via `min_ob_quality`.
-
-5. Export to Google Sheets (`push_all_thresholds_to_gsheet`)
-   - Runs quality sweep for levels `[0,1,2,3]` unless overridden.
-   - Writes each run to its own worksheet.
-   - Writes summary worksheet: `Summary — Quality Sweep`.
-
----
-
-Strategy Logic (Detailed)
-
-SMC and OB quality
-
-Each OB can score up to 5 quality points:
-- displacement confirmation
-- large-bar behavior
-- fair value gap pattern
-- liquidity sweep signal
-- volume expansion or impulse body
-
-Entry OBs are filtered by `MIN_OB_QUALITY` (default `1`) unless sweep level overrides it.
-
-Entry model
-
-The simulation starts from `SWING_SIZE + 5` bars to ensure indicator/structure context is established.
-
-LONG entry checks (all required)
-- Price interaction with active demand zone.
-- MACD histogram negative but rising (`hist < 0` and `hist > p_hist`).
-- Histogram has risen for at least 2 bars (`p_hist > pp_hist`).
-- KDJ condition:
-  - `K < 50`
-  - `K > K_prev`
-  - `J < 60`
-- K acceleration window:
-  - `1 <= k_accel <= 6`
-- ATR regime filter:
-  - reject if `0.8 <= ATR/ATR_200 <= 1.0`
-- Stop-loss validity:
-  - `risk > 0`
-  - `risk / close >= 0.015` (v9 minimum 1.5%)
-- TP selection:
-  - structural TP from nearest valid opposite OB when available
-  - else fallback to `entry + 2R`
-  - reject if reward/risk < 1.5
-
-SHORT entry checks (all required)
-- Price interaction with active supply zone.
-- MACD histogram positive but falling (`hist > 0` and `hist < p_hist`).
-- Histogram has fallen for at least 2 bars (`p_hist < pp_hist`).
-- KDJ condition:
-  - `K > 50`
-  - `J > K > D`
-  - extra short filters:
-    - `K >= 70`
-    - `J <= 100`
-- K acceleration window:
-  - `1 <= k_accel <= 6`
-- ATR regime filter:
-  - reject if `0.8 <= ATR/ATR_200 <= 1.0`
-- Stop-loss validity:
-  - `risk > 0`
-  - `risk / close >= 0.015` (v9 minimum 1.5%)
-- TP selection:
-  - structural TP from nearest valid opposite OB when available
-  - else fallback to `entry - 2R`
-  - reject if reward/risk < 1.5
-
-Position management and exits
-
-For both sides, while in position:
-- Records running PnL every bar.
-- Maintains peak PnL since entry.
-
-Exit conditions:
-- Trailing exit:
-  - once peak PnL reaches at least 1.5%, exit on 50% retrace.
-- KDJ reset exit:
-  - dynamically updated KDJ state with entry-based period.
-  - **v9 gate:** only active from bar 3 onward (`i - entry_idx >= 3`).
-- ATR move exit:
-  - closes at approximately `1.8 * ATR` favorable move.
-- Stop logic:
-  - once price reaches `2 * ATR` favorable move, SL moves to breakeven.
-- Hard exits:
-  - hit stop loss
-  - hit take profit
-
-Trade records include:
-- side, entry/exit index and price
-- pnl percent
-- entry OB metadata
-- whether TP came from structural OB
-- hold bars
-
-Stats attached to DataFrame attributes:
-- Total Trades
-- Total Net Return (%)
-- Avg Return/Trade (%)
-- Win Rate (%)
-
----
-
-Google Sheets Export Behavior
-
-Per quality threshold sheet:
-- Formats core numeric columns.
-- Writes all simulation rows.
-- Colors closed trade PnL cells:
-  - green for positive
-  - red for negative
-- Appends compact stats block in PnL column.
-
-Summary sheet:
-- Name: `Summary — Quality Sweep`
-- Includes one row per quality level with:
-  - min quality
-  - total trades
-  - total net return
-  - average return/trade
-  - win rate
-- Rows are tinted green/red by total return sign.
-
----
-
-Main Execution Defaults
-
-When executed directly (`python "src/Binance backtest bot.py"`), it runs:
-- symbol: `BTCUSDT`
-- interval: `4H`
-- date range:
-  - start: `2022-01-01 00:00:00`
-  - end: `2026-01-01 00:00:00`
-- quality sweep levels: `[0, 1, 2, 3]`
-
-The console prints per-level stats and a final sweep summary.
-
----
-
-How To Run Safely
-
-1. Set environment variables before running:
-   - `BINANCE_API_KEY`
-   - `BINANCE_API_SECRET`
-   - `GOOGLE_SERVICE_KEY_PATH` (path to your service account json)
-   - `GOOGLE_SHEET_ID`
-2. Ensure the Google service account has access to the target sheet.
-3. Run:
-   - `python "src/Binance backtest bot.py"`
-
-If placeholders are still present, export will stop with a clear message.
-
----
-
-Supplementary Analysis Scripts (`analysis/`)
-
-Permanent, git-tracked, read-only analysis tools that consume the existing
-backtest output (`artifacts/candles.csv`, the strategy's own trade log via
-`simulate_trades()`). They never modify `simulate_trades()`, never write to
-`backtest_results.db`, and never change a locked/reported headline number --
-each is an additive lens on the same 27-trade `min_ob_quality=0` baseline.
-Run from the repo root.
-
-Every script below accepts an optional `--json-out PATH` flag that writes
-its results as JSON without changing anything it prints -- this is what
-feeds the dashboard's "Supplementary Analysis" tab (see below). The five
-artifacts it reads (`artifacts/fee_slippage_analysis.json`,
-`artifacts/bootstrap_power_analysis.json`,
-`artifacts/benchmark_dca_analysis.json`,
-`artifacts/regime_breakdown_analysis.json`,
-`artifacts/oos_validation_analysis.json`) are committed so the dashboard has
-data out of the box; regenerate any of them with
-`python analysis/<script>.py --json-out artifacts/<script>.json`.
-
-- `analysis/fee_slippage_analysis.py` -- post-hoc transaction-cost
-  sensitivity. Applies a confirmed Binance USDT-M Futures standard-tier
-  taker fee (0.05%/side) plus a separate, clearly labeled conservative
-  slippage estimate to a copy of the trade log, and reruns the exact
-  binomial, Fisher's exact, and Welch's t-test statistics on the
-  fee-adjusted PnL.
-  ```bash
-  python analysis/fee_slippage_analysis.py
-  # override the fee/slippage assumptions:
-  python analysis/fee_slippage_analysis.py --taker-fee-bps 5.0 --slippage-bps 5.0
-  # skip the legacy pre-confirmation LOW/MID/HIGH sensitivity band:
-  python analysis/fee_slippage_analysis.py --no-sensitivity-band
-  ```
-- `analysis/bootstrap_power_analysis.py` -- (a) nonparametric percentile
-  bootstrap (default B=10,000) giving a 95% confidence interval on the
-  baseline's own total and average return, and (b) a minimum-detectable-
-  effect (MDE) / power calculation per orthogonal OB quality criterion,
-  stating explicitly what size of criterion-level effect the current
-  sample could and could not reliably detect.
-  ```bash
-  python analysis/bootstrap_power_analysis.py
-  # more resamples, different seed:
-  python analysis/bootstrap_power_analysis.py --bootstrap-n 5000 --seed 7
-  # different power/alpha target for the MDE calc:
-  python analysis/bootstrap_power_analysis.py --power 0.8 --alpha 0.05
-  ```
-- `analysis/benchmark_dca_analysis.py` -- two-section strategy-vs-BTC
-  comparison. **Section 1**: event-driven strategy equity curve vs.
-  buy-and-hold, Sharpe/Sortino, max drawdown, and the Pearson correlation
-  between per-trade strategy return and BTC's own return over the same
-  holding window. **Section 2**: a "complementary sleeve" model -- a fixed
-  amount of new capital arrives every week; compares a 100%-BTC-DCA
-  baseline against portfolios that split each week's contribution between
-  BTC-DCA and an independently-capitalized strategy sleeve, at configurable
-  split ratios (90/10, 80/20, 70/30 by default), reporting Sharpe/Sortino/
-  max drawdown for each.
-  ```bash
-  python analysis/benchmark_dca_analysis.py
-  # only the strategy-vs-BTC section:
-  python analysis/benchmark_dca_analysis.py --section 1
-  # only the DCA-blend section, custom contribution size and splits:
-  python analysis/benchmark_dca_analysis.py --section 2 --contribution-amount 50 --splits 0.1,0.2,0.3,0.5
-  ```
-- `analysis/regime_breakdown_analysis.py` -- tags each baseline trade by
-  macro market regime using TWO independent, always-both-reported methods:
-  a calendar split (2022 bear / 2023 chop / 2024-25 bull) and a
-  price-drawdown-from-all-time-high split (thresholds configurable).
-  Reports trade count, win rate, and return contribution per regime under
-  each method, plus a direct regime check on the top-N highest-return
-  trades.
-  ```bash
-  python analysis/regime_breakdown_analysis.py
-  # different drawdown thresholds or calendar years:
-  python analysis/regime_breakdown_analysis.py --bear-threshold -40 --chop-threshold -12
-  python analysis/regime_breakdown_analysis.py --bear-year 2022 --chop-year 2023
-  ```
-- `analysis/oos_validation_analysis.py` -- **the one script in this directory
-  that makes live Binance API calls**, disclosed exception to the offline-only
-  rule below, same justification as its scratch predecessors. Section 1: a
-  forward out-of-sample test against data postdating every commit to the
-  strategy file. Section 2: an 8-year backfill audit checking whether the
-  locked baseline survives extended indicator warm-up, plus (explicitly
-  labeled not-out-of-sample) performance on 2018-2022, the period the
-  strategy's rule structure was originally formulated against. Pulls through
-  a **fixed historical end date** (default 2026-07-31), not "through now" --
-  a closed historical range is safely re-runnable without drifting, since
-  Binance does not revise historical candles (verified). If the end date is
-  ever moved forward, both the old and new results must be reported side by
-  side, never silently swapped.
-  ```bash
-  python analysis/oos_validation_analysis.py
-  # just the forward OOS test, or just the backfill audit:
-  python analysis/oos_validation_analysis.py --section 1
-  python analysis/oos_validation_analysis.py --section 2
-  # only when deliberately extending the window with new data:
-  python analysis/oos_validation_analysis.py --oos-end-date 2026-09-30
-  ```
-
----
-
-Known Assumptions and Notes
-
-- Binance data fetch uses API response loops of up to 1000 bars per call.
-- Open time is shifted by +8 hours.
-- Strategy and comments indicate emphasis on avoiding lookahead bias.
-- This script is a backtest/simulation + reporting tool; it is not an order execution live-trading engine.
-
----
-
-Known Limitations / Future Work
+## Known limitations / future work
 
 - **Leverage is not modeled; all reported returns are unlevered/notional.**
   This is a deliberate scope decision, not an oversight. `simulate_trades()`
-  evaluates every exit condition -- hard stop-loss, take-profit, the
-  trailing exit, the ATR-move exit, and the breakeven-stop adjustment -- at
+  evaluates every exit condition — hard stop-loss, take-profit, the
+  trailing exit, the ATR-move exit, and the breakeven-stop adjustment — at
   bar-close resolution only. Intrabar `high`/`low` prices are present in
-  `artifacts/candles.csv` and are read into the simulation loop, but are
-  used only for order-block touch detection and a subset of the OB quality
-  criteria (Displacement, LargeBar) -- never for any exit or
-  position-sizing decision. The engine has no concept of a margin or
-  liquidation price at any leverage level.
-  A defensible leveraged backtest requires intrabar liquidation tracking: a
-  position can be liquidated by a price excursion that fully reverses
-  within a single 4H bar, which a close-resolution simulation cannot see.
-  Applying a leverage multiplier after the fact to the existing close-basis
-  trade log would not model that risk -- it would silently assume every
-  trade's realized path was free of any intrabar excursion large enough to
-  trigger liquidation, which the data cannot confirm one way or the other.
-  **If leverage modeling is ever revisited**, the exit-evaluation logic
-  would need to check `high`/`low` against a liquidation price intrabar
-  (and a deliberate choice made about execution-order-within-bar
-  assumptions when both a stop and a target are crossable in the same bar)
-  -- a real engine change, not an analysis-layer addition. Until then, this
-  codebase reports unlevered returns only, consistent with common practice
-  in the technical-trading-rule literature (e.g., Svogun & Bazán-Palomino,
-  2022, evaluating moving-average and support/resistance rule profitability
-  on cryptocurrency data net of transaction costs on a notional basis).
-
----
-
-README Logs (Append-Only)
-
-> **Modification policy for this README**  
-> Keep the original sections above as canonical baseline documentation.  
-> If any future clarification/correction/update is needed, add it as a new dated note below instead of rewriting prior paragraphs directly.  
-> If a direct paragraph edit is unavoidable, add a matching note entry documenting exactly what changed and why.
-
-Log Entry Template
-
-- Date:
-- Section affected:
-- Change type: `clarification` | `correction` | `update`
-- Notes:
-- Reason:
-
-Entries
-
-- 2026-04-28 | Initial README creation | update | Added full technical documentation based on current script behavior, configuration, strategy logic, export flow, and safety guidance. | Established baseline project documentation and changelog structure.
-- 2026-04-30 | Local GUI artifact pipeline | update | Added `export_gui_data.py` local artifact export flow (`artifacts/*.json`, `artifacts/*.csv`, verification report) with optional Google Sheets sync via `--export-gsheet`. Updated `run_dashboard.bat` to start a local HTTP server and open `gui.html` via localhost so JSON fetch works reliably. | Replace Google Sheets-first workflow with local, auditable GUI-ready data and easier validation.
-- 2026-05-03 | Execution Optimization & GUI Crash Fix | update | Replaced `run_dashboard.bat` with a native `Run_Dashboard.py` launcher and embedded the web server launch into `export_gui_data.py`. Optimized backend by caching simulations to prevent redundant calculations during GSheet export, halving execution time. Implemented a Track Allocator in `gui.js` to fix LightweightCharts rendering crashes caused by overlapping Order Blocks. | To improve backend performance, fix critical UI crashes, and simplify the local startup process.
-- 2026-05-04 | Advanced UI Sync & Visualization | update | Implemented unified crosshair synchronization across all panes using precise price-point alignment. Added dynamic trade exit reason labels to the dashboard. Refactored pane resizing to use pixel-based calculations with `localStorage` persistence. Fixed indicator dot alignment on sub-charts. | To provide a premium, professional-grade analysis experience and resolve synchronization limitations in Lightweight Charts.
-- 2026-06-15 | Quick Start Documentation | update | Added a simplified "Quick Start" execution guide explaining the single-command startup via `Run_Dashboard.py`. | To improve user boarding and simplify pipeline run instructions.
-- 2026-07-11 | Custom Palette Picker & Visual Themes | update | Replaced native color inputs in settings drawer with custom popup palettes. Added opacity sliders and preset grids. Aligned default visuals and dark mode theme parameters to TradingView standards (#131722 dark canvas, transparent order blocks). | To provide a responsive, premium visual theme and customizable chart elements.
-- 2026-07-12 | Performance Optimizations & Dynamic Indicators | update | Debounced logical range scroll changes and paused DOM updates during active navigation to restore 60fps pan/zoom. Replaced full hover rebuilds with updateActiveHighlight selector (<0.3ms). Linked MACD histogram bar colors dynamically to bullish/bearish candle presets. Added scipy to Dockerfile and documented docker run. | To eliminate zoom-out lag and unify technical indicator styles with user customizations.
-- 2026-08-01 | KDJ architecture (Strategy Logic / Position management and exits) | clarification | Read-only audit clarified that entry-bar K/D/J always come from the STATIC full-history KDJ(9,3,3) column (`kdj_reset_init`'s seed values are read directly from `df` at `entry_idx`, never reseeded to 50 or backfilled from the triggering OB bar). Only the POST-ENTRY exit-signal state machine (`kdj_reset_update`/`kdj_reset_exit`) uses a variable RSV window, `period = entry_idx - triggering_OB_bar`, frozen for that trade's life and gated to fire no earlier than 3 bars after entry. Observed `w` (= entry_idx - ob_bar) across the 27 baseline (`min_ob_quality=0`) trades: min 14, median 74, max 439 -- no trade has single-digit `w`; the paper's "two-bar window" example is illustrative only. | To settle exactly which computation ("interpretation A" vs "B") the adaptive KDJ actually implements, since the two differ materially in what they claim about lookahead safety and window length.
-- 2026-08-01 | KDJ exit-window sensitivity (Strategy Logic / Position management and exits) | update | Additive-only counterfactual grid (`scratch/kdj_exit_window_counterfactual.py`, `scratch/kdj_exit_window_trade_detail.py`) fixed the exit-window `period` to five constants -- 9 (conventional default), 38 (observed p25 of `w`), 74 (median), 114 (observed p75), 439 (observed max) -- with the 27-trade entry set confirmed byte-identical to the dynamic baseline at every point (`period` only governs exit timing, never entry selection). Win rate is flat at 70.37% across p25/median/p75 but the underlying winning-trade SET differs between p25 and {median, p75}: 4 trades flip in a 2-for-2 swap (entry_idx 673, 3196, 7938, 7964). Fixed-74 nearly reproduces the dynamic baseline's win rate/return (+31.89% vs +30.31%); fixed-9 (+28.05%, 59.26% WR) and fixed-439 (+29.51%, 62.96% WR) both underperform. The two commonly-cited reference trades (entry_idx 359, the best winner; entry_idx 2624, the top loser) are completely unaffected by `period` at every grid point -- both exit via non-KDJ-reset paths (`ATR MOVE EXIT`, `HIT STOP LOSS`) with byte-identical pnl in all six configs -- so the ~5.5-point total-return spread across the grid traces entirely to other trades. Exploratory only, not integrated into any paper claim. | To characterize the sensitivity of an already-fixed, disclosed design choice (the OB-relative dynamic exit window) without retuning it, and to separate "the variable window itself adds value" from "a longer fixed window happens to help about as much."
-- 2026-08-01 | SMC and OB quality (Strategy Logic / third disclosed bug) | correction | A dedicated no-lookahead audit (hard runtime assertions added directly at the read sites inside `compute_smc()`, all still present and unweakened in `src/Binance backtest bot.py`) found that the FVG (3-candle: `lows[j+2] > highs[j]`) and displacement quality-criteria search loops were bounded by dataset length `n` instead of by the OB's own confirmation bar `i`, so both could read 1-2 bars past the bar at which the OB actually became usable for entry. Fixed by bounding both loops to the confirmation bar: displacement -> `range(ob_idx+1, min(i+1, ob_idx+4))`; FVG -> `range(ob_idx, min(i-1, ob_idx+3))`, preserving `j+2 <= i` as an invariant for every `j` considered; if `i - ob_idx` is too small for any valid `j`, the criterion now stays `False` rather than reading forward. Applied identically in both duplicated BULLISH/BEARISH branches inside `compute_smc()` -- the single source of truth read by population stats, entered-trade analysis, and every quality-threshold-filtered run alike, so one fix covers all three uniformly. ATR(14)/ATR_200/static KDJ(9,3,3) were separately proven causal via truncation-equality testing (`scratch/no_lookahead_atr_kdj_check.py`, 180/180 checks pass: recomputing each on a dataset truncated at bar `i` gives byte-identical values to the full-dataset computation at `i`), and the OB pivot-detection windows (50-bar swing, 5-bar internal) are provably bounded by array slicing. This is the third disclosed bug (`CLAUDE.md`, "Known bugs" #3) -- data leakage across the OB confirmation boundary, distinct in kind from the two previously-disclosed definitional corrections (non-orthogonal composite score; 2-candle-vs-3-candle FVG formula). | The project's no-lookahead enforcement rule requires this class of bug to be found via explicit assertion, disclosed, and fixed rather than patched around or reverted silently; the audit surfaced a genuine correctness finding.
-- 2026-08-01 | Locked results re-verification (full cascade after the bug fix above) | correction | (1) `scratch/regression.py`: PASS, the 27-trade `min_ob_quality=0` baseline (bars, indicators, all 27 trades) is byte-identical pre/post-fix, because quality never gates entries at threshold 0. (2) Population stats over the full 761 detected Order Blocks: FVG-true 362->253 (47.6%->33.2%, -14.32pp, 109 of the 362 were lookahead artifacts); displacement-true 112->107 (14.7%->14.1%, 5 OBs); OB quality histogram q0=77->93, q1=147->154, q2=200->206, q3=192->197, q4=112->90, q5=33->21. (3) 4 of the 27 baseline trades' entry-OB quality scores changed (entry_idx 673: 5->4, 1158: 2->1, 3100: 1->0, 6040: 2->1), all via `quality_fvg` flipping True->False, none via displacement. (4) Orthogonal-criteria re-test (Fisher's exact on win/loss, Welch's t-test on return, all 5 criteria, methodology reproduces the pre-fix documented values bit-for-bit): only FVG's numbers move (Fisher p 0.6957->1.0000, Welch t +0.1326->+0.5360, p 0.8956->0.5996); no criterion crosses p=0.05 either before or after, so no significance-conclusion flip at the per-criterion level; the bar-359/2624 discussion claims and the four-criteria-shared-top-trade claim were re-confirmed unchanged. (5) Threshold sweep: q>=1 drops from 26 to 25 trades (69.23%->68.00% win rate, +29.08%->+28.31% return) because entry_idx=3100 loses its only quality point and falls below the q>=1 gate -- this DOES flip the q>=1 one-sided binomial significance from p=0.038 (n=26, marginally significant) to p=0.054 (n=25, not significant), a real conclusion-level flip. q>=2 moves 24->23 trades (p 0.0758->0.1050, non-significant both ways). q>=0 and q>=3 are numerically untouched. q>=4 (n=6, 50.00% WR) / q>=5 (n=1, 0.00% WR) reported descriptively only, too small to test. | `CLAUDE.md` requires locked results to change only as a disclosed consequence of a code-correctness fix, and requires every downstream figure the fix could plausibly touch to be explicitly re-verified rather than assumed unaffected -- including a significance-level flip, reported as a finding rather than folded in silently.
-- 2026-08-01 | Locked results block + audit trail (CLAUDE.md, artifacts/*) | update | `CLAUDE.md`'s "Locked results" block updated with old and new values shown side by side (never silently replaced), plus the new "Known bugs" #3 entry described above. `artifacts/candles.csv`/`.json`, `manifest.json`, `orderblocks_default_view.csv`, `runs_by_threshold.json`, `threshold_runs.csv`/`.json`, `trades_default_view.csv`, `verification_report.json`, and `backtest_results.db` regenerated via the existing `export_gui_data.py` pipeline through a purpose-built offline driver (`scratch/run_export_offline.py`) that force-fails the live Binance API call so the pipeline's own existing cache-fallback path loads from the locked `artifacts/candles.csv` snapshot instead -- confirmed zero live API calls made, candle count still 8,767. `scratch/regression.py` re-run clean after every step of this whole cascade. Committed to `development` as `cb4ed93` ("fix: correct FVG/displacement OB scoring lookahead; remove ML pipeline") and fast-forwarded into `main` (`a0f6fc1`->`cb4ed93`, no merge commit needed since main had no divergent history); both pushed to `origin`. | Keep the paper's locked numbers and their disclosed-bug audit trail reproducible and traceable to an exact commit, offline and without touching the live-data path.
-- 2026-08-01 | Dashboard independence check (`gui.js`) | clarification | Confirmed via full search of `gui.js` for any pivot/swing-high/BOS/CHoCH/SMC-detection logic that the JS dashboard does NOT independently detect Order Blocks, FVG, or displacement -- those fields (`quality_fvg`, `quality_displacement`, `quality`, `ob_bar`, `created_at`, etc.) are read as trusted data straight from the Python-generated `artifacts/runs_by_threshold.json` (via `processData()`'s `{...ob}` spread) and only rendered (checklist pass/fail rows, chart highlight overlays). What `gui.js` DOES independently recompute is the entry-condition/indicator side: its own from-scratch JS reimplementation of the `kdj_reset_init`/`kdj_reset_update` recursion for the adaptive-KDJ chart trajectory (added this session's dashboard work, dual static/adaptive KDJ panes), plus the existing MACD/KDJ/ATR entry-rule checklist. Net effect: the JS cross-check neither caught nor missed the FVG/displacement lookahead bug above -- OB/SMC detection was never part of what "independent" covers in this dashboard, only the entry/indicator layer is. | To determine, once the lookahead bug was found and fixed on the Python side, whether the intentionally-independent JS verification layer (see Security/Data Pipeline sections) had already caught or could have caught this class of bug.
-- 2026-08-01 | Credential tracking status (Security and Credentials) | correction | Read-only check (tracking status only -- file contents never opened, read, or displayed): `SERVICE KEY/python-trading-bot-new-strat-10.json` is currently tracked (`git ls-files`) and was committed in a single commit (`a2db013`, "feat: add docker files and sync 1:1 database/models/credentials", 2026-07-09) that is reachable from essentially every local and `origin` branch, including `main` and `development`. This contradicts the "Recommended for GitHub" guidance further up this file (ignore `SERVICE KEY/*.json`) -- the `.gitignore` rule exists, but this specific file was already committed before the rule could exclude it, and removing it from history was explicitly out of scope for the session that found this. Flagged as a standing credential-exposure finding; left untouched. | The "Security and Credentials" section above describes the intended safe posture; this entry records that the actual repository state currently does not match it, so the gap doesn't go unnoticed.
-- 2026-08-01 | Codebase reorganization (File Scope) | update | Full inventory/reorg pass produced `CODEBASE_MAP.md` at repo root (every file: purpose, what references it, CORE / INFRA / AUDIT EVIDENCE / DASHBOARD / CANDIDATE-DEAD classification, proposed destination). After a two-phase proposal + sign-off, executed in two verified batches: **Batch 1** (commit `76f0efb`) deleted 10 files confirmed orphaned by exhaustive grep across tracked files and `scratch/` -- `data.js` (an unreferenced `window.BOT_DATA` static dump superseded by the live artifacts/API load path) and `artifacts/ml_status.json` + `artifacts/models/model_iter_1..8.pkl` (leftovers from the already-disclosed ML-pipeline removal; nothing imports, reads, or globs any of them). **Batch 2** (commit `7713638`) ran `git mv "Binance backtest bot.py" "src/Binance backtest bot.py"` (history preserved) plus every reference that move would otherwise have broken: `BASE_DIR` inside the moved file now goes up one extra directory level so `SERVICE KEY/` (unmoved, out of scope) still resolves correctly (verified `resolve_google_service_key_path()` still finds the real file post-move, existence check only); `export_gui_data.py` (x2 occurrences), `scratch/regression.py`, `scratch/no_lookahead_atr_kdj_check.py`, `scratch/no_lookahead_fvg_scope_audit.py`, `scratch/kdj_exit_window_counterfactual.py`, `scratch/kdj_exit_window_trade_detail.py`, `scratch/02_benchmark_and_risk.py`, `scratch/calculate_all_qualities.py`, and `scratch/inspect_raw_signals.py` all updated to load from `src/`; this README's own path references (File Scope, Main Execution Defaults, How To Run Safely) updated to match. `scratch/regression.py` plus the full locked-figures snapshot re-verified clean (zero diff) after each batch. Separately, 9 of the `scratch/` audit-evidence scripts behind the Known bugs #3 finding and the KDJ-architecture entries above (previously untracked, since `scratch/` is gitignored by default) were force-added and committed on their own (`8ef4076`) after a content scan confirmed no absolute paths, credentials, or machine-specific artifacts in any of them. `db_manager.py`, `export_gui_data.py`, `Run_All.py`, `Run_Dashboard.py`, `Dockerfile`, `chart_theme.json`, and `backtest_results.db` were deliberately left at repo root rather than also moved, to keep the blast radius of broken relative-path references limited to one file move. All reorg commits pushed to `development` only (`cb4ed93..7713638`); `main` intentionally left at `cb4ed93` pending a separate decision on whether to fast-forward it too. | To make the repository's real vs. superseded/dead files explicit and auditable, and give the core strategy engine a conventional `src/` home, without risking the locked results, the disclosed-bug audit trail, or the intentionally-independent JS dashboard cross-check.
-- 2026-08-03 | Transaction-cost sensitivity promoted to `analysis/` (Supplementary Analysis Scripts) | update | Promoted `scratch/fee_slippage_audit.py` to a permanent, git-tracked, CLI-runnable script (`analysis/fee_slippage_analysis.py`) on branch `feature/fee-slippage-analysis`. Fee figure corrected from a prior unverified "4-10bps" placeholder to Binance's published USDT-M Futures standard-tier (VIP 0, no BNB discount) taker rate, confirmed 0.05%/side (web-verified against Binance's fee-schedule FAQ, August 2026); slippage kept as a separate, clearly labeled conservative estimate (0.05%/side) rather than bundled into "the fee." Primary scenario (fee + slippage, 0.20% round trip) drops total net return from +30.31% to +24.91% and win rate from 70.37% to 62.96% (17/27), moving the one-sided binomial p from 0.0261 (significant) to 0.1239 (not significant) -- reported plainly as a fragility finding, not minimized. Welch's t-test on all 5 orthogonal criteria is mathematically invariant to this flat per-trade drag (verified identical to 4 decimals pre/post-adjustment). Promotion verified byte-for-byte numerically identical to the scratch predecessor's output before this entry was written (only cosmetic label-text formatting differs). Old LOW/MID/HIGH bundled fee+slippage guesses retained as a labeled pre-confirmation sensitivity band, not as the primary estimate. | To make transaction-cost sensitivity a permanent, reproducible part of the toolchain rather than a one-off scratch finding, using a verified rather than assumed fee figure.
-- 2026-08-03 | Bootstrap CI / power analysis promoted to `analysis/` (Supplementary Analysis Scripts) | update | Promoted `scratch/bootstrap_power_audit.py` to a permanent, git-tracked, CLI-runnable script (`analysis/bootstrap_power_analysis.py`) on branch `feature/bootstrap-power-analysis`. Provides (a) a nonparametric percentile bootstrap (B=10,000 default) giving a 95% CI on the 27-trade baseline's own total return (+30.31% point estimate, 95% CI [+5.99%, +54.99%], not crossing zero) and average return/trade, and (b) a minimum-detectable-effect (MDE) calculation per orthogonal OB quality criterion: at 80% power / alpha=0.05, the MDE (2.23-2.91 percentage points across the 5 criteria) is roughly 3-10x larger than the actually-observed True/False subgroup gaps (0.23-0.78 pp) -- meaning the criteria-level null results reflect the study being underpowered to detect effects of the size observed, not necessarily a true absence of effect. Promotion verified numerically identical to the scratch predecessor's output (same seed reproduces the same bootstrap CI exactly; only cosmetic label-text formatting differs). | To make the power/CI framing a permanent, reproducible part of the toolchain so the paper's "no significant difference" language can be replaced with the more precise underpowered-vs-null-effect distinction on demand, not just as a one-off scratch finding.
-- 2026-08-03 | Benchmark/DCA-blend analysis promoted to `analysis/` (Supplementary Analysis Scripts) | update | Promoted `scratch/02_benchmark_and_risk.py` and `scratch/dca_blend_audit.py` together to one permanent, git-tracked, CLI-runnable module (`analysis/benchmark_dca_analysis.py`) on branch `feature/benchmark-dca-blend`, since they're the same analysis family. Section 1 (strategy vs. BTC buy-and-hold): Sharpe 1.114 / Sortino 2.727 for the strategy vs. 0.564 / 0.803 for buy-and-hold, at 2.63% time-in-market; Pearson correlation between per-trade strategy return and BTC's return over the same holding window r=-0.3688, p=0.0584 (borderline, not significant at alpha=0.05, but directionally consistent with a complementary/diversifying role). Section 2 (DCA-blend, weekly contributions, configurable split ratios, 90/10/80/20/70/30 by default): Sharpe/Sortino/max-drawdown all improve monotonically as strategy-sleeve allocation increases (e.g. 80/20 split: Sharpe 0.556->0.607, Sortino 0.886->0.978, max drawdown -27.85%->-24.97%, vs. 100%-DCA-only), at the cost of lower absolute final value -- a risk-adjusted-improvement story, not a return-supremacy claim. The scratch predecessor's cumulative-P&L-only drawdown metric produced NaN early in the series (division by a near-zero-or-negative running-max before enough capital had accumulated); fixed in the promoted version by reporting that metric as a peak-to-trough DOLLAR retracement instead of a percentage, which stays well-defined regardless of sign. Promotion verified numerically identical to both scratch predecessors' output (only cosmetic label-text formatting differs). | To make the strategy-vs-benchmark and complementary-sleeve framing a permanent, reproducible, configurable part of the toolchain, with the known NaN bug fixed rather than carried forward silently.
-- 2026-08-03 | Regime breakdown promoted to `analysis/` (Supplementary Analysis Scripts) | update | Promoted `scratch/regime_breakdown_audit.py` to a permanent, git-tracked, CLI-runnable script (`analysis/regime_breakdown_analysis.py`) on branch `feature/regime-breakdown`, keeping BOTH the calendar method (2022 bear / 2023 chop / 2024-25 bull) and the price-drawdown-from-all-time-high method (ATH seeded at $69,000, BTC's actual 2021-11-10 peak, predating this dataset's window; thresholds BEAR<=-40%, CHOP<=-12%) rather than collapsing to one -- the two methods agree on only 13/27 trade assignments (most of calendar-2023 was still 57-64% below the real ATH, i.e. drawdown-method BEAR, despite being sideways/recovering rather than crashing), but both agree BULL is the strongest regime (85.71% win rate under both) and both confirm the 3 concentrated top-return trades (entry_idx 359/6366/8280, together 51.7% of total return) are NOT clustered in a single regime -- calendar gives BEAR/BULL/BULL, drawdown gives CHOP/BULL/BULL, union spans all three labels. Promotion verified numerically identical to the scratch predecessor's output (only a cosmetic calendar-label year-range difference: the promoted version's dynamic label includes the window's final boundary bar, "2024-26" vs. the scratch predecessor's hardcoded "2024-25" -- the underlying year-to-regime logic and all numeric rows are unaffected). | To make the regime robustness check (recommended in the Limitations draft as a substitute for an underpowered calendar holdout) a permanent, reproducible, configurable part of the toolchain.
-- 2026-08-07 | Dashboard rebuilt from nothing; legacy `gui.html`/`gui.js`/`gui.css` removed | update | Every component/stylesheet in `dashboard-v2/` was deleted and rebuilt from a blank slate on a new design system (dark-native palette, monospace-only typography, bracket-tag/left-border-rail status indicators replacing filled colored badges, zero emoji/icon glyphs anywhere) -- not a reskin of the prior React dashboard. The retained, unmodified layer (never touched, verified zero-diff): `api/client.ts`+`hooks.ts`, `types/artifacts.ts`, `stats/statMath.ts`+`statsCompute.ts` (all 5 hypothesis-test computations), `chart/chartProcessing.ts`+`colorUtils.ts`+`obQualityVerification.ts` (the independent live OB-quality cross-check), `sandbox/calculators.ts`+`dateRangeIndicators.ts`, `common/Latex.tsx`. The Chart tab's multi-pane sync/hover logic was rebuilt with 3 interaction-safety properties designed in from the start rather than patched on after: the OB-zone-overlay redraw is gated on the hovered bar index actually changing (not fired on every raw pointer-move event during a drag); the Inspection Panel's hover state is revalidated whenever OB filters change, independent of mouse movement; both the pan-sync and crosshair-sync re-entrancy guards clear on the next animation frame rather than synchronously, closing off a same-frame-echo bug class that had only been fixed for one of the two guards previously. Order Blocks are now drawn exclusively as a rectangle anchored at the origin candle extending forward to where the zone ends -- the old arrow/marker series-marker representation is gone, not just de-emphasized. `gui.html`/`gui.js`/`gui.css` (the original, non-React dashboard, ~4,500 lines combined) are deleted outright, not archived -- `dashboard-v2` had reached full feature parity (same 3 tabs, same backend, same `/api/*` and `artifacts/*.json` contracts) and maintaining two independent frontends for one backend had no remaining justification. `export_gui_data.py`'s `SilentHandler` now serves the production `dashboard-v2/dist` build under `/dashboard/` (new `translate_path` override, SPA-style fallback to `index.html`) and `webbrowser.open` targets `/dashboard/` instead of `/gui.html`; `Run_All.py`/`Run_Dashboard.py` gained an `ensure_dashboard_built()` step (`npm run build`, skipped when `dashboard-v2/dist` is already newer than `dashboard-v2/src`) so this is automatic, not a manual prerequisite. `Dockerfile` restructured to a two-stage build (a `node:20-slim` stage runs `npm run build`; the final `python:3.11-slim` stage copies in only the built `dist/` output) so the shipped image needs no Node.js/npm at runtime. Verified end-to-end in a real browser (Playwright, not just `tsc`/build success) at every stage: zero console errors on any of the 3 tabs in both themes, the rebuilt chart's crosshair/pan/filter-change interactions confirmed fixed, hovering an OB's origin candle populates the Inspection Panel with live-recomputed criteria matching the recorded quality score exactly, the Stats tab's live binomial/Fisher/Welch/bootstrap/MDE figures match the previously-verified locked numbers exactly, and the production `/dashboard/` route (built assets, not the dev server) renders correctly end-to-end through the real `export_gui_data.py` server. | The prior dashboard-v2 redesign attempt (reusing the existing component/CSS structure, patching bug sites in place) was explicitly rejected mid-session as not matching what "total rehaul" meant -- the request was for the entire presentation layer to be removed and rebuilt, keeping only the verified computation/data-fetching code, styled as a data-dense trading-terminal instrument rather than a generic SaaS dashboard.
-- 2026-08-03 | OOS/backfill validation promoted to `analysis/` (Supplementary Analysis Scripts) | update | Promoted `scratch/oos_live_pull_2026_08.py` and `scratch/eightyr_backfill_audit.py` together to one permanent, git-tracked, CLI-runnable module (`analysis/oos_validation_analysis.py`) on branch `feature/oos-validation-analysis` -- the one script in `analysis/` that makes live Binance API calls, a disclosed exception to the offline-only rule, same justification as its scratch predecessors. Redesigned to pull through a fixed historical end date (`--oos-end-date`, default 2026-07-31) instead of an open-ended "through now," making it safely re-runnable without drifting (Binance does not revise historical candles, verified this session) rather than requiring a static frozen-snapshot workaround. Section 1 (forward OOS, 2022-01-01..2026-07-31): locked 27-trade baseline reproduces byte-identically (integrity + regression checks PASS) before 4 new out-of-sample trades are examined -- 1 win, 3 losses, 25.00% win rate, -3.45% total return, reported plainly as a small, directionally unfavorable result, not softened. Section 2 (8yr backfill, 2018-2026): confirms the locked baseline reproduces exactly even with ~4 extra years of indicator warm-up prepended (not guaranteed a priori, given MACD/KDJ's theoretically unbounded recursive memory -- empirically PASS, max pnl diff 0.0000000000), then reports 2018-2022 performance (25 trades, 60.00% win rate, +21.82%) explicitly labeled NOT out-of-sample -- disclosed this session as the period the strategy's rule structure was originally formulated against, with only the minimum stop-distance filter changed afterward -- plus combined 2018-2026 stats (56 trades, 62.50%, +48.68%, one-sided binomial p=0.0407) with an explicit caveat against citing that figure as clean validation, since it mixes formulation-period and out-of-sample data. Both `docs/limitations_section_draft.md` (subsection a) and `docs/results_section_addition_draft.md` (new subsection c) updated with these findings; both remain drafts pending separate human review before paper integration. Promotion verified: default-args run reproduces every number already reported and discussed prior to promotion, exactly. | To make this session's out-of-sample and formulation-period disclosures a permanent, reproducible part of the toolchain rather than one-off scratch findings and chat history, and to give the "run once, report as-is" pre-registration commitment a design (fixed end date) that survives being productionized instead of requiring an honor-system workaround.
-- 2026-08-03 | `--json-out` added to all 5 `analysis/` scripts (Supplementary Analysis Scripts) | update | Added an optional `--json-out PATH` flag to `fee_slippage_analysis.py`, `bootstrap_power_analysis.py`, `benchmark_dca_analysis.py`, `regime_breakdown_analysis.py`, and `oos_validation_analysis.py` on branch `feature/analysis-json-export`, backed by a new shared `analysis/_json_utils.py` helper (mirrors `export_gui_data.py`'s `fallback_json` numpy/pandas serialization, duplicated rather than imported to keep `analysis/` dependency-free of the root pipeline scripts). Each script's internal functions were refactored to also return the same numbers they already print, with zero re-derivation. Verified byte-identical stdout (flag omitted) against each script's pre-change committed version for all 5 scripts. Generated and committed the resulting 5 artifacts (`artifacts/fee_slippage_analysis.json`, `artifacts/bootstrap_power_analysis.json`, `artifacts/benchmark_dca_analysis.json`, `artifacts/regime_breakdown_analysis.json`, `artifacts/oos_validation_analysis.json`) so the dashboard has data without requiring a manual script run first; all validated as parseable JSON with no non-serializable types leaked through. Not wired into `Run_All.py`/`Run_Dashboard.py` -- all 5 scripts remain manually run. | To give the new dashboard "Supplementary Analysis" tab a stable, regeneratable data source without duplicating any of the scripts' underlying computation in JavaScript.
-- 2026-08-03 | Known Limitations / Future Work (new section) | update | Added a new "Known Limitations / Future Work" section documenting that leverage is not modeled: `simulate_trades()` evaluates all exit conditions at bar-close resolution only, intrabar `high`/`low` (present in the data, read into the loop) are used only for OB-touch detection and two quality criteria, never for exits, and the engine has no margin/liquidation-price concept at all. States plainly that a leveraged backtest is not defensible without adding intrabar liquidation tracking to the exit-evaluation logic, and that this codebase deliberately does not attempt a leverage-multiplier workaround on the existing close-basis trade log, since that would silently hide the exact risk (intrabar liquidation invisible to a close-only simulation) it claims to model. Cites Svogun & Bazán-Palomino (2022) as consistent precedent for reporting unlevered notional returns in the technical-trading-rule literature. No code changes -- documentation only, per this session's investigation finding that the engine "cannot honestly support this." | To make an already-investigated scope decision (not a gap someone might mistake for an oversight) explicit and discoverable, and to record what a future revisit would actually require rather than leaving it unstated.
-- 2026-08-10 | Quick Start / dependency install (Install Dependencies, new "Frontend Dev Mode" subsection) | correction | The `pip install` line here previously listed `pandas numpy python-binance oauth2client gspread gspread-formatting` -- missing `scipy`, which 7+ scripts under `analysis/` actually import (`from scipy import stats`), so a fresh install via this exact line crashed the first time any of those scripts ran. The `Dockerfile` had its own separate, also-incomplete list (missing `scipy`, plus an unused `scikit-learn` left over from the already-disclosed removed ML pipeline). Both replaced with a single new root `requirements.txt` (pinned versions), installed via `pip install -r requirements.txt` here and `COPY requirements.txt . && RUN pip install --no-cache-dir -r requirements.txt` in the `Dockerfile`, so the two paths can no longer drift apart. Also added a new "Frontend Dev Mode (Hot Reload)" subsection documenting `dashboard-v2`'s `npm run dev` (now auto-starts `export_gui_data.py --no-browser` via `dashboard-v2/scripts/dev.mjs` if a backend isn't already running on :8765, so the Vite proxy always has something to talk to) and the `dev:vite-only` escape hatch for running Vite against an already-running/manually-managed backend. Added `.env.example` at repo root documenting the 4 env vars this section already described (`BINANCE_API_KEY`, `BINANCE_API_SECRET`, `GOOGLE_SERVICE_KEY_PATH`, `GOOGLE_SHEET_ID`) -- not auto-loaded, still set via shell/session as before. Separately, per an explicit decision this session, the standing credential-exposure finding two entries above (`SERVICE KEY/python-trading-bot-new-strat-10.json` in git history at `a2db013`) remains deliberately unaddressed -- confirmed private/personal repo, narrowly-scoped key, history purge and key rotation explicitly declined as out of scope. | A user hit `ECONNREFUSED` running `npm run dev` with no backend running, which led to a broader "make this ready to migrate to another computer" pass -- the missing/drifted dependency lists and undocumented two-step dev workflow were both real gaps a fresh machine would hit immediately.
-- 2026-08-12 | Quick Start (new "Migrating to a New Machine" subsection); `.gitignore` | correction | Added a step-by-step "Migrating to a New Machine" subsection (clone, install deps or Docker, manually copy the `SERVICE KEY/` JSON and set env vars if needed, run `Run_Dashboard.py`) so the credential/setup steps a previous entry documented piecemeal are in one place. Separately found and fixed a real gap in `.gitignore`: it excluded `.venv/`/`venv/`/`env/`/`*.pyc` but not `.env` itself, even though `.env.example`'s own header comment tells users to "copy to `.env` for your own reference" -- if that file ever gained real secrets it was not actually git-ignored. Added `.env` and `.env.*` (with `!.env.example` to keep the tracked example file from being excluded by the new pattern). This commit also carries the already-pending `requirements.txt`/`Dockerfile`/README changes from the entry above (left uncommitted at the end of that session) plus a routine artifact regeneration (`artifacts/*.json`, `backtest_results.db` -- timestamps only, confirmed zero numeric/MISMATCH diff via `artifacts/paper_sync_report.md`) and a new `docs/order_block_criteria_per_trade_reference.md`, pushed together to both `development` and `main` (fast-forward, `main` was an exact 1-commit ancestor) as part of a full migration-readiness pass. | Preparing the repo to be cloned onto a different machine surfaced both a documentation gap (no single migration checklist) and a real credential-safety gap (`.env` not git-ignored) that needed closing before pushing, not after.
-
-
+  `artifacts/candles.csv` and read into the simulation loop, but used only
+  for order-block touch detection and two quality criteria (displacement,
+  large-bar) — never for any exit or position-sizing decision. The engine
+  has no concept of a margin or liquidation price at any leverage level.
+  A defensible leveraged backtest requires intrabar liquidation tracking,
+  which is a real engine change, not an analysis-layer addition — see
+  `CHANGELOG.md`'s 2026-08-03 entry for the full reasoning. Until then,
+  this codebase reports unlevered returns only, consistent with common
+  practice in the technical-trading-rule literature.
+- The statistical-analysis functions in `research_analysis.py` (Section 5B)
+  are read-only lenses on the same 27-trade baseline; they are not
+  independent replications on new data (except `run_forward_oos_
+  validation()`'s live-pull section).
+- See `CLAUDE.md`'s "Open question" and "Known bugs" sections for
+  currently-unresolved methodological questions, and `CHANGELOG.md` for
+  every prior correction's full reasoning and verification trail.
