@@ -4,24 +4,6 @@
   min-width: 0;
 }
 
-.criterion-group {
-  margin-bottom: var(--space-4);
-}
-
-.criterion-group:last-child {
-  margin-bottom: 0;
-}
-
-.criterion-group-title {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--text-secondary);
-  margin: 0 0 var(--space-2) 0;
-  padding-bottom: var(--space-1);
-  border-bottom: 1px solid var(--border);
-}
-
 /* Single column, full-width -- these cards now contain multi-step
    derivations with tables and long substitutions; a 320px-min 3-across grid
    left no room for either. */

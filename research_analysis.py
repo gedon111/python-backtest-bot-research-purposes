@@ -523,9 +523,9 @@ def load_extended_candles_window(start_date, end_date, path=ARTIFACTS_CANDLES_EX
 #
 # Ported verbatim (formulas, thresholds, and control flow unchanged) from
 # src/Binance backtest bot.py's compute_indicators(), compute_smc(),
-# get_structural_tp(), kdj_reset_init/update/exit(), simulate_trades(), and
-# run_quality_sweep(). Only variable names and comments were changed for
-# readability -- see this file's module docstring.
+# get_structural_tp(), kdj_reset_init/update/exit(), and simulate_trades().
+# Only variable names and comments were changed for readability -- see this
+# file's module docstring.
 #
 # A note on the "ob" abbreviation used throughout this section: it stands
 # for "Order Block", the SMC (Smart Money Concepts) structure this engine
@@ -620,8 +620,7 @@ def compute_smc(df):
     Statistical/analytical question answered: none directly -- this
     identifies the price zones (Order Blocks) that simulate_trades() gates
     entries against, and scores each one on 5 independent quality criteria
-    used later by the per-criterion Fisher's-exact/Welch's-t tests in
-    Section 5.
+    used as a cumulative entry-eligibility threshold (min_ob_quality).
 
     Method: runs two independent passes over the candle series -- a "swing"
     pass (50-bar pivot lookback) and an "internal" pass (5-bar pivot
@@ -777,13 +776,12 @@ def _build_order_block_from_crossover(df, highs, lows, atr_200, parsed_highs, pa
     and bearish (SUPPLY) branches of compute_smc(), which are otherwise
     identical aside from which array they search for the defining extreme.
 
-    Statistical/analytical question answered: this is where each Order
-    Block's 5 independent (orthogonal, per CLAUDE.md Known bug #1) quality
-    criteria are evaluated -- displacement, large_bar, fvg (Fair Value Gap),
-    liquidity_sweep, and volume_expansion. These feed the per-criterion
-    Fisher's-exact/Welch's-t tests in Section 5, which ask: "do trades whose
-    entry Order Block had this criterion TRUE earn significantly different
-    returns than trades whose entry OB did not?"
+    Statistical/analytical question answered: none directly -- this is where
+    each Order Block's 5 independent quality criteria are evaluated --
+    displacement, large_bar, fvg (Fair Value Gap), liquidity_sweep, and
+    volume_expansion. Their sum is used only as a cumulative
+    entry-eligibility threshold (min_ob_quality), not as a per-criterion
+    statistical test.
 
     Parameters mirror the two call sites in compute_smc() -- see there for
     the no-lookahead invariants each forward-search loop below enforces.
@@ -1403,11 +1401,12 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
         Minimum composite quality score (0-5) an Order Block must have to
         gate an entry. None defaults to DEFAULT_MIN_OB_QUALITY (1). The
         paper's locked 27-trade baseline uses min_ob_quality=0 (no
-        filtering) -- see run_quality_sweep() and CLAUDE.md's "Locked
-        results".
+        filtering) -- see CLAUDE.md's "Locked results".
     iteration_parameters : dict or None
         Optional override dict; currently only supports overriding
-        'min_ob_quality'. Exists for run_quality_sweep()'s threshold loop.
+        'min_ob_quality'. Exists for callers that sweep min_ob_quality
+        across repeated simulate_trades() calls (e.g. the dashboard's
+        per-threshold ChartTab export).
 
     Returns
     -------
@@ -1426,8 +1425,9 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
 
     # Order Block detection is deterministic given (length, last close), so
     # it is cached across repeated calls on the same effective dataset --
-    # this matters for run_quality_sweep(), which calls simulate_trades()
-    # once per quality threshold on the same underlying candles.
+    # this matters when simulate_trades() is called once per quality
+    # threshold on the same underlying candles (e.g. the dashboard's
+    # per-threshold ChartTab export).
     global _smc_detection_cache
     cache_key = (len(df), float(df["close"].iloc[-1]) if not df.empty else 0.0)
     if cache_key in _smc_detection_cache:
@@ -1635,45 +1635,6 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
     return df
 
 
-def run_quality_sweep(df, levels=(0, 1, 2, 3)):
-    """
-    Run simulate_trades() once per Order Block minimum-quality threshold and
-    collect headline stats for each, for side-by-side comparison.
-
-    Statistical/analytical question answered: "how sensitive is the
-    strategy's performance to the OB quality gate?" -- not itself a formal
-    test, but the trade pools it produces feed the q>=0 vs q>=1 comparison
-    discussed in CLAUDE.md's locked results (the q>=1 significance-
-    conclusion flip from the no-lookahead fix).
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Candle data (compute_indicators() applied automatically inside
-        simulate_trades() if needed).
-    levels : iterable of int, default (0, 1, 2, 3)
-        Minimum quality thresholds to sweep.
-
-    Returns
-    -------
-    pandas.DataFrame
-        One row per threshold: min_quality, Total Trades, Total Net Return
-        (%), Avg Return/Trade (%), Win Rate (%).
-    """
-    sweep_rows = []
-    for quality_threshold in levels:
-        result_df = simulate_trades(df.copy(), min_ob_quality=quality_threshold)
-        stats = result_df.attrs.get("trade_stats", {})
-        sweep_rows.append({
-            "min_quality": quality_threshold,
-            "Total Trades": stats.get("Total Trades", 0),
-            "Total Net Return (%)": stats.get("Total Net Return (%)", 0.0),
-            "Avg Return/Trade (%)": stats.get("Avg Return/Trade (%)", 0.0),
-            "Win Rate (%)": stats.get("Win Rate (%)", 0.0),
-        })
-    return pd.DataFrame(sweep_rows)
-
-
 # ============================================================================
 # SECTION 3B: LIVE DATA PULL + GOOGLE SHEETS EXPORT PLUMBING
 # ============================================================================
@@ -1825,51 +1786,6 @@ def _get_or_create_sheet(workbook, title, rows=50000, cols=30):
     return ws
 
 
-def _format_df_for_export(df):
-    """Curated-column formatting for the (legacy, no-longer-default)
-    per-quality-threshold sheet export -- see push_all_thresholds_to_gsheet()."""
-    columns_to_export = [
-        "open_time", "open", "high", "low", "close",
-        "MACD", "MACD_signal", "MACD_hist",
-        "K", "D", "J",
-        "ATR", "ATR_200",
-        "Active_Supply", "Active_Demand",
-        "Entry_Price", "Stop_Loss", "Take_Profit", "Exit_Price",
-        "Trade_Status", "Running_PnL_%",
-    ]
-    df_copy = df[columns_to_export].copy()
-    df_copy.rename(columns={
-        "open_time": "Date/Time",
-        "open": "Open",
-        "high": "High",
-        "low": "Low",
-        "close": "Close",
-        "ATR": "ATR (14)",
-        "ATR_200": "ATR (200)",
-        "Active_Supply": "Supply Zone",
-        "Active_Demand": "Demand Zone",
-        "Entry_Price": "Entry Price",
-        "Stop_Loss": "Stop Loss",
-        "Take_Profit": "Take Profit",
-        "Exit_Price": "Exit Price",
-        "Trade_Status": "Trade Status",
-        "Running_PnL_%": "Running PnL %",
-    }, inplace=True)
-
-    df_copy["Date/Time"] = (pd.to_datetime(df_copy["Date/Time"], errors="coerce")
-                             .dt.strftime("%Y-%m-%d %H:%M:%S"))
-    for col in ["Entry Price", "Stop Loss", "Take Profit", "Exit Price"]:
-        df_copy[col] = df_copy[col].apply(
-            lambda x: f"{x:.4f}" if pd.notnull(x) else "")
-    for col in ["ATR (14)", "ATR (200)"]:
-        df_copy[col] = df_copy[col].apply(
-            lambda x: f"{x:.4f}" if pd.notnull(x) else "")
-    df_copy["Running PnL %"] = df_copy["Running PnL %"].apply(
-        lambda x: f"{x:.4f}%" if pd.notnull(x) and isinstance(x, (float, int)) else "")
-    df_copy = df_copy.astype(object).where(pd.notnull(df_copy), "")
-    return df_copy
-
-
 def _format_df_for_export_full(df):
     """Exports EVERY column present on the fully-simulated dataframe -- not
     the curated subset _format_df_for_export() selects. Column set is read
@@ -1945,46 +1861,6 @@ def _apply_pnl_formatting(ws, df_copy):
         ])
 
 
-def _write_summary_sheet(workbook, sweep_results):
-    needed_rows = len(sweep_results) + 5
-    needed_cols = 7
-    ws = _get_or_create_sheet(workbook, "Summary — Quality Sweep",
-                               rows=needed_rows, cols=needed_cols)
-    ws.clear()
-
-    header = [
-        "Min OB Quality",
-        "Total Trades",
-        "Total Net Return (%)",
-        "Avg Return / Trade (%)",
-        "Win Rate (%)",
-    ]
-    rows = [header]
-    for r in sweep_results:
-        rows.append([
-            str(r["quality"]),
-            str(r["total_trades"]),
-            f"{r['total_return']:.4f}",
-            f"{r['avg_return']:.4f}",
-            f"{r['win_rate']:.4f}",
-        ])
-
-    ws.update(rows)
-
-    format_cell_ranges(ws, [
-        ("A1:E1", CellFormat(
-            textFormat=TextFormat(bold=True),
-            backgroundColor=Color(0.18, 0.46, 0.71),
-        ))
-    ])
-
-    for i, r in enumerate(sweep_results, start=2):
-        color = Color(0.88, 0.95, 0.83) if r["total_return"] >= 0 else Color(0.98, 0.88, 0.88)
-        format_cell_ranges(ws, [(f"A{i}:E{i}", CellFormat(backgroundColor=color))])
-
-    print(f"  Summary sheet written ({len(sweep_results)} rows).")
-
-
 def _authorize_gsheet_workbook():
     scope = ["https://spreadsheets.google.com/feeds",
              "https://www.googleapis.com/auth/drive"]
@@ -2000,58 +1876,6 @@ def _authorize_gsheet_workbook():
     creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
     gc = gspread.authorize(creds)
     return gc.open_by_key(GOOGLE_SHEET_ID)
-
-
-def push_all_thresholds_to_gsheet(raw_df, levels=None, precomputed_dfs=None):
-    """Legacy per-quality-threshold sheet export ("Quality 0".."Quality 3" +
-    a sweep-summary sheet). Superseded by push_trades_and_results_to_gsheet()
-    (see CLAUDE.md's "Google Sheets pipeline" section) -- kept defined for
-    reference but NOT called by --serve's default push path. Do not re-wire
-    it back in without asking; it was deliberately superseded, not
-    deprecated by accident."""
-    if levels is None:
-        levels = [0, 1, 2, 3]
-
-    workbook = _authorize_gsheet_workbook()
-    sweep_results = []
-
-    for q in levels:
-        sheet_title = f"Quality {q}"
-        if precomputed_dfs and q in precomputed_dfs:
-            print(f"\n[{sheet_title}] Using precomputed simulation...")
-            sim_df = precomputed_dfs[q]
-        else:
-            print(f"\n[{sheet_title}] Running simulation...")
-            sim_df = simulate_trades(raw_df.copy(), min_ob_quality=q)
-
-        stats = sim_df.attrs.get("trade_stats", {})
-
-        print(f"  Trades: {stats.get('Total Trades', 0)}  |  "
-              f"Return: {stats.get('Total Net Return (%)', 0):.4f}%  |  "
-              f"Win Rate: {stats.get('Win Rate (%)', 0):.4f}%")
-
-        df_copy = _format_df_for_export(sim_df)
-        needed_rows = len(df_copy) + 10
-        needed_cols = len(df_copy.columns) + 2
-        ws = _get_or_create_sheet(workbook, sheet_title, rows=needed_rows, cols=needed_cols)
-
-        print(f"  Writing {len(df_copy)} rows to '{sheet_title}'...")
-        _write_sheet(ws, df_copy)
-        _apply_pnl_formatting(ws, df_copy)
-        print(f"  '{sheet_title}' done.")
-
-        sweep_results.append({
-            "quality": q,
-            "total_trades": int(stats.get("Total Trades", 0)),
-            "total_return": float(stats.get("Total Net Return (%)", 0.0)),
-            "avg_return": float(stats.get("Avg Return/Trade (%)", 0.0)),
-            "win_rate": float(stats.get("Win Rate (%)", 0.0)),
-        })
-
-    print("\n[Summary] Writing quality sweep comparison sheet...")
-    _write_summary_sheet(workbook, sweep_results)
-    print("\nCheck GSHEET: All threshold sheets exported successfully.")
-    return sweep_results
 
 
 # --- Google Sheets export: benchmark-vs-passive -----------------------------
@@ -2155,27 +1979,6 @@ _TRADE_SHEET_COLUMNS = [
     "tp_is_structural", "tp_ob_bar", "tp_ob_created_at", "tp_ob_type", "tp_ob_level", "tp_ob_quality",
 ]
 
-_OLD_QUALITY_SWEEP_SHEET_TITLES = [
-    "Quality 0", "Quality 1", "Quality 2", "Quality 3", "Quality 4",
-    "Summary — Quality Sweep",
-]
-
-
-def _delete_worksheet_if_exists(workbook, title):
-    try:
-        ws = workbook.worksheet(title)
-    except gspread.exceptions.WorksheetNotFound:
-        return False
-    workbook.del_worksheet(ws)
-    return True
-
-
-def _clean_old_quality_sweep_sheets(workbook):
-    removed = [t for t in _OLD_QUALITY_SWEEP_SHEET_TITLES if _delete_worksheet_if_exists(workbook, t)]
-    if removed:
-        print(f"  Removed old per-quality-threshold sheet(s): {', '.join(removed)}")
-
-
 def _write_trades_sheet(workbook, title, trades):
     header = _TRADE_SHEET_COLUMNS
     rows = [header]
@@ -2239,7 +2042,6 @@ def push_trades_and_results_to_gsheet(export_result):
     returns (top-level keys: main_window, formulation_period_window, each
     with label/window_start/window_end/trades/results)."""
     workbook = _authorize_gsheet_workbook()
-    _clean_old_quality_sweep_sheets(workbook)
 
     main_w = export_result["main_window"]
     _write_trades_sheet(workbook, "Trades 2022-2026", main_w["trades"])
@@ -2748,67 +2550,6 @@ def binomial_test(win_count, trade_count, null_win_probability=0.5):
     return {"p_one_sided": one_sided.pvalue, "p_two_sided": two_sided.pvalue}
 
 
-def fisher_exact_test(group_true_wins, group_true_losses, group_false_wins, group_false_losses):
-    """
-    Fisher's exact test on a 2x2 win/loss contingency table, comparing two
-    groups' win RATES (independent of return magnitude).
-
-    Statistical question answered: "do trades whose entry Order Block had a
-    given quality criterion TRUE win at a significantly different rate than
-    trades where it was FALSE?" Used per-criterion across the 5 orthogonal
-    OB quality criteria (displacement, large_bar, fvg, liquidity_sweep,
-    volume_expansion). Fisher's exact (rather than a chi-square test) is
-    used because several of the group sizes here are small (n as low as 4),
-    where the chi-square approximation is unreliable.
-
-    Parameters
-    ----------
-    group_true_wins, group_true_losses : int
-        Win/loss counts where the criterion was True.
-    group_false_wins, group_false_losses : int
-        Win/loss counts where the criterion was False.
-
-    Returns
-    -------
-    float
-        p-value.
-    """
-    contingency_table = [[group_true_wins, group_true_losses], [group_false_wins, group_false_losses]]
-    _, p_value = scipy_stats.fisher_exact(contingency_table)
-    return p_value
-
-
-def welch_t_test(group_true_returns, group_false_returns):
-    """
-    Welch's two-sample t-test on per-trade returns (pnl_pct), comparing two
-    groups' MEAN returns (unlike fisher_exact_test(), which compares win
-    rates only).
-
-    Statistical question answered: "do trades whose entry Order Block had a
-    given quality criterion TRUE earn a significantly different average
-    return than trades where it was FALSE?"
-
-    Why Welch's t-test (equal_var=False) rather than a standard pooled-
-    variance t-test: the True/False subgroups for each criterion have
-    different sample sizes AND no reason to assume equal variances (nothing
-    about an OB quality criterion implies its two subgroups should have
-    matched return volatility). Welch's test does not assume equal
-    variances, making it the more defensible default here.
-
-    Parameters
-    ----------
-    group_true_returns, group_false_returns : array-like
-        Per-trade pnl_pct values for each subgroup.
-
-    Returns
-    -------
-    dict
-        t_statistic, p_value.
-    """
-    t_statistic, p_value = scipy_stats.ttest_ind(group_true_returns, group_false_returns, equal_var=False)
-    return {"t_statistic": t_statistic, "p_value": p_value}
-
-
 def bootstrap_resample(values, bootstrap_resamples, seed, resample_size=None):
     """
     Nonparametric percentile bootstrap: resample `values` with replacement
@@ -2921,61 +2662,6 @@ def spearman_correlation(x_values, y_values):
     return {"rho": rho, "p_value": p_value, "n": len(x_values)}
 
 
-def mde_power_analysis(group_true_returns, group_false_returns, alpha, power):
-    """
-    Minimum Detectable Effect (MDE) for a two-sample comparison, at a given
-    significance level and target power, using the standard normal-
-    approximation formula:
-        MDE = (z_(alpha/2) + z_beta) * sqrt(SD_true^2/n_true + SD_false^2/n_false)
-
-    Statistical question answered: "given the actual observed subgroup
-    sizes and standard deviations, what is the smallest TRUE mean-return
-    gap between these two subgroups that this sample size could reliably
-    (80% of the time, at alpha=0.05) detect?" This reframes a
-    non-significant Welch's-t result: if the observed difference is smaller
-    than the MDE, the correct reading is "underpowered to rule out a gap up
-    to roughly +/-MDE", not "no gap exists".
-
-    Why a normal approximation to the Welch-t reference distribution is
-    adequate here: it is standard practice for a post-hoc power/MDE sanity
-    check at this scale, and here the subgroup sizes (n=4..23 across the 5
-    OB quality criteria) are themselves the binding constraint on power --
-    not the approximation error introduced by using a normal rather than a
-    t reference distribution.
-
-    Parameters
-    ----------
-    group_true_returns, group_false_returns : array-like
-        Per-trade pnl_pct values for each subgroup.
-    alpha : float
-        Significance level (e.g. 0.05).
-    power : float
-        Target statistical power (e.g. 0.80).
-
-    Returns
-    -------
-    dict
-        n_true, sd_true, n_false, sd_false, observed_diff, mde,
-        detectable (bool: is the observed difference >= MDE?).
-    """
-    z_alpha_2 = scipy_stats.norm.ppf(1 - alpha / 2)
-    z_beta = scipy_stats.norm.ppf(power)
-
-    n_true, n_false = len(group_true_returns), len(group_false_returns)
-    sd_true = np.std(group_true_returns, ddof=1)
-    sd_false = np.std(group_false_returns, ddof=1)
-    observed_diff = np.mean(group_true_returns) - np.mean(group_false_returns)
-
-    standard_error = np.sqrt(sd_true ** 2 / n_true + sd_false ** 2 / n_false)
-    mde = (z_alpha_2 + z_beta) * standard_error
-    detectable = abs(observed_diff) >= mde
-
-    return {
-        "n_true": n_true, "sd_true": sd_true, "n_false": n_false, "sd_false": sd_false,
-        "observed_diff": observed_diff, "mde": mde, "detectable": bool(detectable),
-    }
-
-
 def max_drawdown_pct(equity_curve):
     """
     Maximum percentage drawdown of an equity curve (peak-to-trough decline
@@ -3044,58 +2730,8 @@ def sharpe_sortino_ratios(bar_returns, periods_per_year):
 # analysis/oos_validation_analysis.py, analysis/paper_sync_report.py,
 # analysis/benchmark_vs_passive.py, analysis/export_trades_and_results.py.
 
-OB_QUALITY_CRITERIA_COLUMNS = {
-    "Displacement": "entry_ob_quality_displacement",
-    "LargeBar": "entry_ob_quality_large_bar",
-    "FVG": "entry_ob_quality_fvg",
-    "LiqSweep": "entry_ob_quality_liquidity_sweep",
-    "VolExpansion": "entry_ob_quality_volume_expansion",
-}
 PERIODS_PER_YEAR_4H_BARS = 6 * 365.25   # 4H bars/year, leap-year-averaged
 PERIODS_PER_YEAR_WEEKLY = 52
-
-
-def run_criteria_significance_tests(trades_df, pnl_column="pnl_pct"):
-    """
-    Run Fisher's exact test and Welch's t-test for each of the 5 orthogonal
-    OB quality criteria, comparing the True-subgroup against the
-    False-subgroup on win rate (Fisher) and mean return (Welch).
-
-    Statistical question answered: "does any individual OB quality
-    criterion predict trade outcome on its own?" -- ported from the
-    identical per-criterion loop duplicated across
-    analysis/fee_slippage_analysis.py, analysis/paper_sync_report.py, and
-    scratch/fee_slippage_audit.py (verified formula-identical at every call
-    site before consolidating here).
-
-    Parameters
-    ----------
-    trades_df : pandas.DataFrame
-        Must contain the 5 entry_ob_quality_* boolean columns and a return
-        column (`pnl_column`, default 'pnl_pct' -- pass 'pnl_pct_adj' for a
-        fee/slippage-adjusted scenario).
-
-    Returns
-    -------
-    dict
-        One entry per criterion name: true_n, true_wins, false_n,
-        false_wins, fisher_p, welch_t, welch_p.
-    """
-    results = {}
-    for name, column in OB_QUALITY_CRITERIA_COLUMNS.items():
-        mask = trades_df[column].astype(bool)
-        true_group = trades_df.loc[mask, pnl_column]
-        false_group = trades_df.loc[~mask, pnl_column]
-        true_wins = int((true_group > 0).sum())
-        false_wins = int((false_group > 0).sum())
-        fisher_p = fisher_exact_test(true_wins, len(true_group) - true_wins, false_wins, len(false_group) - false_wins)
-        welch_result = welch_t_test(true_group, false_group)
-        results[name] = {
-            "true_n": len(true_group), "true_wins": true_wins,
-            "false_n": len(false_group), "false_wins": false_wins,
-            "fisher_p": fisher_p, "welch_t": welch_result["t_statistic"], "welch_p": welch_result["p_value"],
-        }
-    return results
 
 
 def run_bootstrap_ci(trades_df, bootstrap_resamples=10000, seed=42):
@@ -3137,36 +2773,6 @@ def run_bootstrap_ci(trades_df, bootstrap_resamples=10000, seed=42):
         "pct_resamples_total_le_zero": (resamples["resample_totals"] <= 0).mean() * 100,
         "pct_resamples_avg_le_zero": (resamples["resample_means"] <= 0).mean() * 100,
     }
-
-
-def run_mde_power_report(trades_df, alpha=0.05, power=0.80):
-    """
-    Run mde_power_analysis() for each of the 5 orthogonal OB quality
-    criteria and collect the results into one report.
-
-    Statistical question answered: "for each criterion, is this sample
-    underpowered to detect its own observed effect size?" -- see
-    mde_power_analysis() in Section 5.
-
-    Parameters
-    ----------
-    trades_df : pandas.DataFrame
-    alpha : float, default 0.05
-    power : float, default 0.80
-
-    Returns
-    -------
-    dict
-        {"alpha":..., "power":..., "criteria": {name: mde_power_analysis()
-        result, ...}}
-    """
-    per_criterion = {}
-    for name, column in OB_QUALITY_CRITERIA_COLUMNS.items():
-        mask = trades_df[column].astype(bool)
-        per_criterion[name] = mde_power_analysis(
-            trades_df.loc[mask, "pnl_pct"], trades_df.loc[~mask, "pnl_pct"], alpha, power
-        )
-    return {"alpha": alpha, "power": power, "criteria": per_criterion}
 
 
 def run_benchmark_vs_buy_and_hold(df, trades_df):
@@ -3424,9 +3030,7 @@ def run_fee_slippage_sensitivity(trades_df, taker_fee_bps=5.0, slippage_bps=5.0,
     list of dict
         One entry per scenario: label, drag_pct, total_return_pct,
         avg_return_pct, sd_return_pct, wins, n, win_rate_pct,
-        binomial_p_one_sided, binomial_p_two_sided, flipped_trades (list),
-        criteria (per-criterion Fisher/Welch, via
-        run_criteria_significance_tests()).
+        binomial_p_one_sided, binomial_p_two_sided, flipped_trades (list).
     """
     fee_round_trip_pct = 2 * taker_fee_bps * 0.01
     slippage_round_trip_pct = 2 * slippage_bps * 0.01
@@ -3465,7 +3069,6 @@ def run_fee_slippage_sensitivity(trades_df, taker_fee_bps=5.0, slippage_bps=5.0,
                 {"entry_idx": int(r["entry_idx"]), "gross_pnl_pct": r["pnl_pct"], "net_pnl_pct": r["pnl_pct_adj"]}
                 for _, r in flipped.iterrows()
             ],
-            "criteria": run_criteria_significance_tests(adjusted, pnl_column="pnl_pct_adj"),
         })
     return results
 
@@ -3687,11 +3290,6 @@ def run_paper_sync_check(df):
     dict
         checks (list of {metric, locked, live, status}), any_mismatch (bool).
     """
-    order_blocks = compute_smc(df)
-    total_obs = len(order_blocks)
-    fvg_true_count = sum(1 for ob in order_blocks if ob.get("quality_fvg"))
-    fvg_true_pct = fvg_true_count / total_obs * 100 if total_obs else None
-
     baseline_sim = simulate_trades(df.copy(), min_ob_quality=0)
     baseline_trades = baseline_sim.attrs.get("trades_df", pd.DataFrame())
     baseline_stats = baseline_sim.attrs.get("trade_stats", {})
@@ -3713,9 +3311,6 @@ def run_paper_sync_check(df):
         check("Baseline avg return/trade (%)", LOCKED_BASELINE_AVG_RETURN_PCT, baseline_stats["Avg Return/Trade (%)"], tolerance=0.01),
         check("Baseline SD (%)", LOCKED_BASELINE_RETURN_SD_PCT, baseline_sd, tolerance=0.01),
         check("Baseline p (one-sided)", 0.026, baseline_binomial["p_one_sided"], tolerance=0.001),
-        check("Total detected Order Blocks", 761, total_obs),
-        check("FVG-true count", 253, fvg_true_count),
-        check("FVG-true (%)", 33.2, fvg_true_pct, tolerance=0.05),
     ]
     any_mismatch = any(c["status"] == "MISMATCH" for c in checks)
     return {"checks": checks, "any_mismatch": any_mismatch}
@@ -3734,76 +3329,6 @@ def run_paper_sync_check(df):
 CLAUDE_MD_PATH = os.path.join(BASE_DIR, "CLAUDE.md")
 PAPER_SYNC_REPORT_DEFAULT_OUT_PATH = os.path.join(BASE_DIR, "artifacts", "paper_sync_report.md")
 
-_PAPER_SYNC_CRITERIA_COLUMNS = {
-    "Displacement": "entry_ob_quality_displacement",
-    "LargeBar": "entry_ob_quality_large_bar",
-    "FVG": "entry_ob_quality_fvg",
-    "LiqSweep": "entry_ob_quality_liquidity_sweep",
-    "VolExpansion": "entry_ob_quality_volume_expansion",
-}
-_PAPER_SYNC_OB_QUALITY_FIELDS = {
-    "Displacement": "quality_displacement",
-    "LargeBar": "quality_large_bar",
-    "FVG": "quality_fvg",
-    "LiqSweep": "quality_liquidity_sweep",
-    "VolExpansion": "quality_volume_expansion",
-}
-
-
-def _paper_sync_threshold_sweep(df):
-    """Full q0-q5 sweep with binomial tests at every threshold (not just the
-    q>=0 baseline run_paper_sync_check() checks)."""
-    rows = []
-    for q in range(6):
-        sim_df = simulate_trades(df.copy(), min_ob_quality=q)
-        trades_df = sim_df.attrs.get("trades_df", pd.DataFrame())
-        n = len(trades_df)
-        if n == 0:
-            rows.append({"q": q, "n": 0})
-            continue
-        wins = int((trades_df["pnl_pct"] > 0).sum())
-        binomial_result = binomial_test(wins, n)
-        rows.append({
-            "q": q, "n": n, "wins": wins, "losses": n - wins,
-            "win_rate": wins / n * 100, "total_return": float(trades_df["pnl_pct"].sum()),
-            "avg_return": float(trades_df["pnl_pct"].mean()),
-            "sd": float(trades_df["pnl_pct"].std()) if n > 1 else float("nan"),
-            "p_one_sided": binomial_result["p_one_sided"], "p_two_sided": binomial_result["p_two_sided"],
-        })
-    return rows
-
-
-def _paper_sync_ob_population(order_blocks):
-    total = len(order_blocks)
-    counts = {name: sum(1 for ob in order_blocks if ob.get(field))
-              for name, field in _PAPER_SYNC_OB_QUALITY_FIELDS.items()}
-    quality_distribution = {q: 0 for q in range(6)}
-    for ob in order_blocks:
-        quality_distribution[int(ob.get("quality", 0))] += 1
-    return {"total": total, "criteria_true_counts": counts, "quality_distribution": quality_distribution}
-
-
-def _paper_sync_criteria_tests(trades_df):
-    results = {}
-    for name, col in _PAPER_SYNC_CRITERIA_COLUMNS.items():
-        true_pnl = trades_df.loc[trades_df[col] == True, "pnl_pct"]
-        false_pnl = trades_df.loc[trades_df[col] == False, "pnl_pct"]
-        true_n, false_n = len(true_pnl), len(false_pnl)
-        true_wins, false_wins = int((true_pnl > 0).sum()), int((false_pnl > 0).sum())
-        fisher_p = fisher_exact_test(
-            true_wins, true_n - true_wins, false_wins, false_n - false_wins,
-        ) if true_n and false_n else float("nan")
-        welch_result = welch_t_test(true_pnl.tolist(), false_pnl.tolist()) if true_n > 1 and false_n > 1 else None
-        results[name] = {
-            "true_n": true_n, "true_wins": true_wins,
-            "false_n": false_n, "false_wins": false_wins,
-            "fisher_p": fisher_p,
-            "welch_t": welch_result["t_statistic"] if welch_result else float("nan"),
-            "welch_p": welch_result["p_value"] if welch_result else float("nan"),
-        }
-    return results
-
-
 def _parse_claude_md_locked_results():
     """Regex-parse CLAUDE.md's "Locked results" prose into a dict of live-
     comparable values. Returns (locked_dict, raw_text)."""
@@ -3819,23 +3344,11 @@ def _parse_claude_md_locked_results():
         ("baseline_sd", r"SD\s*(\d+\.\d+)%", float),
         ("baseline_p_one_sided", r"One-sided binomial p\s*=\s*(\d+\.\d+)", float),
         ("baseline_p_two_sided", r"two-sided\s*(\d+\.\d+)\)\s*for the q>=0 baseline", float),
-        ("total_obs", r"(\d+)\s*detected Order Blocks", int),
-        ("fvg_true_count", r"FVG criterion true for\s*(\d+)\s*\(", int),
-        ("fvg_true_pct", r"FVG criterion true for\s*\d+\s*\((\d+\.\d+)%\)", float),
         ("bar_count", r"(\d[\d,]*)\s*bars \(1,461 days", lambda s: int(s.replace(",", ""))),
     ]
     for key, pattern, cast in checks:
         m = re.search(pattern, raw_text)
         locked[key] = cast(m.group(1)) if m else None
-
-    qdist_m = re.search(
-        r"OB quality distribution \(post-fix.*?\):\s*"
-        r"q0=(\d+), q1=(\d+),\s*\n?\s*q2=(\d+), q3=(\d+), q4=(\d+), q5=(\d+)",
-        raw_text,
-    )
-    locked["quality_distribution"] = (
-        {i: int(qdist_m.group(i + 1)) for i in range(6)} if qdist_m else None
-    )
 
     ablation_a_m = re.search(
         r"Ablation A \(indicators-only, entry-ATR stop\):\s*(\d+) trades,\s*(\d+\.\d+)%,\s*(-?\d+\.\d+)%", raw_text)
@@ -3916,49 +3429,34 @@ def generate_paper_sync_report(out_path=PAPER_SYNC_REPORT_DEFAULT_OUT_PATH, verb
     raw_df = load_candles()
     bar_count = len(raw_df)
 
-    log("[paper_sync_report] Computing indicators and Order Blocks...")
+    log("[paper_sync_report] Computing indicators...")
     base_df = compute_indicators(raw_df.copy())
-    order_blocks = compute_smc(base_df)
-    ob_population = _paper_sync_ob_population(order_blocks)
 
-    log("[paper_sync_report] Running q0-q5 threshold sweep...")
-    sweep_rows = _paper_sync_threshold_sweep(base_df)
-
-    log("[paper_sync_report] Running per-criterion Fisher/Welch tests on the q>=0 baseline...")
+    log("[paper_sync_report] Running the q>=0 baseline...")
     q0_sim = simulate_trades(base_df.copy(), min_ob_quality=0)
     q0_trades = q0_sim.attrs.get("trades_df", pd.DataFrame())
-    criteria_tests = _paper_sync_criteria_tests(q0_trades)
+    q0_stats = q0_sim.attrs.get("trade_stats", {})
+    q0_wins = int((q0_trades["pnl_pct"] > 0).sum())
+    q0_binomial = binomial_test(q0_wins, len(q0_trades)) if len(q0_trades) else {"p_one_sided": None}
+    q0_sd = float(q0_trades["pnl_pct"].std()) if len(q0_trades) > 1 else float("nan")
 
     log("[paper_sync_report] Parsing CLAUDE.md locked results...")
     locked, _ = _parse_claude_md_locked_results()
 
-    q0 = next(r for r in sweep_rows if r["q"] == 0)
     checks = [
         _PaperSyncCheck("Bar count", locked.get("bar_count"), bar_count),
-        _PaperSyncCheck("Baseline (q>=0) trades", locked.get("baseline_trades"), q0.get("n")),
-        _PaperSyncCheck("Baseline win rate (%)", locked.get("baseline_win_rate"), q0.get("win_rate"),
+        _PaperSyncCheck("Baseline (q>=0) trades", locked.get("baseline_trades"), q0_stats.get("Total Trades")),
+        _PaperSyncCheck("Baseline win rate (%)", locked.get("baseline_win_rate"), q0_stats.get("Win Rate (%)"),
                          fmt=lambda v: f"{v:.2f}", tol=0.01),
-        _PaperSyncCheck("Baseline total net return (%)", locked.get("baseline_total_return"), q0.get("total_return"),
+        _PaperSyncCheck("Baseline total net return (%)", locked.get("baseline_total_return"),
+                         q0_stats.get("Total Net Return (%)"), fmt=lambda v: f"{v:.2f}", tol=0.01),
+        _PaperSyncCheck("Baseline avg return/trade (%)", locked.get("baseline_avg_return"),
+                         q0_stats.get("Avg Return/Trade (%)"), fmt=lambda v: f"{v:.2f}", tol=0.01),
+        _PaperSyncCheck("Baseline SD (%)", locked.get("baseline_sd"), q0_sd,
                          fmt=lambda v: f"{v:.2f}", tol=0.01),
-        _PaperSyncCheck("Baseline avg return/trade (%)", locked.get("baseline_avg_return"), q0.get("avg_return"),
-                         fmt=lambda v: f"{v:.2f}", tol=0.01),
-        _PaperSyncCheck("Baseline SD (%)", locked.get("baseline_sd"), q0.get("sd"),
-                         fmt=lambda v: f"{v:.2f}", tol=0.01),
-        _PaperSyncCheck("Baseline p (one-sided)", locked.get("baseline_p_one_sided"), q0.get("p_one_sided"),
+        _PaperSyncCheck("Baseline p (one-sided)", locked.get("baseline_p_one_sided"), q0_binomial["p_one_sided"],
                          fmt=lambda v: f"{v:.3f}", tol=0.001),
-        _PaperSyncCheck("Total detected Order Blocks", locked.get("total_obs"), ob_population["total"]),
-        _PaperSyncCheck("FVG-true count", locked.get("fvg_true_count"), ob_population["criteria_true_counts"]["FVG"]),
     ]
-    fvg_pct_live = (ob_population["criteria_true_counts"]["FVG"] / ob_population["total"] * 100) if ob_population["total"] else None
-    checks.append(_PaperSyncCheck("FVG-true (%)", locked.get("fvg_true_pct"), fvg_pct_live,
-                                   fmt=lambda v: f"{v:.1f}", tol=0.05))
-    qdist_locked = locked.get("quality_distribution") or {}
-    for q in range(6):
-        checks.append(_PaperSyncCheck(f"OB quality distribution q{q}", qdist_locked.get(q),
-                                       ob_population["quality_distribution"][q]))
-
-    welch_ps_all5 = [v["welch_p"] for v in criteria_tests.values()]
-    welch_range_all5 = (min(welch_ps_all5), max(welch_ps_all5)) if welch_ps_all5 else (None, None)
 
     lines = [
         "# Paper/codebase sync report", "",
@@ -3972,40 +3470,6 @@ def generate_paper_sync_report(out_path=PAPER_SYNC_REPORT_DEFAULT_OUT_PATH, verb
         "|---|---|---|---|",
     ]
     lines.extend(c.row() for c in checks)
-    lines.append("")
-
-    lines.append("## Full q0-q5 threshold sweep (live)")
-    lines.append("")
-    lines.append("| q | N | Wins | Losses | Win rate | Total return | Avg/trade | SD | p (one-sided) | p (two-sided) |")
-    lines.append("|---|---|---|---|---|---|---|---|---|---|")
-    for r in sweep_rows:
-        if r.get("n", 0) == 0:
-            lines.append(f"| {r['q']} | 0 | - | - | - | - | - | - | - | - |")
-            continue
-        sd_s = f"{r['sd']:.2f}" if not np.isnan(r["sd"]) else "n/a (n=1)"
-        lines.append(
-            f"| {r['q']} | {r['n']} | {r['wins']} | {r['losses']} | {r['win_rate']:.2f}% | "
-            f"{r['total_return']:+.2f}% | {r['avg_return']:+.4f}% | {sd_s} | "
-            f"{r['p_one_sided']:.4f} | {r['p_two_sided']:.4f} |"
-        )
-    lines.append("")
-
-    lines.append("## Per-criterion Fisher's exact + Welch's t-test (live, q>=0 baseline)")
-    lines.append("")
-    lines.append("| Criterion | True n (wins) | False n (wins) | Fisher p | Welch t | Welch p |")
-    lines.append("|---|---|---|---|---|---|")
-    for name in _PAPER_SYNC_CRITERIA_COLUMNS:
-        r = criteria_tests[name]
-        lines.append(
-            f"| {name} | {r['true_n']} ({r['true_wins']}) | {r['false_n']} ({r['false_wins']}) | "
-            f"{r['fisher_p']:.4f} | {r['welch_t']:+.4f} | {r['welch_p']:.4f} |"
-        )
-    lines.append("")
-    if welch_range_all5[0] is not None:
-        lines.append(
-            f"Welch p-value range across all 5 criteria: "
-            f"**{welch_range_all5[0]:.4f}-{welch_range_all5[1]:.4f}**."
-        )
     lines.append("")
 
     lines.append("## Ablation A/B -- passthrough from CLAUDE.md, UNVERIFIED this run")
@@ -4808,7 +4272,7 @@ def write_statistical_artifacts(df, baseline_trades, output_dir="artifacts"):
     output_dir : str, default "artifacts"
     """
     write_json_results(
-        {"bootstrap_ci": run_bootstrap_ci(baseline_trades), "mde_power": run_mde_power_report(baseline_trades)},
+        {"bootstrap_ci": run_bootstrap_ci(baseline_trades)},
         os.path.join(output_dir, "bootstrap_power_analysis.json"),
     )
     write_json_results(
@@ -5170,14 +4634,6 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
         inputs={"win_count": baseline_wins, "trade_count": len(baseline_trades), "null_win_probability": 0.5},
         outputs={"p_one_sided": binomial_result["p_one_sided"], "p_two_sided": binomial_result["p_two_sided"]},
     )
-    criteria_significance = run_criteria_significance_tests(baseline_trades)
-    for name, r in criteria_significance.items():
-        report_stat(
-            f"Per-criterion significance: {name}",
-            inputs={"criterion": name, "true_n": r["true_n"], "true_wins": r["true_wins"],
-                    "false_n": r["false_n"], "false_wins": r["false_wins"]},
-            outputs={"fisher_p": r["fisher_p"], "welch_t": r["welch_t"], "welch_p": r["welch_p"]},
-        )
     bootstrap_ci = run_bootstrap_ci(baseline_trades, bootstrap_resamples, seed)
     report_stat(
         "Bootstrap 95% CI on baseline total/avg return",
@@ -5189,7 +4645,6 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
             "avg_return_ci_high_pct": bootstrap_ci["avg_return_ci_pct"][1],
         },
     )
-    mde_report = run_mde_power_report(baseline_trades)
     pearson_result = pearson_correlation(baseline_trades["hold_bars"].values, baseline_trades["pnl_pct"].values)
     spearman_result = spearman_correlation(baseline_trades["hold_bars"].values, baseline_trades["pnl_pct"].values)
     report_stat(
@@ -5201,8 +4656,8 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
         },
     )
     results["statistical_tests"] = {
-        "binomial": binomial_result, "criteria_significance": criteria_significance,
-        "bootstrap_ci": bootstrap_ci, "mde_power": mde_report,
+        "binomial": binomial_result,
+        "bootstrap_ci": bootstrap_ci,
         "hold_bars_vs_pnl_correlation": {"pearson": pearson_result, "spearman": spearman_result},
     }
 

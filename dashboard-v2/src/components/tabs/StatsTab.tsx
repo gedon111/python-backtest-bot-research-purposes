@@ -5,10 +5,8 @@ import {
   baselineTrades,
   computeBaselineOverview,
   computeCorrelations,
-  computeCriteriaTests,
   computeExitReasons,
   computeLongShort,
-  computeOrthogonalCriteria,
   computeOwnBootstrapCI,
 } from '../stats/statsCompute';
 import { binomialTestGreater, runDistributionSelfChecks } from '../stats/statMath';
@@ -31,8 +29,6 @@ export function StatsTab() {
   const allTrades = trades.data ?? [];
   const base = useMemo(() => baselineTrades(allTrades), [allTrades]);
   const overview = useMemo(() => computeBaselineOverview(allTrades), [allTrades]);
-  const orthogonal = useMemo(() => computeOrthogonalCriteria(allTrades), [allTrades]);
-  const criteriaTests = useMemo(() => computeCriteriaTests(allTrades), [allTrades]);
   const ownBootstrap = useMemo(() => computeOwnBootstrapCI(allTrades), [allTrades]);
   const correlations = useMemo(() => computeCorrelations(allTrades), [allTrades]);
   const exitReasons = useMemo(() => computeExitReasons(allTrades), [allTrades]);
@@ -98,69 +94,6 @@ export function StatsTab() {
                   <td>{row.stdDev == null ? '--' : pct(row.stdDev)}</td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="stat-card panel">
-        <h3>
-          Orthogonal Criteria: Fisher's Exact + Welch's t-test + MDE <span className="tag tag-live">LIVE</span>
-        </h3>
-        <div className="method-block">
-          <Latex
-            block
-            tex="p = \sum_{x:\,P(x)\leq P(x_{\text{obs}})} P(x), \quad P(x) = \dfrac{\binom{a+b}{x}\binom{c+d}{(a+c)-x}}{\binom{n}{a+c}}"
-          />
-          <div className="method-line">Fisher's exact test (two-sided), win/loss × criterion True/False.</div>
-          <Latex
-            block
-            tex="t = \dfrac{\bar{X}_1-\bar{X}_2}{\sqrt{s_1^2/n_1+s_2^2/n_2}}, \quad \text{MDE} = (z_{\alpha/2}+z_\beta)\sqrt{s_1^2/n_1+s_2^2/n_2}"
-          />
-          <div className="method-line">Welch's t-test on pnl_pct; MDE at α=0.05, power=0.80 (z=1.9600, z=0.8416).</div>
-        </div>
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Criterion</th>
-                <th>Subgroup</th>
-                <th>N</th>
-                <th>Mean Return</th>
-                <th>Best Trade</th>
-                <th>Fisher p</th>
-                <th>Welch t (p)</th>
-                <th>MDE</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orthogonal.map((row, i) => {
-                const test = criteriaTests[Math.floor(i / 2)];
-                return (
-                  <tr key={`${row.label}-${row.subgroup}`}>
-                    {row.subgroup === 'True' && (
-                      <td rowSpan={2} className="row-label">
-                        {row.label}
-                      </td>
-                    )}
-                    <td>{row.subgroup}</td>
-                    <td>{row.n}</td>
-                    <td>{spct(row.meanReturn)}</td>
-                    <td className="pnl-pos">+{row.bestTrade.toFixed(2)}%</td>
-                    {row.subgroup === 'True' && (
-                      <>
-                        <td rowSpan={2}>{test ? test.fisherP.toFixed(4) : '--'}</td>
-                        <td rowSpan={2}>
-                          {test && !isNaN(test.welch.t) ? `${snum(test.welch.t, 3)} (${test.welch.p.toFixed(4)})` : 'n<2'}
-                        </td>
-                        <td rowSpan={2}>
-                          {test ? `${pct(test.mde.mde, 2)} ${test.mde.detectable ? '' : '(underpowered)'}` : '--'}
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
             </tbody>
           </table>
         </div>

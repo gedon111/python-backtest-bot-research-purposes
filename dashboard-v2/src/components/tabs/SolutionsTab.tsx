@@ -1,20 +1,17 @@
 import { useMemo } from 'react';
 import './SolutionsTab.css';
 import { useCandles, useTrades } from '../../api/hooks';
-import { baselineProvenance, baselineTrades, computeCriteriaTests, computeOwnBootstrapCI } from '../stats/statsCompute';
-import { binomialTailTerms, binomialTestGreater, computeCorrelationPearson, computeCorrelationSpearman, fisherExactTerms } from '../stats/statMath';
+import { baselineProvenance, baselineTrades, computeOwnBootstrapCI } from '../stats/statsCompute';
+import { binomialTailTerms, binomialTestGreater, computeCorrelationPearson, computeCorrelationSpearman } from '../stats/statMath';
 import { dcaArm, lumpSumArm, strategyArm } from '../stats/benchmarkMath';
 import {
   binomialDerivation,
   bootstrapDerivation,
   dcaArmDerivation,
-  fisherDerivation,
   lumpSumArmDerivation,
-  mdeDerivation,
   pearsonDerivation,
   spearmanDerivation,
   strategyArmDerivation,
-  welchDerivation,
 } from '../stats/derivationSteps';
 import { DerivationCard } from '../stats/DerivationCard';
 
@@ -37,7 +34,6 @@ export function SolutionsTab() {
 
   const base = useMemo(() => baselineTrades(allTrades), [allTrades]);
   const prov = useMemo(() => baselineProvenance(allTrades), [allTrades]);
-  const criteriaTests = useMemo(() => computeCriteriaTests(allTrades), [allTrades]);
   const ownBootstrap = useMemo(() => computeOwnBootstrapCI(allTrades), [allTrades]);
 
   const baseWins = base.filter((t) => t.pnl_pct > 0).length;
@@ -106,29 +102,12 @@ export function SolutionsTab() {
       </section>
 
       <section className="stat-card panel">
-        <h3>2. Orthogonal Criteria: Fisher&apos;s Exact, Welch&apos;s t-test, MDE (per criterion)</h3>
-        {criteriaTests.map((row) => {
-          const fisherTerms = fisherExactTerms(row.trueWins, row.trueN - row.trueWins, row.falseWins, row.falseN - row.falseWins);
-          return (
-            <div key={row.label} className="criterion-group">
-              <h4 className="criterion-group-title">{row.label}</h4>
-              <div className="derivation-grid">
-                <DerivationCard step={fisherDerivation(row, fisherTerms)} />
-                <DerivationCard step={welchDerivation(row)} />
-                <DerivationCard step={mdeDerivation(row)} />
-              </div>
-            </div>
-          );
-        })}
-      </section>
-
-      <section className="stat-card panel">
-        <h3>3. Percentile Bootstrap CI</h3>
+        <h3>2. Percentile Bootstrap CI</h3>
         <DerivationCard step={bootstrapDerivation(ownBootstrap, pnl)} />
       </section>
 
       <section className="stat-card panel">
-        <h3>4. Correlation: Hold Duration vs. PnL</h3>
+        <h3>3. Correlation: Hold Duration vs. PnL</h3>
         <div className="derivation-grid">
           <DerivationCard step={pearsonDerivation(holdBars, pnl, pearson)} />
           <DerivationCard step={spearmanDerivation(holdBars, pnl, spearman)} />
@@ -136,7 +115,7 @@ export function SolutionsTab() {
       </section>
 
       <section className="stat-card panel">
-        <h3>5. Risk-Adjusted &amp; Benchmark Metrics</h3>
+        <h3>4. Risk-Adjusted &amp; Benchmark Metrics</h3>
         <p className="stats-legend text-muted">
           Sharpe, Sortino and Max Drawdown for the OB-gated strategy vs. weekly DCA into BTC vs. lump-sum
           buy-and-hold, at $10,000 notional starting capital, over the same locked 2022-2026 window

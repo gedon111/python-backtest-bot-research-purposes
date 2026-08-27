@@ -11,9 +11,9 @@
  * A DerivationStep is an ordered list of DerivationLine "steps", each an
  * ordered list of DerivationBlock. Blocks (not fixed formula/table/note
  * fields) exist because different derivations need different internal
- * orderings: Welch's mean step wants its raw-value TABLE before the mean
- * FORMULA, while Fisher's enumeration step wants the hypergeometric FORMULA
- * before its term TABLE.
+ * orderings: the bootstrap's replicate step wants its raw-draws TABLE before
+ * the sum/mean FORMULA, while the binomial's enumeration step wants the
+ * general FORMULA before its term TABLE.
  *
  * Every `tex` value handed to <Latex> stays an author-constant template with
  * only numeric leaves interpolated, per Latex.tsx's contract. Field names
@@ -24,17 +24,8 @@
  * Table cells are plain text for the same reason, and so KaTeX only ever
  * parses ~190 formula strings on this page, not one per data cell.
  */
-import type {
-  BinomialTerm,
-  BootstrapCIResult,
-  FisherTermsResult,
-  MdeResult,
-  PearsonResult,
-  SpearmanResult,
-  WelchResult,
-} from './statMath';
-import { Z_ALPHA_2, Z_BETA } from './statMath';
-import type { BaselineProvenance, CriterionTestRow } from './statsCompute';
+import type { BinomialTerm, BootstrapCIResult, PearsonResult, SpearmanResult } from './statMath';
+import type { BaselineProvenance } from './statsCompute';
 import type { ArmResult, DcaArmResult } from './benchmarkMath';
 
 export interface DerivationVariable {
@@ -90,11 +81,7 @@ export interface DerivationStep {
 // 4dp-stated 0.0261; at 6dp both reconcile exactly).
 const n2 = (v: number) => (Number.isNaN(v) ? '\\text{NaN}' : v.toFixed(2));
 const n4 = (v: number) => (Number.isNaN(v) ? '\\text{NaN}' : v.toFixed(4));
-const n6 = (v: number) => (Number.isNaN(v) ? '\\text{NaN}' : v.toFixed(6));
 const s2 = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`;
-/** A single value as a signed LaTeX term, negatives parenthesized so a
- * following " + " reads unambiguously (e.g. "0.78 + (-1.23)"). */
-const term = (v: number) => (v < 0 ? `(${v.toFixed(2)})` : v.toFixed(2));
 /** Locale-independent thousands separator (not toLocaleString(), whose
  * output depends on the reader's browser locale -- "2,000" in en-US is
  * "2.000" in de-DE, making a `tex` string non-author-constant). */
@@ -148,47 +135,6 @@ function valuesTable(description: string, values2: number[]): DerivationBlock {
     headers: ['#', 'pnl_pct'],
     rows: values2.map((v, i) => ({ cells: [String(i + 1), s2(v) + '%'] })),
   });
-}
-
-/** Mean sub-derivation as a full DerivationLine: raw-values table, then the
- * general formula, the expanded sum, and the (already-computed) result. */
-function meanLine(symbol: string, description: string, vals: number[], resultValue: number): DerivationLine {
-  const n = vals.length;
-  const sumTex = vals.map(term).join(' + ');
-  return {
-    label: `Mean, ${description}`,
-    blocks: [
-      valuesTable(description, vals),
-      algebra('\\bar{X} = \\dfrac{1}{n}\\sum_{i=1}^{n} X_i', `${symbol} = \\dfrac{${sumTex}}{${n}}`, `${symbol} = ${s2(resultValue)}\\%`),
-    ],
-  };
-}
-
-/** Sample-variance (Bessel-corrected) sub-derivation. `showTable` controls
- * whether the raw values are re-listed -- skipped when the same subgroup's
- * table was already shown in an adjacent step (e.g. the mean step directly
- * above), so the page doesn't repeat a 20+ row table twice in a row. */
-function varianceLine(
-  symbol: string,
-  description: string,
-  vals: number[],
-  meanValue: number,
-  resultValue: number,
-  opts: { asSd: boolean; showTable: boolean },
-): DerivationLine {
-  const n = vals.length;
-  const meanStr = s2(meanValue);
-  const devTex = vals.map((v) => `(${term(v)} - ${meanStr})^2`).join(' + ');
-  const formulaTex = opts.asSd
-    ? 's = \\sqrt{\\dfrac{1}{n-1}\\sum_{i=1}^{n} (X_i-\\bar{X})^2}'
-    : 's^2 = \\dfrac{1}{n-1}\\sum_{i=1}^{n} (X_i-\\bar{X})^2';
-  const substitutedTex = opts.asSd
-    ? `${symbol} = \\sqrt{\\dfrac{${devTex}}{${n}-1}}`
-    : `${symbol} = \\dfrac{${devTex}}{${n}-1}`;
-  const blocks: DerivationBlock[] = [];
-  if (opts.showTable) blocks.push(valuesTable(description, vals));
-  blocks.push(algebra(formulaTex, substitutedTex, `${symbol} = ${n4(resultValue)}`));
-  return { label: `${opts.asSd ? 'Standard deviation' : 'Sample variance'}, ${description}`, blocks };
 }
 
 // ─── 1. One-sided exact binomial test ──────────────────────────────────────
@@ -281,263 +227,6 @@ export function binomialDerivation(prov: BaselineProvenance, k: number, p0: numb
     prose:
       "One-sided because the pre-registered hypothesis is directional -- that the strategy's win rate " +
       'exceeds the 50% zero-edge null, not merely that it differs from 50% in either direction.',
-  };
-}
-
-// ─── 2. Fisher's exact test (per orthogonal criterion) ─────────────────────
-export function fisherDerivation(row: CriterionTestRow, terms: FisherTermsResult): DerivationStep {
-  const a = row.trueWins;
-  const b = row.trueN - row.trueWins;
-  const c = row.falseWins;
-  const d = row.falseN - row.falseWins;
-  return {
-    id: `fisher-${row.label}`,
-    title: `Fisher's Exact Test -- ${row.label}`,
-    steps: [
-      {
-        label: `Build the 2x2 table from ${row.field}`,
-        blocks: [
-          values([
-            { symbol: 'a', description: `${row.label}=True, win`, value: String(a) },
-            { symbol: 'b', description: `${row.label}=True, loss`, value: String(b) },
-            { symbol: 'c', description: `${row.label}=False, win`, value: String(c) },
-            { symbol: 'd', description: `${row.label}=False, loss`, value: String(d) },
-          ]),
-          algebra(`\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}`, `\\begin{bmatrix} ${a} & ${b} \\\\ ${c} & ${d} \\end{bmatrix}`),
-          note(`a,b,c,d partition the N=${terms.n} baseline trades by win/loss (pnl_pct > 0) crossed with whether the ${row.field} field is true.`),
-        ],
-      },
-      {
-        label: 'Row/column margins and total',
-        blocks: [
-          algebra(
-            'n_1 = a+b, \\quad n_2 = c+d, \\quad m_1 = a+c, \\quad m_2 = b+d, \\quad n = n_1+n_2',
-            `n_1 = ${a}+${b}, \\; n_2 = ${c}+${d}, \\; m_1 = ${a}+${c}, \\; m_2 = ${b}+${d}, \\; n = ${terms.n}`,
-            `n_1 = ${terms.rowSum1}, \\; n_2 = ${terms.rowSum2}, \\; m_1 = ${terms.colSum1}, \\; m_2 = ${terms.colSum2}, \\; n = ${terms.n}`,
-          ),
-        ],
-      },
-      {
-        label: 'Hypergeometric probability of any table with these margins',
-        blocks: [
-          algebra('P(x) = \\dfrac{\\binom{n_1}{x}\\binom{n_2}{m_1-x}}{\\binom{n}{m_1}}'),
-          note('x is the (a)-cell count -- the number of True&Win trades -- ranging over every table sharing these same row/column margins.'),
-        ],
-      },
-      {
-        label: 'Probability of the observed table',
-        blocks: [
-          algebra(
-            `P(x_{\\text{obs}}) = \\dfrac{\\binom{${terms.rowSum1}}{${terms.xObs}}\\binom{${terms.rowSum2}}{${terms.colSum1}-${terms.xObs}}}{\\binom{${terms.n}}{${terms.colSum1}}}`,
-            undefined,
-            `P(x_{\\text{obs}}) = ${pFmtTex(terms.pObs)}`,
-          ),
-          note(
-            `A table is included in the two-sided sum if its probability is <= P(x_obs) plus a small floating-point ` +
-              `tolerance (epsilon = ${terms.epsilon.toExponential(0)}); the comparison is actually done in log-probability ` +
-              'space (log P(x) <= log P(x_obs) + epsilon), which is why the enumeration table below also lists log P(x).',
-          ),
-        ],
-      },
-      {
-        label: `Enumerate every table with these margins, x = ${terms.xMin}..${terms.xMax}`,
-        blocks: [
-          table({
-            caption: `All ${terms.terms.length} tables, P(x) and inclusion in the two-sided sum`,
-            headers: ['x', 'P(x)', 'log P(x)', 'Included?'],
-            rows: terms.terms.map((t) => ({
-              cells: [String(t.x), pFmtTable(t.p), t.logP.toFixed(4), t.included ? 'yes' : 'no -- more likely than observed'],
-              emphasis: t.x === terms.xObs ? 'observed' : t.included ? undefined : 'excluded',
-            })),
-          }),
-        ],
-      },
-      {
-        label: 'Sum the included tables',
-        blocks: [
-          algebra(
-            'p = \\sum_{x:\\, P(x) \\leq P(x_{\\text{obs}})+\\epsilon} P(x)',
-            `p = ${terms.terms
-              .filter((t) => t.included)
-              .map((t) => pFmtTex(t.p))
-              .join(' + ')}`,
-            `p = ${n4(row.fisherP)}`,
-          ),
-        ],
-      },
-      {
-        label: 'Compare to alpha = 0.05',
-        blocks: [
-          note(
-            `${n4(row.fisherP)} ${row.fisherP < 0.05 ? '<' : '>='} 0.05, so the association between ${row.label} and ` +
-              `win/loss is ${row.fisherP < 0.05 ? 'significant' : 'not significant'} at alpha=0.05.`,
-          ),
-        ],
-      },
-    ],
-    resultTex: `p = ${n4(row.fisherP)}`,
-    prose:
-      'Two-sided exact test on the 2x2 win/loss x criterion-True/False contingency table, over the baseline. ' +
-      "Sums the exact hypergeometric probability of every table with the same row/column margins whose " +
-      "probability is <= the observed table's -- matches scipy.stats.fisher_exact(alternative='two-sided').",
-  };
-}
-
-// ─── 3. Welch's t-test (per orthogonal criterion) ───────────────────────────
-export function welchDerivation(row: CriterionTestRow): DerivationStep {
-  const w: WelchResult = row.welch;
-  return {
-    id: `welch-${row.label}`,
-    title: `Welch's t-test -- ${row.label}`,
-    steps: [
-      {
-        label: `Partition the baseline by ${row.field}`,
-        blocks: [
-          values([
-            { symbol: 'n_1', description: `${row.label}=True subgroup size`, value: String(w.n1) },
-            { symbol: 'n_2', description: `${row.label}=False subgroup size`, value: String(w.n2) },
-          ]),
-        ],
-      },
-      meanLine('\\bar{X}_1', `${row.label}=True`, row.trueValues, w.m1),
-      meanLine('\\bar{X}_2', `${row.label}=False`, row.falseValues, w.m2),
-      varianceLine('s_1^2', `${row.label}=True`, row.trueValues, w.m1, w.v1, { asSd: false, showTable: false }),
-      varianceLine('s_2^2', `${row.label}=False`, row.falseValues, w.m2, w.v2, { asSd: false, showTable: false }),
-      {
-        label: 'Standard error',
-        blocks: [
-          algebra('a_1 = s_1^2/n_1', `a_1 = ${n4(w.v1)}/${w.n1}`, `a_1 = ${n4(w.a1)}`),
-          algebra('a_2 = s_2^2/n_2', `a_2 = ${n4(w.v2)}/${w.n2}`, `a_2 = ${n4(w.a2)}`),
-          algebra('SE^2 = a_1 + a_2', `SE^2 = ${n4(w.a1)} + ${n4(w.a2)}`, `SE^2 = ${n4(w.se2)}`),
-          algebra('SE = \\sqrt{SE^2}', `SE = \\sqrt{${n4(w.se2)}}`, `SE = ${n4(w.se)}`),
-        ],
-      },
-      {
-        label: 't statistic',
-        blocks: [algebra('t = \\dfrac{\\bar{X}_1-\\bar{X}_2}{SE}', `t = \\dfrac{${s2(w.m1)} - (${s2(w.m2)})}{${n4(w.se)}}`, `t = ${s2(w.t)}`)],
-      },
-      {
-        label: 'Welch-Satterthwaite degrees of freedom',
-        blocks: [
-          algebra('\\text{df}_{\\text{num}} = (SE^2)^2', `(${n4(w.se2)})^2`, `\\text{df}_{\\text{num}} = ${n4(w.dfNum)}`),
-          algebra(
-            '\\text{df}_{\\text{den}} = \\dfrac{a_1^2}{n_1-1} + \\dfrac{a_2^2}{n_2-1}',
-            `\\dfrac{${n4(w.a1)}^2}{${w.n1}-1} + \\dfrac{${n4(w.a2)}^2}{${w.n2}-1}`,
-            `\\text{df}_{\\text{den}} = ${n6(w.dfDen1 + w.dfDen2)}`,
-          ),
-          algebra(
-            '\\text{df} = \\dfrac{\\text{df}_{\\text{num}}}{\\text{df}_{\\text{den}}}',
-            `\\text{df} = \\dfrac{${n4(w.dfNum)}}{${n6(w.dfDen1 + w.dfDen2)}}`,
-            `\\text{df} = ${n2(w.df)}`,
-          ),
-        ],
-      },
-      {
-        label: 'p-value',
-        blocks: [
-          algebra('x = \\dfrac{\\text{df}}{\\text{df}+t^2}', `x = \\dfrac{${n2(w.df)}}{${n2(w.df)}+(${s2(w.t)})^2}`, `x = ${n4(w.tX)}`),
-          algebra('p = I_x(\\text{df}/2,\\, 1/2)', `p = I_{${n4(w.tX)}}(${n2(w.df / 2)},\\, 0.5)`, `p = ${n4(w.p)}`),
-          note(INCOMPLETE_BETA_NOTE),
-        ],
-      },
-      {
-        label: 'Compare to alpha = 0.05',
-        blocks: [
-          note(
-            `${n4(w.p)} ${w.p < 0.05 ? '<' : '>='} 0.05, so the mean-return difference between ${row.label}=True and ` +
-              `${row.label}=False is ${w.p < 0.05 ? 'significant' : 'not significant'} at alpha=0.05.`,
-          ),
-        ],
-      },
-    ],
-    resultTex: `t = ${s2(w.t)}, \\; \\text{df} = ${n2(w.df)}, \\; p = ${n4(w.p)}`,
-    prose:
-      "Unequal-variance (Welch's, not Student's) two-sample t-test on pnl_pct, True vs. False subgroups. " +
-      "Welch's form is used because subgroup sizes and variances are unequal and small -- matches " +
-      'scipy.stats.ttest_ind(equal_var=False).',
-  };
-}
-
-// ─── 4. Minimum Detectable Effect (per orthogonal criterion) ───────────────
-export function mdeDerivation(row: CriterionTestRow): DerivationStep {
-  const m: MdeResult = row.mde;
-  return {
-    id: `mde-${row.label}`,
-    title: `Minimum Detectable Effect -- ${row.label}`,
-    steps: [
-      {
-        label: 'Reuse the True/False subgroups',
-        blocks: [
-          note(
-            `Same ${row.field}=True/False partition of the baseline as the Welch's t-test card above -- see ` +
-              'its first step for the raw pnl_pct values behind each subgroup.',
-          ),
-        ],
-      },
-      varianceLine('s_1', `${row.label}=True`, row.trueValues, row.welch.m1, m.sd1, { asSd: true, showTable: false }),
-      varianceLine('s_2', `${row.label}=False`, row.falseValues, row.welch.m2, m.sd2, { asSd: true, showTable: false }),
-      {
-        label: 'Where the critical values come from',
-        blocks: [
-          values([
-            { symbol: 'z_{\\alpha/2}', description: 'two-sided critical value, alpha=0.05', value: n4(Z_ALPHA_2) },
-            { symbol: 'z_\\beta', description: 'critical value, power=0.80', value: n4(Z_BETA) },
-          ]),
-          note(
-            'These are the standard-normal quantiles Phi^-1(0.975) and Phi^-1(0.80). They are NOT evaluated by an ' +
-              'inverse-normal-CDF routine in this browser -- they are fixed constants, hardcoded to match ' +
-              "analysis/bootstrap_power_analysis.py's own defaults (--alpha 0.05 --power 0.80), since this " +
-              'dashboard does not expose alpha/power as tunable inputs.',
-          ),
-        ],
-      },
-      {
-        label: 'Standard error',
-        blocks: [
-          algebra(
-            'SE = \\sqrt{s_1^2/n_1 + s_2^2/n_2}',
-            `SE = \\sqrt{${n4(m.sd1)}^2/${m.n1} + ${n4(m.sd2)}^2/${m.n2}}`,
-            `SE = ${n4(m.se)}`,
-          ),
-          note(
-            "This SE is the same formula as Welch's SE above, but computed independently here from s (this " +
-              "card's own sd -> square path) rather than Welch's s^2 (its variance directly). The two are " +
-              'numerically equal for this data but are not guaranteed bit-identical in general, since ' +
-              'sqrt(v)**2 does not always equal v exactly in floating point.',
-          ),
-        ],
-      },
-      {
-        label: 'Minimum detectable effect',
-        blocks: [
-          algebra(
-            '\\text{MDE} = (z_{\\alpha/2}+z_\\beta)\\, SE',
-            `\\text{MDE} = (${n4(Z_ALPHA_2)} + ${n4(Z_BETA)}) \\times ${n4(m.se)}`,
-            `\\text{MDE} = ${n2(m.mde)}\\%`,
-          ),
-        ],
-      },
-      {
-        label: 'Compare to the observed difference',
-        blocks: [
-          algebra(
-            '|\\bar{X}_1-\\bar{X}_2|\\ \\text{vs.}\\ \\text{MDE}',
-            `${n2(Math.abs(m.observedDiff))}\\%\\ \\text{vs.}\\ ${n2(m.mde)}\\%`,
-            `\\text{${m.detectable ? 'detectable' : 'underpowered'}}`,
-          ),
-          note(
-            m.detectable
-              ? 'The observed difference exceeds the MDE: this sample size could reliably detect an effect of this size.'
-              : 'The observed difference is SMALLER than the MDE: this sample size cannot reliably distinguish an effect ' +
-                'of this size from noise. Reported plainly, not softened -- this is the case for all 5 orthogonal criteria.',
-          ),
-        ],
-      },
-    ],
-    resultTex: `\\text{MDE} = ${n2(m.mde)}\\%, \\quad |\\bar{X}_1-\\bar{X}_2| = ${n2(Math.abs(m.observedDiff))}\\%\\ (${m.detectable ? 'detectable' : 'underpowered'})`,
-    prose:
-      'Two-sample normal-approximation MDE at alpha=0.05, power=0.80 -- the smallest true mean difference ' +
-      "this subgroup split could reliably detect at these sample sizes.",
   };
 }
 

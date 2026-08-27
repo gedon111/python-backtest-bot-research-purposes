@@ -59,18 +59,6 @@ the change, not an improvement:
 - Baseline (min_ob_quality=0): 27 trades, 70.37% win rate, +30.31% total net
   return, +1.12% avg return/trade, SD 2.41%
 - One-sided binomial p = 0.026 (two-sided 0.052) for the q>=0 baseline.
-- q>=1 one-sided binomial p: 0.038 (n=26, pre-fix) -> 0.054 (n=25,
-  post-fix as of commit cb4ed93). This is a SIGNIFICANCE-CONCLUSION FLIP
-  (marginally significant -> not significant at alpha=0.05), not a modest
-  revision - driven by a single trade (entry_idx=3100) losing its only
-  quality point (FVG) under the corrected no-lookahead computation. See
-  Known bugs #3. Consistent with the Limitations section's existing
-  small-sample caveat about q>=1's thin N.
-- 761 detected Order Blocks; FVG criterion true for 253 (33.2%) as of
-  commit cb4ed93 (was 362 / 47.6% pre-fix; corrected, see Known bugs #3).
-- OB quality distribution (post-fix, commit cb4ed93): q0=93, q1=154,
-  q2=206, q3=197, q4=90, q5=21 (was q0=77, q1=147, q2=200, q3=192, q4=112,
-  q5=33 pre-fix; corrected, see Known bugs #3).
 - Ablation A (indicators-only, entry-ATR stop): 140 trades, 60.00%, -14.63%
 - Ablation B (indicators-only, swing-pivot stop): 138 trades, 55.07%, -25.50%
 - Dataset: artifacts/candles.csv, 8,767 bars (1,461 days incl. 2024 leap day
@@ -129,36 +117,21 @@ file is now newer than the working one before assuming the code is broken.
 Do not "fix" anything that looks related to these without asking. Apparent
 oddities nearby may be intentional:
 
-1. The composite 0-5 quality score was non-orthogonal (higher-scored sets were
-   nested subsets of lower-scored ones). Replaced by independent per-criterion
-   evaluation. The score field still exists and is still computed; it is no
-   longer used as an ordinal threshold for analysis.
-2. FVG used an adjacent-candle test (lows[j+1] > highs[j]) instead of the
-   three-candle definition (lows[j+2] > highs[j]). Corrected.
-3. FVG and displacement quality criteria could read 1-2 bars past an Order
+1. FVG and displacement quality criteria could read 1-2 bars past an Order
    Block's own confirmation bar - the forward-search loop was bounded by
    dataset length, not by the confirmation bar. Found via the no-lookahead
-   audit; fixed by freezing the search window at the confirmation bar.
-   Affects 110/761 OBs' quality scores (FVG true: 362->253, 47.6%->33.2%;
-   displacement true: 112->107). Does not change the 27-trade q>=0 baseline
-   (unaffected by quality filtering) but drops q>=1 from 26->25 trades,
-   flipping its one-sided binomial significance (0.038->0.054). Corrected
-   as of commit cb4ed93. Distinct in kind from bugs #1-2 above (those were
-   definitional corrections; this was data leakage across the confirmation
-   boundary). Pending: the paper's Results narrative sentence reporting the
-   Welch's t-test p-value range across all 5 orthogonal criteria (currently
-   "0.38-0.90" pre-fix) should become "0.38-0.78" post-fix (only FVG's
-   value moved, from 0.8956 to 0.5996; LargeBar's 0.7751 is now the max).
-   The paper itself has not been touched by this correction pass.
+   audit; fixed by freezing the search window at the confirmation bar. Does
+   not change the 27-trade q>=0 baseline (unaffected by quality filtering).
+   Corrected as of commit cb4ed93.
 
-If you find a THIRD bug, STOP and report it. Do not fix it silently. A newly
+If you find a SECOND bug, STOP and report it. Do not fix it silently. A newly
 discovered error changes what the paper claims, so I need to see it first.
 
 ## Paper reporting corrections (distinct from the backtest-engine bugs above)
 
 Found in a 2026-08-08 cross-surface numerical audit. These are reporting/
 documentation errors, NOT backtest-engine bugs - they do not count toward
-the "THIRD bug" rule above, and none of them touch a locked result.
+the "SECOND bug" rule above, and none of them touch a locked result.
 
 1. Pearson/Spearman correlation (hold_bars vs pnl_pct, 27 baseline trades)
    p-values were reported as "p < 0.001" in docs/paper_full_update_2026-08-08.md

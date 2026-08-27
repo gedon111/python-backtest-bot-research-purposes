@@ -4,9 +4,9 @@ A Python research toolkit that backtests a rule-based BTC/USDT trading
 strategy (MACD + KDJ + ATR + Smart Money Concepts order blocks) on 4-hour
 candles, then serves the results through a local interactive dashboard. It
 also includes a full statistical-significance and robustness suite
-(binomial/Fisher/Welch tests, bootstrap confidence intervals, correlation
-analysis, power/MDE analysis, fee/slippage sensitivity, regime breakdown,
-out-of-sample validation, and benchmark-vs-passive comparisons).
+(binomial test, bootstrap confidence intervals, correlation analysis,
+fee/slippage sensitivity, regime breakdown, an indicators-only ablation
+study, out-of-sample validation, and benchmark-vs-passive comparisons).
 
 **This is a research/reporting artifact for an ISEF science-fair paper, not
 a live-trading system.** It simulates trades against historical data and
@@ -516,8 +516,8 @@ same 27-trade `min_ob_quality=0` baseline. Pass `--json-out PATH` to
 
 | Function | What it does |
 |---|---|
-| `run_fee_slippage_sensitivity()` | Applies Binance's confirmed USDT-M Futures taker fee (0.05%/side) plus a labeled conservative slippage estimate, reruns binomial/Fisher/Welch tests on the fee-adjusted PnL. |
-| `run_bootstrap_ci()` / `run_mde_power_report()` | Nonparametric percentile bootstrap (default B=10,000) for a 95% CI on total/average return; minimum-detectable-effect (MDE)/power calculation per order-block quality criterion. |
+| `run_fee_slippage_sensitivity()` | Applies Binance's confirmed USDT-M Futures taker fee (0.05%/side) plus a labeled conservative slippage estimate, reruns the binomial test on the fee-adjusted PnL. |
+| `run_bootstrap_ci()` | Nonparametric percentile bootstrap (default B=10,000) for a 95% CI on total/average return. |
 | `run_benchmark_vs_buy_and_hold()` / `run_dca_blend_analysis()` | Strategy vs. buy-and-hold equity curve, Sharpe/Sortino/max drawdown, Pearson correlation of per-trade return vs. BTC's return over the same window, plus a DCA "complementary sleeve" blend. |
 | `run_benchmark_vs_passive()` | Dollar-denominated head-to-head: OB-gated strategy vs. weekly DCA vs. lump-sum buy-and-hold, both the locked 2022-2026 window and the 2018-2022 formulation-period window, gross and fee-adjusted. |
 | `run_regime_breakdown()` | Tags each baseline trade by macro regime under two independent methods (calendar split, and price-drawdown-from-ATH), reports win rate/return contribution per regime. |
