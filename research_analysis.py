@@ -1812,6 +1812,20 @@ def _write_sheet(ws, df_copy):
     ws.update([df_copy.columns.values.tolist()] + df_copy.values.tolist())
 
 
+def _write_sheet_formulas(ws, rows, chunk_size=4000):
+    """Like _write_sheet, but for rows containing live '=...' formula
+    strings. gspread's default value_input_option is RAW, which stores a
+    leading '=' as a literal text string -- USER_ENTERED makes Sheets parse
+    it as a real formula, which is the entire point of the HandCalc tabs
+    (Charles must be able to click a cell and see/defend the formula, not a
+    Python-computed literal). Chunked so a large tab (e.g. an 8,700-bar
+    per-bar equity curve) doesn't risk a single oversized API request."""
+    ws.clear()
+    for start in range(0, len(rows), chunk_size):
+        batch = rows[start:start + chunk_size]
+        ws.update(batch, range_name=f"A{start + 1}", value_input_option="USER_ENTERED")
+
+
 def _apply_pnl_formatting(ws, df_copy):
     closed_kw = [
         "HIT STOP LOSS", "HIT TAKE PROFIT",
@@ -2072,6 +2086,633 @@ def push_candles_to_gsheet(candles_result):
         print(f"  '{title}' done.")
 
     print("\nCheck GSHEET: candle-level sheets exported successfully.")
+
+
+# --- Google Sheets export: hand-reproducible ("HandCalc") stats -------------
+# Built for ISEF panel defense: Charles had AI compute the paper's
+# statistics (scipy-backed, this file) and cannot currently reproduce any of
+# them live if a panelist asks. Every tab below is raw exported data plus
+# real, native Google Sheets formulas over that data -- not a number Python
+# already computed that the sheet just displays. The ONE exception is
+# _hc_bootstrap_ci_tab()'s 10,000 seeded resamples: numpy's Generator RNG
+# (seed=42) has no native Sheets equivalent and Sheets' own RNG couldn't
+# reproduce the paper's canonical point estimate anyway, so Python exports
+# the actual resample arrays and Sheets computes only the CI bounds
+# (PERCENTILE.INC) from them. Every other tab is 100% Sheets formulas.
+# See CLAUDE.md's approved plan for the full per-stat reproducibility audit.
+
+def _hc_raw_trades_tab(workbook, trades_df):
+    """HandCalc - Raw Trades: the baseline trade log, values only. Every
+    other HandCalc tab's formulas reference this tab's ranges -- it is the
+    one raw-data source every downstream formula points back at."""
+    n = len(trades_df)
+    header = ["entry_idx", "exit_idx", "hold_bars", "pnl_pct", "Win? (=IF(pnl_pct>0,1,0))"]
+    rows = [
+        ["HandCalc - Raw Trades (values only -- every other HandCalc tab's formulas "
+         "reference this data by cell range)"],
+        [],
+        header,
+    ]
+    header_row = len(rows)
+    first_data_row = header_row + 1
+    for i, r in trades_df.reset_index(drop=True).iterrows():
+        row_num = first_data_row + i
+        rows.append([
+            int(r["entry_idx"]), int(r["exit_idx"]), int(r["hold_bars"]), float(r["pnl_pct"]),
+            f"=IF(D{row_num}>0,1,0)",
+        ])
+    last_data_row = first_data_row + n - 1
+
+    ws = _get_or_create_sheet(workbook, "HandCalc - Raw Trades", rows=len(rows) + 5, cols=len(header) + 2)
+    _write_sheet_formulas(ws, rows)
+    format_cell_ranges(ws, [
+        (f"A{header_row}:E{header_row}", CellFormat(
+            textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+            backgroundColor=Color(0.18, 0.46, 0.71),
+        ))
+    ])
+    print(f"  'HandCalc - Raw Trades' done ({n} trades).")
+    return {
+        "sheet": "HandCalc - Raw Trades", "n": n,
+        "entry_idx_range": f"'HandCalc - Raw Trades'!A{first_data_row}:A{last_data_row}",
+        "exit_idx_range": f"'HandCalc - Raw Trades'!B{first_data_row}:B{last_data_row}",
+        "hold_bars_range": f"'HandCalc - Raw Trades'!C{first_data_row}:C{last_data_row}",
+        "pnl_range": f"'HandCalc - Raw Trades'!D{first_data_row}:D{last_data_row}",
+        "win_range": f"'HandCalc - Raw Trades'!E{first_data_row}:E{last_data_row}",
+        "first_data_row": first_data_row, "last_data_row": last_data_row,
+    }
+
+
+def _hc_win_binomial_tab(workbook, raw):
+    """HandCalc - Win Rate & Binomial: win rate and the one-sided binomial
+    test are single-cell formulas. The two-sided test needs a small k=0..n
+    helper table since scipy's exact two-sided binomial test uses the
+    'minlike' method (sum of every PMF(k) at or below the observed PMF),
+    not a flat 2x one-sided shortcut."""
+    n = raw["n"]
+    rows = [
+        ["HandCalc - Win Rate & Binomial Test"], [],
+        ["Metric", "Value"],
+        ["n (total trades)", f"=COUNT({raw['pnl_range']})"],
+        ["wins (pnl_pct > 0)", f"=SUM({raw['win_range']})"],
+        ["win rate", "=B5/B4"],
+        ["p, one-sided (H1: win rate > 0.5) = 1-BINOM.DIST(wins-1,n,0.5,TRUE)",
+         "=1-BINOM.DIST(B5-1,B4,0.5,TRUE)"],
+        ["P(k=observed wins), exact PMF -- used by the two-sided table below",
+         "=BINOM.DIST(B5,B4,0.5,FALSE)"],
+        ["p, two-sided (minlike: sum of helper-table PMF(k) <= P(k=observed))", None],
+        [],
+        ["Two-sided helper table -- every possible win count k=0..n and its exact binomial probability"],
+        ["k", "PMF(k) = BINOM.DIST(k, n, 0.5, FALSE)"],
+    ]
+    two_sided_row = 9
+    helper_header_row = len(rows)
+    first_k_row = helper_header_row + 1
+    for k in range(n + 1):
+        rows.append([k, f"=BINOM.DIST(A{first_k_row + k},$B$4,0.5,FALSE)"])
+    last_k_row = first_k_row + n
+
+    rows[two_sided_row - 1][1] = (
+        f"=SUMPRODUCT((B{first_k_row}:B{last_k_row}<=$B$8*(1+0.0000001))*B{first_k_row}:B{last_k_row})"
+    )
+
+    ws = _get_or_create_sheet(workbook, "HandCalc - Win Rate & Binomial", rows=len(rows) + 5, cols=4)
+    _write_sheet_formulas(ws, rows)
+    format_cell_ranges(ws, [
+        ("A3:B3", CellFormat(textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+                              backgroundColor=Color(0.18, 0.46, 0.71))),
+        (f"A{helper_header_row}:B{helper_header_row}", CellFormat(textFormat=TextFormat(bold=True))),
+    ])
+    print("  'HandCalc - Win Rate & Binomial' done.")
+    return {
+        "sheet": "HandCalc - Win Rate & Binomial",
+        "win_rate": "'HandCalc - Win Rate & Binomial'!B6",
+        "p_one_sided": "'HandCalc - Win Rate & Binomial'!B7",
+        "p_two_sided": "'HandCalc - Win Rate & Binomial'!B9",
+    }
+
+
+def _hc_return_stats_tab(workbook, raw):
+    """HandCalc - Return Stats: total/avg/SD of per-trade return, trivial
+    native formulas. SD uses STDEV.S (sample SD, ddof=1) to match pandas'
+    .std() default used throughout research_analysis.py -- NOT STDEV.P."""
+    rows = [
+        ["HandCalc - Return Stats"], [],
+        ["Metric", "Value"],
+        ["Total net return (%) = SUM(pnl_pct)", f"=SUM({raw['pnl_range']})"],
+        ["Avg return / trade (%) = AVERAGE(pnl_pct)", f"=AVERAGE({raw['pnl_range']})"],
+        ["SD of per-trade return (%) = STDEV.S(pnl_pct) [sample SD, ddof=1 -- "
+         "matches pandas' .std() default, NOT STDEV.P]", f"=STDEV.S({raw['pnl_range']})"],
+    ]
+    ws = _get_or_create_sheet(workbook, "HandCalc - Return Stats", rows=len(rows) + 5, cols=3)
+    _write_sheet_formulas(ws, rows)
+    format_cell_ranges(ws, [("A3:B3", CellFormat(textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+                                                   backgroundColor=Color(0.18, 0.46, 0.71)))])
+    print("  'HandCalc - Return Stats' done.")
+    return {
+        "sheet": "HandCalc - Return Stats",
+        "total_return": "'HandCalc - Return Stats'!B4",
+        "avg_return": "'HandCalc - Return Stats'!B5",
+        "sd_return": "'HandCalc - Return Stats'!B6",
+    }
+
+
+def _hc_correlation_tab(workbook, trades_df):
+    """HandCalc - Correlation: Pearson (CORREL + t-transform) and Spearman
+    (CORREL on RANK.AVG-ranked values, same t-transform) between hold_bars
+    and pnl_pct. scipy's spearmanr is itself Pearson-on-average-ranks
+    internally, so this is an exact match, not an approximation."""
+    trades_sorted = trades_df.reset_index(drop=True)
+    n = len(trades_sorted)
+    header_row = 3
+    first_data_row = header_row + 1
+    last_data_row = first_data_row + n - 1
+    header = ["hold_bars (x)", "pnl_pct (y)", "RANK.AVG(hold_bars)", "RANK.AVG(pnl_pct)"]
+    rows = [["HandCalc - Correlation (hold_bars vs pnl_pct, Pearson + Spearman)"], [], header]
+    hold_range = f"$A${first_data_row}:$A${last_data_row}"
+    pnl_range = f"$B${first_data_row}:$B${last_data_row}"
+    for i, r in trades_sorted.iterrows():
+        row_num = first_data_row + i
+        rows.append([
+            int(r["hold_bars"]), float(r["pnl_pct"]),
+            f"=RANK.AVG(A{row_num},{hold_range},1)",
+            f"=RANK.AVG(B{row_num},{pnl_range},1)",
+        ])
+    rank_hold_range = f"$C${first_data_row}:$C${last_data_row}"
+    rank_pnl_range = f"$D${first_data_row}:$D${last_data_row}"
+
+    rows.append([])
+    rows.append(["Metric", "Value"])
+    summary_header_row = len(rows)
+    rows.append(["n", f"=COUNT(A{first_data_row}:A{last_data_row})"])
+    n_row = len(rows)
+    rows.append(["Pearson r = CORREL(hold_bars, pnl_pct)", f"=CORREL({hold_range},{pnl_range})"])
+    r_row = len(rows)
+    rows.append(["Pearson t = r*SQRT(n-2)/SQRT(1-r^2)", f"=B{r_row}*SQRT(B{n_row}-2)/SQRT(1-B{r_row}^2)"])
+    t_row = len(rows)
+    rows.append(["Pearson p (two-sided) = T.DIST.2T(ABS(t), n-2)", f"=T.DIST.2T(ABS(B{t_row}),B{n_row}-2)"])
+    p_pearson_row = len(rows)
+    rows.append(["Spearman rho = CORREL(rank(hold_bars), rank(pnl_pct))",
+                  f"=CORREL({rank_hold_range},{rank_pnl_range})"])
+    rho_row = len(rows)
+    rows.append(["Spearman t = rho*SQRT(n-2)/SQRT(1-rho^2)", f"=B{rho_row}*SQRT(B{n_row}-2)/SQRT(1-B{rho_row}^2)"])
+    ts_row = len(rows)
+    rows.append(["Spearman p (two-sided) = T.DIST.2T(ABS(t), n-2)", f"=T.DIST.2T(ABS(B{ts_row}),B{n_row}-2)"])
+    p_spearman_row = len(rows)
+
+    ws = _get_or_create_sheet(workbook, "HandCalc - Correlation", rows=len(rows) + 5, cols=5)
+    _write_sheet_formulas(ws, rows)
+    format_cell_ranges(ws, [
+        (f"A{header_row}:D{header_row}", CellFormat(textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+                                                      backgroundColor=Color(0.18, 0.46, 0.71))),
+        (f"A{summary_header_row}:B{summary_header_row}", CellFormat(textFormat=TextFormat(bold=True))),
+    ])
+    print("  'HandCalc - Correlation' done.")
+    return {
+        "sheet": "HandCalc - Correlation",
+        "pearson_r": f"'HandCalc - Correlation'!B{r_row}",
+        "pearson_p": f"'HandCalc - Correlation'!B{p_pearson_row}",
+        "spearman_rho": f"'HandCalc - Correlation'!B{rho_row}",
+        "spearman_p": f"'HandCalc - Correlation'!B{p_spearman_row}",
+    }
+
+
+def _hc_bootstrap_ci_tab(workbook, trades_df, bootstrap_resamples=10000, seed=42):
+    """HandCalc - Bootstrap CI: the ONE tab where Python precomputes raw
+    data that Sheets formulas cannot generate natively -- the 10,000 seeded
+    bootstrap resamples themselves (numpy's Generator RNG has no native
+    Sheets equivalent, and Sheets' own RNG wouldn't reproduce the paper's
+    seed=42 point estimate anyway). Every CI bound downstream of that raw
+    data is a live PERCENTILE.INC formula. trades_df must be passed in
+    EXACTLY the order run_bootstrap_ci() uses it (NOT re-sorted by
+    entry_idx) -- rng.choice() draws by array index, so a different row
+    order would silently produce a different (still internally-consistent,
+    but non-matching) resample."""
+    pnl_values = trades_df["pnl_pct"].values
+    n_trades = len(trades_df)
+    resamples = bootstrap_resample(pnl_values, bootstrap_resamples, seed)
+    totals = resamples["resample_totals"]
+    means = resamples["resample_means"]
+
+    rows = [
+        [f"HandCalc - Bootstrap CI (B={bootstrap_resamples}, seed={seed}, calling this file's own "
+         "bootstrap_resample() -- the one step Python must precompute; every CI bound below is a "
+         "live PERCENTILE.INC formula)"],
+        [],
+        ["Metric", "Value", "", "resample_total (raw, from Python bootstrap_resample())",
+         "resample_mean (raw, from Python bootstrap_resample())"],
+    ]
+    first_data_row = len(rows) + 1
+    last_data_row = first_data_row + bootstrap_resamples - 1
+    metric_rows = [
+        ("point estimate: total return (%) [=SUM(pnl_pct)]",
+         f"=SUM('HandCalc - Raw Trades'!D4:D{3 + n_trades})"),
+        ("point estimate: avg return / trade (%) [=AVERAGE(pnl_pct)]",
+         f"=AVERAGE('HandCalc - Raw Trades'!D4:D{3 + n_trades})"),
+        ("95% CI, total return, lower = PERCENTILE.INC(resample_totals, 0.025)",
+         f"=PERCENTILE.INC(D{first_data_row}:D{last_data_row},0.025)"),
+        ("95% CI, total return, upper = PERCENTILE.INC(resample_totals, 0.975)",
+         f"=PERCENTILE.INC(D{first_data_row}:D{last_data_row},0.975)"),
+        ("95% CI, avg return, lower = PERCENTILE.INC(resample_means, 0.025)",
+         f"=PERCENTILE.INC(E{first_data_row}:E{last_data_row},0.025)"),
+        ("95% CI, avg return, upper = PERCENTILE.INC(resample_means, 0.975)",
+         f"=PERCENTILE.INC(E{first_data_row}:E{last_data_row},0.975)"),
+    ]
+    for i in range(bootstrap_resamples):
+        if i < len(metric_rows):
+            label, formula = metric_rows[i]
+            row = [label, formula, "", float(totals[i]), float(means[i])]
+        else:
+            row = ["", "", "", float(totals[i]), float(means[i])]
+        rows.append(row)
+
+    point_total_row = first_data_row
+    point_avg_row = first_data_row + 1
+    ci_total_lo_row = first_data_row + 2
+    ci_total_hi_row = first_data_row + 3
+    ci_avg_lo_row = first_data_row + 4
+    ci_avg_hi_row = first_data_row + 5
+
+    ws = _get_or_create_sheet(workbook, "HandCalc - Bootstrap CI", rows=len(rows) + 8, cols=6)
+    _write_sheet_formulas(ws, rows)
+    format_cell_ranges(ws, [
+        ("A3:E3", CellFormat(textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+                              backgroundColor=Color(0.18, 0.46, 0.71))),
+    ])
+    print(f"  'HandCalc - Bootstrap CI' done ({bootstrap_resamples} resamples).")
+    return {
+        "sheet": "HandCalc - Bootstrap CI",
+        "point_total": f"'HandCalc - Bootstrap CI'!B{point_total_row}",
+        "point_avg": f"'HandCalc - Bootstrap CI'!B{point_avg_row}",
+        "ci_total_lo": f"'HandCalc - Bootstrap CI'!B{ci_total_lo_row}",
+        "ci_total_hi": f"'HandCalc - Bootstrap CI'!B{ci_total_hi_row}",
+        "ci_avg_lo": f"'HandCalc - Bootstrap CI'!B{ci_avg_lo_row}",
+        "ci_avg_hi": f"'HandCalc - Bootstrap CI'!B{ci_avg_hi_row}",
+    }
+
+
+def _hc_strategy_risk_tab(workbook, df_main, trades_main, starting_capital):
+    """HandCalc - Strategy Risk Metrics: reproduces _run_strategy_dollar_arm()'s
+    per-BAR (not per-trade) equity curve, bar by bar, as live formulas.
+    Sharpe/Sortino are computed over ALL bar returns (mostly zero between
+    trades, matching PERIODS_PER_YEAR_4H_BARS), not just the ~27 trade
+    returns -- the full per-bar table is necessary for an exact match to
+    the locked figures, not a shortcut."""
+    n_bars = len(df_main)
+    exit_pnl_by_bar = dict(zip(trades_main["exit_idx"].astype(int), trades_main["pnl_pct"].astype(float)))
+
+    rows = [
+        ["HandCalc - Strategy Risk Metrics (per-4H-bar equity curve, event-driven -- flat "
+         "between trades, compounds only at each exit bar; Sharpe/Sortino use ALL bar "
+         "returns, matching research_analysis.py's own PERIODS_PER_YEAR_4H_BARS convention)"],
+        [],
+        ["bar_idx", "exit_pnl_pct (raw; blank unless this bar is a trade's exit)",
+         "equity ($)", "bar_return", "running_max ($)", "drawdown (%)", "downside_sq = MIN(return,0)^2"],
+    ]
+    header_row = len(rows)
+    first_row = header_row + 1
+    for i in range(n_bars):
+        row_num = first_row + i
+        exit_pnl = exit_pnl_by_bar.get(i, "")
+        if i == 0:
+            equity_f, return_f, downside_f = f"={starting_capital}", "", ""
+        else:
+            equity_f = f'=IF(B{row_num}="",C{row_num - 1},C{row_num - 1}*(1+B{row_num}/100))'
+            return_f = f"=(C{row_num}-C{row_num - 1})/C{row_num - 1}"
+            downside_f = f"=MIN(D{row_num},0)^2"
+        runmax_f = f"=MAX($C${first_row}:C{row_num})"
+        dd_f = f"=(C{row_num}-E{row_num})/E{row_num}*100"
+        rows.append([i, exit_pnl, equity_f, return_f, runmax_f, dd_f, downside_f])
+    last_row = first_row + n_bars - 1
+    return_range = f"D{first_row + 1}:D{last_row}"
+    downside_range = f"G{first_row + 1}:G{last_row}"
+    dd_range = f"F{first_row}:F{last_row}"
+
+    rows.append([])
+    rows.append(["Metric", "Value"])
+    summary_header_row = len(rows)
+    rows.append(["periods_per_year (4H bars, leap-year-averaged)", "=6*365.25"])
+    ppy_row = len(rows)
+    rows.append(["mean(bar_return)", f"=AVERAGE({return_range})"])
+    mean_row = len(rows)
+    rows.append(["STDEV.S(bar_return)", f"=STDEV.S({return_range})"])
+    std_row = len(rows)
+    rows.append(["Sharpe = mean/STDEV.S * SQRT(periods_per_year)", f"=B{mean_row}/B{std_row}*SQRT(B{ppy_row})"])
+    sharpe_row = len(rows)
+    rows.append(["sqrt(AVERAGE(downside_sq)) [downside deviation, full-N denominator]",
+                  f"=SQRT(AVERAGE({downside_range}))"])
+    downside_dev_row = len(rows)
+    rows.append(["Sortino = mean/downside_deviation * SQRT(periods_per_year)",
+                  f"=B{mean_row}/B{downside_dev_row}*SQRT(B{ppy_row})"])
+    sortino_row = len(rows)
+    rows.append(["Max Drawdown (%) = MIN(drawdown column)", f"=MIN({dd_range})"])
+    maxdd_row = len(rows)
+    rows.append(["Final capital ($) = last bar's equity", f"=C{last_row}"])
+    final_cap_row = len(rows)
+
+    ws = _get_or_create_sheet(workbook, "HandCalc - Strategy Risk Metrics", rows=len(rows) + 5, cols=8)
+    _write_sheet_formulas(ws, rows)
+    format_cell_ranges(ws, [
+        ("A3:G3", CellFormat(textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+                              backgroundColor=Color(0.18, 0.46, 0.71))),
+        (f"A{summary_header_row}:B{summary_header_row}", CellFormat(textFormat=TextFormat(bold=True))),
+    ])
+    print(f"  'HandCalc - Strategy Risk Metrics' done ({n_bars} bars).")
+    return {
+        "sheet": "HandCalc - Strategy Risk Metrics",
+        "sharpe": f"'HandCalc - Strategy Risk Metrics'!B{sharpe_row}",
+        "sortino": f"'HandCalc - Strategy Risk Metrics'!B{sortino_row}",
+        "max_drawdown": f"'HandCalc - Strategy Risk Metrics'!B{maxdd_row}",
+        "final_capital": f"'HandCalc - Strategy Risk Metrics'!B{final_cap_row}",
+    }
+
+
+def _hc_dca_risk_tab(workbook, df_main, starting_capital):
+    """HandCalc - DCA Risk Metrics: reproduces _run_dca_dollar_arm()'s
+    weekly-DCA equity curve. Columns A-G are a per-4H-bar table (units
+    accumulate on each ISO week's first bar, matching _iso_week_first_bars());
+    columns I-N are a per-CONTRIBUTION-WEEK table (one row per week, NOT
+    aligned with column A's bar_idx on that same row -- each cell explicitly
+    pulls the correct bar's data via a direct row reference, so which bar it
+    reads from is always visible in the formula). Sharpe/Sortino/MaxDD use
+    the weekly values only, matching PERIODS_PER_YEAR_WEEKLY -- not every
+    4H bar, since _run_dca_dollar_arm() computes them off value_at_contributions."""
+    n_bars = len(df_main)
+    close = df_main["close"].values
+    contribution_bars = _iso_week_first_bars(df_main)
+    contribution_bar_set = set(int(x) for x in contribution_bars.tolist())
+    n_weeks = len(contribution_bars)
+
+    rows = [
+        ["HandCalc - DCA Risk Metrics (weekly DCA into BTC -- capital split evenly across "
+         "every ISO week, bought at that week's first-bar close). Columns I-N: one row per "
+         "contribution week (row k = the k-th week, NOT bar k -- see each formula for which "
+         "bar row it reads)."],
+        [],
+        ["Parameter", "Value"],
+    ]
+    rows.append(["starting_capital ($)", starting_capital])
+    starting_capital_row = len(rows)
+    rows.append(["n_weeks (contribution periods)", None])
+    n_weeks_row = len(rows)
+    rows.append(["contribution per week ($) = starting_capital / n_weeks",
+                  f"=B{starting_capital_row}/B{n_weeks_row}"])
+    contrib_amt_row = len(rows)
+    rows.append([])
+    rows.append(["bar_idx", "close ($)", "is_contribution_bar?", "units_bought_this_bar",
+                  "cumulative_units", "value ($) = cumulative_units * close",
+                  "contribution ($) this bar", "",
+                  "contrib_value (this week's bar's running value)",
+                  "contrib_amount (this week's bar's contribution)",
+                  "period_return", "downside_sq", "running_max ($)", "drawdown (%)"])
+    header_row = len(rows)
+    data_first_row = header_row + 1
+    data_last_row = data_first_row + n_bars - 1
+    rows[n_weeks_row - 1][1] = f"=SUM(C{data_first_row}:C{data_last_row})"
+
+    contrib_first_row = data_first_row
+    contrib_last_row = contrib_first_row + n_weeks - 1
+
+    for i in range(n_bars):
+        row_num = data_first_row + i
+        is_contrib = 1 if i in contribution_bar_set else 0
+        units_f = f"=IF(C{row_num}=1,$B${contrib_amt_row}/B{row_num},0)"
+        cum_f = f"=D{row_num}" if i == 0 else f"=E{row_num - 1}+D{row_num}"
+        value_f = f"=E{row_num}*B{row_num}"
+        contrib_f = f"=IF(C{row_num}=1,$B${contrib_amt_row},0)"
+        row = [i, float(close[i]), is_contrib, units_f, cum_f, value_f, contrib_f, ""]
+
+        if i < n_weeks:
+            bar_i = int(contribution_bars[i])
+            bar_row_num = data_first_row + bar_i
+            i_f = f"=F{bar_row_num}"
+            j_f = f"=G{bar_row_num}"
+            if i > 0:
+                k_f = f"=(I{row_num}-J{row_num})/I{row_num - 1}-1"
+                l_f = f"=MIN(K{row_num},0)^2"
+            else:
+                k_f, l_f = "", ""
+            m_f = f"=MAX($I${contrib_first_row}:I{row_num})"
+            n_f = f"=(I{row_num}-M{row_num})/M{row_num}*100"
+            row += [i_f, j_f, k_f, l_f, m_f, n_f]
+        else:
+            row += ["", "", "", "", "", ""]
+        rows.append(row)
+
+    period_return_range = f"K{contrib_first_row + 1}:K{contrib_last_row}"
+    downside_range = f"L{contrib_first_row + 1}:L{contrib_last_row}"
+    dd_range = f"N{contrib_first_row}:N{contrib_last_row}"
+
+    rows.append([])
+    rows.append(["Metric", "Value"])
+    summary_header_row = len(rows)
+    rows.append(["periods_per_year (weekly)", "=52"])
+    ppy_row = len(rows)
+    rows.append(["mean(period_return)", f"=AVERAGE({period_return_range})"])
+    mean_row = len(rows)
+    rows.append(["STDEV.S(period_return)", f"=STDEV.S({period_return_range})"])
+    std_row = len(rows)
+    rows.append(["Sharpe = mean/STDEV.S * SQRT(periods_per_year)", f"=B{mean_row}/B{std_row}*SQRT(B{ppy_row})"])
+    sharpe_row = len(rows)
+    rows.append(["sqrt(AVERAGE(downside_sq))", f"=SQRT(AVERAGE({downside_range}))"])
+    downside_dev_row = len(rows)
+    rows.append(["Sortino = mean/downside_deviation * SQRT(periods_per_year)",
+                  f"=B{mean_row}/B{downside_dev_row}*SQRT(B{ppy_row})"])
+    sortino_row = len(rows)
+    rows.append(["Max Drawdown (%) = MIN(drawdown column, weekly contribution-bar values only)",
+                  f"=MIN({dd_range})"])
+    maxdd_row = len(rows)
+    rows.append(["Final value ($) = value at last contribution week", f"=I{contrib_last_row}"])
+    final_cap_row = len(rows)
+    rows.append(["Total contributed ($) = SUM(contribution column)",
+                  f"=SUM(J{contrib_first_row}:J{contrib_last_row})"])
+    total_contrib_row = len(rows)
+    rows.append(["Total return (%) = (final value - total contributed) / total contributed",
+                  f"=(B{final_cap_row}-B{total_contrib_row})/B{total_contrib_row}*100"])
+    total_return_row = len(rows)
+
+    ws = _get_or_create_sheet(workbook, "HandCalc - DCA Risk Metrics", rows=len(rows) + 5, cols=15)
+    _write_sheet_formulas(ws, rows)
+    format_cell_ranges(ws, [
+        (f"A{header_row}:N{header_row}", CellFormat(textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+                                                      backgroundColor=Color(0.18, 0.46, 0.71))),
+        (f"A{summary_header_row}:B{summary_header_row}", CellFormat(textFormat=TextFormat(bold=True))),
+    ])
+    print(f"  'HandCalc - DCA Risk Metrics' done ({n_bars} bars, {n_weeks} weekly contributions).")
+    return {
+        "sheet": "HandCalc - DCA Risk Metrics",
+        "sharpe": f"'HandCalc - DCA Risk Metrics'!B{sharpe_row}",
+        "sortino": f"'HandCalc - DCA Risk Metrics'!B{sortino_row}",
+        "max_drawdown": f"'HandCalc - DCA Risk Metrics'!B{maxdd_row}",
+        "final_capital": f"'HandCalc - DCA Risk Metrics'!B{final_cap_row}",
+        "total_return": f"'HandCalc - DCA Risk Metrics'!B{total_return_row}",
+    }
+
+
+def _hc_lumpsum_risk_tab(workbook, df_main, starting_capital):
+    """HandCalc - Lump-Sum Risk Metrics: reproduces _run_lump_sum_dollar_arm()
+    -- 100% of starting capital deployed at the window's first-bar OPEN
+    price, held to the last bar's close. Same per-bar Sharpe/Sortino/MaxDD
+    pattern as the Strategy tab."""
+    n_bars = len(df_main)
+    close = df_main["close"].values
+    entry_price = float(df_main["open"].iloc[0])
+
+    rows = [
+        ["HandCalc - Lump-Sum Risk Metrics (100% of starting capital deployed at the "
+         "window's first-bar OPEN price, held to the last bar's close)"],
+        [],
+        ["Parameter", "Value"],
+    ]
+    rows.append(["starting_capital ($)", starting_capital])
+    starting_capital_row = len(rows)
+    rows.append(["entry_price ($) = first bar's open", entry_price])
+    entry_price_row = len(rows)
+    rows.append(["units bought = starting_capital / entry_price", f"=B{starting_capital_row}/B{entry_price_row}"])
+    units_row = len(rows)
+    rows.append([])
+    rows.append(["bar_idx", "close ($)", "equity ($) = units * close", "bar_return",
+                  "running_max ($)", "drawdown (%)", "downside_sq = MIN(return,0)^2"])
+    header_row = len(rows)
+    data_first_row = header_row + 1
+    for i in range(n_bars):
+        row_num = data_first_row + i
+        equity_f = f"=$B${units_row}*B{row_num}"
+        if i == 0:
+            return_f, downside_f = "", ""
+        else:
+            return_f = f"=(C{row_num}-C{row_num - 1})/C{row_num - 1}"
+            downside_f = f"=MIN(D{row_num},0)^2"
+        runmax_f = f"=MAX($C${data_first_row}:C{row_num})"
+        dd_f = f"=(C{row_num}-E{row_num})/E{row_num}*100"
+        rows.append([i, float(close[i]), equity_f, return_f, runmax_f, dd_f, downside_f])
+    data_last_row = data_first_row + n_bars - 1
+    return_range = f"D{data_first_row + 1}:D{data_last_row}"
+    downside_range = f"G{data_first_row + 1}:G{data_last_row}"
+    dd_range = f"F{data_first_row}:F{data_last_row}"
+
+    rows.append([])
+    rows.append(["Metric", "Value"])
+    summary_header_row = len(rows)
+    rows.append(["periods_per_year (4H bars, leap-year-averaged)", "=6*365.25"])
+    ppy_row = len(rows)
+    rows.append(["mean(bar_return)", f"=AVERAGE({return_range})"])
+    mean_row = len(rows)
+    rows.append(["STDEV.S(bar_return)", f"=STDEV.S({return_range})"])
+    std_row = len(rows)
+    rows.append(["Sharpe = mean/STDEV.S * SQRT(periods_per_year)", f"=B{mean_row}/B{std_row}*SQRT(B{ppy_row})"])
+    sharpe_row = len(rows)
+    rows.append(["sqrt(AVERAGE(downside_sq))", f"=SQRT(AVERAGE({downside_range}))"])
+    downside_dev_row = len(rows)
+    rows.append(["Sortino = mean/downside_deviation * SQRT(periods_per_year)",
+                  f"=B{mean_row}/B{downside_dev_row}*SQRT(B{ppy_row})"])
+    sortino_row = len(rows)
+    rows.append(["Max Drawdown (%) = MIN(drawdown column)", f"=MIN({dd_range})"])
+    maxdd_row = len(rows)
+    rows.append(["Final capital ($) = last bar's equity", f"=C{data_last_row}"])
+    final_cap_row = len(rows)
+    rows.append(["Total return (%) = (final - starting) / starting",
+                  f"=(B{final_cap_row}-B{starting_capital_row})/B{starting_capital_row}*100"])
+    total_return_row = len(rows)
+
+    ws = _get_or_create_sheet(workbook, "HandCalc - Lump-Sum Risk Metrics", rows=len(rows) + 5, cols=8)
+    _write_sheet_formulas(ws, rows)
+    format_cell_ranges(ws, [
+        (f"A{header_row}:G{header_row}", CellFormat(textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+                                                      backgroundColor=Color(0.18, 0.46, 0.71))),
+        (f"A{summary_header_row}:B{summary_header_row}", CellFormat(textFormat=TextFormat(bold=True))),
+    ])
+    print(f"  'HandCalc - Lump-Sum Risk Metrics' done ({n_bars} bars).")
+    return {
+        "sheet": "HandCalc - Lump-Sum Risk Metrics",
+        "sharpe": f"'HandCalc - Lump-Sum Risk Metrics'!B{sharpe_row}",
+        "sortino": f"'HandCalc - Lump-Sum Risk Metrics'!B{sortino_row}",
+        "max_drawdown": f"'HandCalc - Lump-Sum Risk Metrics'!B{maxdd_row}",
+        "final_capital": f"'HandCalc - Lump-Sum Risk Metrics'!B{final_cap_row}",
+        "total_return": f"'HandCalc - Lump-Sum Risk Metrics'!B{total_return_row}",
+    }
+
+
+def _hc_summary_tab(workbook, raw, win_bin, ret_stats, corr, boot, strat, dca, lump):
+    """HandCalc - Summary: every other tab's final answer, pulled in by
+    live cross-sheet reference, next to the locked figure from
+    docs/SCRATCH_RESULTS_METHODS.md. A mismatch here is a correctness flag
+    to investigate, never something to silently reconcile."""
+    rows = [
+        ["HandCalc - Summary -- locked figure (docs/SCRATCH_RESULTS_METHODS.md) vs. this "
+         "workbook's own live formula result. A mismatch is a correctness flag, not "
+         "something to quietly average away."],
+        [],
+        ["Statistic", "Locked figure", "Live HandCalc result"],
+        ["n (trades)", raw["n"], f"=COUNT({raw['pnl_range']})"],
+        ["Win rate", "70.37%", f"={win_bin['win_rate']}"],
+        ["Total net return (%)", "+30.31%", f"={ret_stats['total_return']}"],
+        ["Avg return / trade (%)", "+1.12%", f"={ret_stats['avg_return']}"],
+        ["SD of per-trade return (%)", "2.41%", f"={ret_stats['sd_return']}"],
+        ["Binomial p, one-sided", "0.026", f"={win_bin['p_one_sided']}"],
+        ["Binomial p, two-sided", "0.052", f"={win_bin['p_two_sided']}"],
+        ["Pearson r (hold_bars vs pnl_pct)", "+0.4907", f"={corr['pearson_r']}"],
+        ["Pearson p", "0.0094", f"={corr['pearson_p']}"],
+        ["Spearman rho", "+0.4797", f"={corr['spearman_rho']}"],
+        ["Spearman p", "0.0113", f"={corr['spearman_p']}"],
+        ["Bootstrap point estimate: total return (%)", "+30.31%", f"={boot['point_total']}"],
+        ["Bootstrap 95% CI, total return, lower (%)", "+5.99%", f"={boot['ci_total_lo']}"],
+        ["Bootstrap 95% CI, total return, upper (%)", "+54.99%", f"={boot['ci_total_hi']}"],
+        ["Strategy Sharpe (2022-2026, gross)", "1.114", f"={strat['sharpe']}"],
+        ["Strategy Sortino", "2.727", f"={strat['sortino']}"],
+        ["Strategy Max Drawdown (%)", "-6.46%", f"={strat['max_drawdown']}"],
+        ["Strategy final capital ($, on $10,000)", "$13,417.77", f"={strat['final_capital']}"],
+        ["DCA Sharpe (2022-2026, gross)", "0.556", f"={dca['sharpe']}"],
+        ["DCA Max Drawdown (%)", "-27.85%", f"={dca['max_drawdown']}"],
+        ["DCA final value ($, on $10,000)", "$22,312.94", f"={dca['final_capital']}"],
+        ["Lump-sum Sharpe (2022-2026, gross)", "0.564", f"={lump['sharpe']}"],
+        ["Lump-sum Max Drawdown (%)", "-67.21%", f"={lump['max_drawdown']}"],
+        ["Lump-sum final capital ($, on $10,000)", "$19,007.32", f"={lump['final_capital']}"],
+    ]
+    ws = _get_or_create_sheet(workbook, "HandCalc - Summary", rows=len(rows) + 5, cols=4)
+    _write_sheet_formulas(ws, rows)
+    format_cell_ranges(ws, [
+        ("A3:C3", CellFormat(textFormat=TextFormat(bold=True, foregroundColor=Color(1, 1, 1)),
+                              backgroundColor=Color(0.18, 0.46, 0.71))),
+    ])
+    print("  'HandCalc - Summary' done.")
+
+
+def push_hand_reproducible_stats_to_gsheet(df_main, trades_main, starting_capital=10000.0):
+    """Writes the 'HandCalc - *' tab set: every headline/risk statistic as
+    a live, inspectable Google Sheets formula over raw exported data, so
+    Charles can point at any cell and defend it live rather than reciting a
+    number scipy/pandas already computed. The ONLY Python-precomputed
+    number anywhere in this tab set is the bootstrap tab's 10,000 seeded
+    resamples (see _hc_bootstrap_ci_tab) -- everything else is SUM/AVERAGE/
+    STDEV.S/CORREL/BINOM.DIST/RANK.AVG/PERCENTILE.INC formulas Sheets
+    itself evaluates from raw trade/candle data written alongside them.
+
+    Parameters
+    ----------
+    df_main : pandas.DataFrame
+        Main-window (2022-2026) candles with indicators computed.
+    trades_main : pandas.DataFrame
+        The q>=0 baseline trade log for df_main (sim_main.attrs["trades_df"]).
+    starting_capital : float, default 10000.0
+        Matches run_benchmark_vs_passive()'s default, for the risk-metric
+        tabs' dollar-denominated equity curves.
+    """
+    workbook = _authorize_gsheet_workbook()
+    trades_sorted = trades_main.sort_values("entry_idx").reset_index(drop=True)
+
+    raw = _hc_raw_trades_tab(workbook, trades_sorted)
+    win_bin = _hc_win_binomial_tab(workbook, raw)
+    ret_stats = _hc_return_stats_tab(workbook, raw)
+    corr = _hc_correlation_tab(workbook, trades_sorted)
+    # NOT trades_sorted -- must match run_bootstrap_ci()'s exact call order (see docstring).
+    boot = _hc_bootstrap_ci_tab(workbook, trades_main)
+    strat = _hc_strategy_risk_tab(workbook, df_main, trades_main, starting_capital)
+    dca = _hc_dca_risk_tab(workbook, df_main, starting_capital)
+    lump = _hc_lumpsum_risk_tab(workbook, df_main, starting_capital)
+    _hc_summary_tab(workbook, raw, win_bin, ret_stats, corr, boot, strat, dca, lump)
+
+    print("\nCheck GSHEET: hand-reproducible HandCalc sheets exported successfully.")
 
 
 # ============================================================================
@@ -4253,6 +4894,11 @@ def push_all_gsheet_exports(output_dir="artifacts"):
         push_benchmark_vs_passive_to_gsheet(benchmark_result)
     except Exception as e:
         print(f"\n[WARNING] Skipping benchmark-vs-passive gsheet push: {e}")
+
+    try:
+        push_hand_reproducible_stats_to_gsheet(df_main, trades_main)
+    except Exception as e:
+        print(f"\n[WARNING] Skipping hand-reproducible HandCalc gsheet push: {e}")
 
 
 def write_statistical_artifacts(df, baseline_trades, output_dir="artifacts"):
