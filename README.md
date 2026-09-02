@@ -221,11 +221,60 @@ whichever of those steps is already satisfied.)
 
 ### Alternative: run the pipeline script directly
 
+`research_analysis.py` has **two mutually exclusive modes**, selected by
+whether `--serve` is passed. Most flags only take effect in one of the two
+modes — passing a flag from the wrong mode is not an error (argparse
+accepts it either way), it is just silently ignored, since the other
+mode's code path never reads it.
+
 ```bash
+# Mode 1 (default): offline statistics pipeline only, prints to console.
+python research_analysis.py
+
+# Mode 2: export artifacts/DB + start the dashboard server.
 python research_analysis.py --serve --levels 0,1,2,3
 ```
 
-Useful flags (`python research_analysis.py --help` for the full list):
+`python research_analysis.py --help` prints the full list at any time.
+
+#### Mode 1 — offline statistics pipeline (default, no `--serve`)
+
+Runs `run_full_analysis_pipeline()`: loads candles, simulates the baseline
+`min_ob_quality=0` trade log, then runs every statistical analysis in the
+[table above](#statistical-analyses-part-of-research_analysispy)
+(binomial test, bootstrap CI, fee/slippage sensitivity, regime breakdown,
+benchmark-vs-passive, paper-sync check, etc.) and prints each section's
+results to the console. Nothing is written to disk unless `--json-out` is
+given. This is the fastest way to get statistical results without touching
+the dashboard, database, or `artifacts/*` files.
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--include-oos-live` | off | Also run `run_forward_oos_validation()` — the one section that makes a live Binance API call. Off by default so the pipeline stays fully offline. |
+| `--bootstrap-n` | `10000` | Number of resamples for the bootstrap confidence interval (`run_bootstrap_ci()`). Lower it (e.g. `--bootstrap-n 500`) for a quick smoke-test run; the locked/reported CI uses the default. |
+| `--seed` | `42` | RNG seed for all bootstrap resampling. Reproducibility only — never change this to "improve" a result. |
+| `--json-out` | none | Path to write every section's results as one JSON file, e.g. `--json-out artifacts/stats_run.json`. |
+
+```bash
+python research_analysis.py                                # full pipeline, console output only
+python research_analysis.py --json-out out.json             # also dump results to JSON
+python research_analysis.py --bootstrap-n 500 --seed 1      # quick, non-canonical smoke test
+python research_analysis.py --include-oos-live              # also run the live-Binance OOS check
+```
+
+#### Mode 2 — `--serve`: export artifacts/DB + run the dashboard
+
+Runs `run_serve_mode()`: fetches/loads candles, sweeps the requested
+`--levels`, writes `artifacts/*.json`/`*.csv` and `backtest_results.db`,
+regenerates `artifacts/paper_sync_report.md`, regenerates the four
+statistical-artifact JSON files (`bootstrap_power_analysis.json`,
+`fee_slippage_analysis.json`, `ablation_reconstruction.json`,
+`benchmark_vs_passive.json` — each readable directly without opening the
+dashboard at all), optionally pushes to Google Sheets, then starts the
+dashboard HTTP server. **`--bootstrap-n`, `--seed`, `--json-out`, and
+`--include-oos-live` have no effect here** — this mode always calls
+`run_bootstrap_ci()` with its own defaults (`10000`/`42`, same as Mode 1's
+defaults) and never runs the live OOS section.
 
 | Flag | Default | Purpose |
 |---|---|---|
@@ -237,8 +286,25 @@ Useful flags (`python research_analysis.py --help` for the full list):
 | `--output-dir` | `artifacts` | Where JSON/CSV output is written |
 | `--export-gsheet` | off | Attempt a Google Sheets export (needs the env vars above) |
 | `--db-url` | `sqlite:///backtest_results.db` | Override the SQLAlchemy database URL |
-| `--no-server` | off | Run the pipeline only; skip starting the dashboard web server |
+| `--no-server` | off | Run the export pipeline only; skip starting the dashboard web server (useful if you just want the `artifacts/*.json` result files) |
 | `--no-browser` | off | Start the server but don't auto-open a browser tab |
+
+```bash
+python research_analysis.py --serve                                   # export + serve dashboard at :8765
+python research_analysis.py --serve --no-server                       # export artifacts/DB only, no server
+python research_analysis.py --serve --no-browser                      # serve without opening a browser tab
+python research_analysis.py --serve --levels 0,1,2,3 --export-gsheet  # also push to Google Sheets
+```
+
+**Picking a mode for what you want:**
+
+| You want... | Run |
+|---|---|
+| Statistical results printed to console, quickly | `python research_analysis.py` |
+| Statistical results as a single JSON file | `python research_analysis.py --json-out out.json` |
+| The dashboard, browsable in a browser | `python research_analysis.py --serve` |
+| Just the per-analysis JSON files (`artifacts/*.json`) without a running server | `python research_analysis.py --serve --no-server` |
+| A one-off custom bootstrap run (different N/seed) | `python research_analysis.py --bootstrap-n <N> --seed <S>` (Mode 1 only — Mode 2 ignores these) |
 
 ### Frontend dev mode (hot reload)
 
@@ -554,6 +620,10 @@ python research_analysis.py --serve                 # export artifacts/DB,
                                                       # and start the
                                                       # dashboard server
 ```
+
+See [Alternative: run the pipeline script directly](#alternative-run-the-pipeline-script-directly)
+above for the full flag reference, split by which of the two modes
+(default offline pipeline vs. `--serve`) each flag actually affects.
 
 ---
 

@@ -1,0 +1,1565 @@
+<title>HEDGE Computation Ledger</title>
+<meta name="description" content="Every number in the HEDGE paper traced to the line of code that produced it — strategy, statistics, and a cross-check against the paper.">
+<style>
+/* ============================================================
+   DESIGN TOKENS  (shared with docs/study_guide.html)
+   ============================================================ */
+:root{
+  --paper:#f6f5f2;
+  --surface:#ffffff;
+  --surface-2:#fbfaf8;
+  --ink:#14171c;
+  --ink-2:#4c535c;
+  --ink-3:#767d86;
+  --rule:#e0dcd4;
+  --rule-2:#cfc9be;
+  --accent:#26456f;
+  --accent-2:#3d6699;
+  --accent-soft:#e9eef6;
+  --good:#1c6244;
+  --good-soft:#e4f0ea;
+  --warn:#8a5610;
+  --warn-soft:#f9eedb;
+  --bad:#992e2a;
+  --bad-soft:#f8e7e5;
+  --mono:ui-monospace,"SFMono-Regular","Cascadia Mono","Segoe UI Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+  --maxw:50rem;      /* comfortable reading measure for prose */
+  --figw:72rem;      /* tables and wide blocks may exceed it */
+  --shadow:0 1px 2px rgba(20,23,28,.05),0 4px 14px rgba(20,23,28,.045);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:1.5rem;-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:16.5px;line-height:1.62;
+  font-feature-settings:"kern" 1;
+}
+h1,h2,h3,h4,h5{line-height:1.22;letter-spacing:-.014em;margin:0}
+p{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
+a:hover{color:var(--accent-2)}
+strong,b{font-weight:650}
+p code,li code,td code,th code,summary code,caption code,.why code,.what code,.colophon code{
+  font-family:var(--mono);font-size:.87em;background:var(--surface-2);
+  border:1px solid var(--rule);border-radius:3px;padding:.08em .34em}
+hr{border:0;border-top:1px solid var(--rule);margin:2.6rem 0}
+::selection{background:#d9e4f3}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.layout{display:grid;grid-template-columns:17.5rem minmax(0,1fr);min-height:100vh}
+#sidebar{
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+  background:var(--surface);border-right:1px solid var(--rule);
+  padding:1.6rem 1.15rem 3rem;
+}
+main{min-width:0;padding:2.6rem 2.4rem 6rem;max-width:calc(var(--figw) + 4.8rem);margin:0 auto}
+/* Prose keeps a comfortable measure; tables and figure strips use the full width. */
+section.sec > p,
+section.sec > ol,
+section.sec > ul,
+section.sec > h3,
+section.sec > h4,
+section.sec > .callout,
+section.sec > .sec-sub,
+section.sec > details.primer,
+section.sec > .formula,
+section.sec > .colophon,
+header.masthead{max-width:var(--maxw)}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:.6rem;top:.6rem;z-index:99;background:var(--surface);padding:.5rem .8rem;
+  border:2px solid var(--accent);border-radius:4px}
+
+/* ---------------- sidebar ---------------- */
+.brand{font-family:var(--mono);font-size:.66rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:.35rem}
+.brand-title{font-size:.98rem;font-weight:660;letter-spacing:-.01em;line-height:1.3;margin-bottom:1.35rem}
+.brand-title span{display:block;font-weight:400;font-size:.78rem;color:var(--ink-3);
+  font-family:var(--mono);letter-spacing:0;margin-top:.35rem}
+#nav{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+#nav li{border-bottom:1px solid var(--rule)}
+#nav a{
+  display:grid;grid-template-columns:1.55rem 1fr;gap:.35rem;align-items:baseline;
+  padding:.6rem .3rem;text-decoration:none;color:var(--ink-2);font-size:.92rem;line-height:1.35;
+  border-left:2px solid transparent;transition:color .12s,border-color .12s,background .12s;
+}
+#nav a .n{font-family:var(--mono);font-size:.78rem;color:var(--ink-3)}
+#nav a:hover{color:var(--ink);background:var(--surface-2)}
+#nav a.active{color:var(--accent);border-left-color:var(--accent);font-weight:620;background:var(--accent-soft)}
+#nav a.active .n{color:var(--accent)}
+#nav a.is-flag .n{color:var(--warn)}
+#nav a.is-flag em{grid-column:2;display:block;font-family:var(--mono);font-size:.68rem;
+  font-style:normal;color:var(--warn);letter-spacing:.05em;margin-top:.1rem}
+.side-note{margin-top:1.4rem;font-family:var(--mono);font-size:.76rem;line-height:1.6;color:var(--ink-3);
+  border-top:1px solid var(--rule);padding-top:.9rem}
+.side-note b{color:var(--ink-2);font-weight:600}
+
+/* mobile drawer */
+#navToggle{display:none}
+.topbar{display:none}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .topbar{
+    display:flex;align-items:center;gap:.7rem;position:sticky;top:0;z-index:40;
+    background:var(--surface);border-bottom:1px solid var(--rule);padding:.6rem .9rem;
+  }
+  .topbar .tt{font-size:.82rem;font-weight:640;line-height:1.25}
+  #navToggle{display:inline-flex;align-items:center;gap:.4rem;background:var(--surface-2);
+    border:1px solid var(--rule-2);border-radius:5px;padding:.4rem .62rem;font-family:var(--mono);
+    font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);cursor:pointer}
+  #sidebar{
+    position:fixed;inset:0 auto 0 0;width:min(19rem,86vw);z-index:50;
+    transform:translateX(-102%);transition:transform .2s ease;box-shadow:var(--shadow);
+  }
+  #sidebar.open{transform:none}
+  #scrim{position:fixed;inset:0;background:rgba(20,23,28,.38);z-index:45;display:none}
+  #scrim.on{display:block}
+  main{padding:1.4rem 1.05rem 4rem}
+}
+
+/* ============================================================
+   MASTHEAD
+   ============================================================ */
+.masthead{border-bottom:2px solid var(--ink);padding-bottom:1.5rem;margin-bottom:2.4rem}
+.masthead .eyebrow{display:flex;flex-wrap:wrap;gap:.3rem .95rem;font-family:var(--mono);font-size:.7rem;
+  letter-spacing:.17em;text-transform:uppercase;color:var(--accent);margin-bottom:.9rem}
+.masthead h1{font-size:clamp(1.85rem,4.2vw,2.65rem);font-weight:700;letter-spacing:-.025em}
+.masthead .standfirst{font-family:var(--serif);font-size:1.06rem;line-height:1.5;color:var(--ink-2);
+  margin-top:.9rem;max-width:44rem;font-style:italic}
+.provenance{display:flex;flex-wrap:wrap;gap:.4rem .5rem;margin-top:1.25rem}
+.prov-item{font-family:var(--mono);font-size:.7rem;letter-spacing:.03em;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:.24rem .5rem}
+.prov-item b{color:var(--ink);font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  font-size:.63rem;margin-right:.4rem}
+
+/* ============================================================
+   SECTIONS + HEADINGS
+   ============================================================ */
+section.sec{margin:0 0 4.2rem;scroll-margin-top:1rem}
+@media (max-width:900px){section.sec{scroll-margin-top:3.6rem}}
+.sec-head{border-top:2px solid var(--ink);padding-top:.85rem;margin-bottom:.7rem}
+.sec-num{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;color:var(--accent);
+  text-transform:uppercase;display:block;margin-bottom:.45rem}
+.sec-head h2{font-size:clamp(1.4rem,3vw,1.85rem);font-weight:690}
+.sec-sub{font-family:var(--serif);font-size:1.08rem;line-height:1.55;color:var(--ink-2);
+  margin:0 0 1.9rem}
+.lede{font-size:1.02rem;color:var(--ink-2)}
+h3{font-size:1.14rem;font-weight:660;margin:2.3rem 0 .75rem;padding-left:.65rem;
+  border-left:3px solid var(--accent)}
+h4{font-size:.98rem;font-weight:660;margin:1.6rem 0 .5rem;color:var(--ink)}
+
+/* ============================================================
+   TABLES  (.wide is the scroll frame)
+   ============================================================ */
+.wide{overflow-x:auto;margin:1.4rem 0;border:1px solid var(--rule-2);border-radius:6px;
+  background:var(--surface);-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:34rem}
+.wide.narrow table{min-width:0}
+caption{caption-side:top;text-align:left;padding:.6rem .75rem;font-family:var(--mono);
+  font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);
+  background:var(--surface-2);border-bottom:1px solid var(--rule)}
+th,td{padding:.5rem .68rem;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{background:var(--surface-2);font-size:.75rem;font-weight:660;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--ink-2);border-bottom:1.5px solid var(--rule-2);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--surface-2)}
+td.n,th.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+td.mono{font-family:var(--mono);font-size:.84rem}
+table .grp td{background:var(--accent-soft);font-family:var(--mono);font-size:.68rem;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--accent);font-weight:660;
+  border-bottom:1px solid var(--rule-2)}
+table .grp:hover td{background:var(--accent-soft)}
+tfoot td{background:var(--surface-2);border-top:1px solid var(--rule-2);border-bottom:0;
+  font-size:.86rem;line-height:1.6;color:var(--ink-2)}
+
+/* ============================================================
+   CHIPS
+   ============================================================ */
+.chip{display:inline-block;font-family:var(--mono);font-size:.72rem;letter-spacing:.03em;
+  background:var(--surface-2);border:1px solid var(--rule-2);border-radius:20px;
+  padding:.16rem .5rem;color:var(--ink-2);white-space:nowrap}
+.chip.ok{background:var(--good-soft);border-color:#bcdccb;color:var(--good)}
+.chip.flag{background:var(--warn-soft);border-color:#e3cb9c;color:var(--warn)}
+.chip.note{background:var(--surface-2);border-color:var(--rule-2);color:var(--ink-2)}
+.chip.acc{background:var(--accent-soft);border-color:#b9c8dd;color:var(--accent)}
+
+/* ============================================================
+   CODE  (real research_analysis.py excerpts)
+   ============================================================ */
+pre{
+  margin:1.5rem 0;background:var(--ink);border:1px solid var(--ink);border-radius:7px;
+  box-shadow:var(--shadow);padding:.95rem 1.05rem;overflow-x:auto;
+  font-family:var(--mono);font-size:.9rem;line-height:1.7;color:#e8ebef;
+}
+pre .cm{color:#98a2b0;font-style:italic}
+pre .hl{color:#9dc0ea;font-weight:600}
+.codecap{
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.05em;color:#aab2bf;
+  background:#1f242c;border:1px solid var(--ink);border-bottom:1px solid #333a45;
+  border-radius:7px 7px 0 0;padding:.5rem .9rem;margin:1.5rem 0 0;max-width:none;
+}
+.codecap + pre{margin-top:0;border-radius:0 0 7px 7px;border-top:0}
+
+/* ============================================================
+   FORMULA BLOCK
+   ============================================================ */
+.formula{
+  background:var(--surface-2);border:1px solid var(--rule);border-radius:6px;
+  padding:.85rem 1rem;margin:1.2rem 0;font-family:var(--mono);
+  font-size:1rem;line-height:1.9;overflow-x:auto;color:var(--ink);
+}
+.formula .lbl{font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+.formula sub,.formula sup{font-size:.66em}
+.formula b{color:var(--accent);font-weight:660}
+
+/* ============================================================
+   TWO-TRACK PRIMER  (plain-language layer)
+   ============================================================ */
+details.primer{
+  margin:1.2rem 0 1.5rem;border:1px solid #c6d2e4;border-radius:6px;
+  background:var(--accent-soft);overflow:hidden;
+}
+details.primer[open]{box-shadow:var(--shadow)}
+details.primer summary{
+  cursor:pointer;list-style:none;padding:.55rem .8rem;
+  font-family:var(--mono);font-size:.72rem;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent);
+  display:grid;grid-template-columns:1rem 1fr;gap:.5rem;align-items:baseline;
+}
+details.primer summary::-webkit-details-marker{display:none}
+details.primer summary::before{content:"+";font-family:var(--mono);color:var(--ink-3);font-size:.95rem}
+details.primer[open] summary::before{content:"\2212";color:var(--accent)}
+details.primer summary:hover{background:#dfe8f4}
+details.primer .body{padding:.1rem 1rem .8rem 2.3rem;font-size:.93rem;line-height:1.65;color:var(--ink-2)}
+details.primer .body strong{color:var(--ink)}
+details.primer .body > :last-child{margin-bottom:0}
+
+/* ============================================================
+   STATISTIC CARDS  (one per statistic)
+   ============================================================ */
+.stat{
+  margin:1.9rem 0;background:var(--surface);border:1px solid var(--rule-2);border-radius:7px;
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.stat > header{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem .8rem;
+  padding:.62rem .95rem;background:var(--surface-2);border-bottom:1px solid var(--rule);
+}
+.stat > header h3{margin:0;padding:0;border:0;font-size:.98rem;font-weight:660;letter-spacing:-.005em}
+.stat .fn{font-family:var(--mono);font-size:.72rem;color:var(--ink-3);margin-left:auto}
+.stat .inner{padding:1.15rem .95rem}
+.stat .inner > :first-child{margin-top:0}
+.stat .inner h4:first-of-type{margin-top:0}
+.qrow{
+  font-family:var(--serif);font-style:italic;font-size:1.05rem;line-height:1.5;color:var(--ink);
+  border-left:3px solid var(--rule-2);padding-left:.85rem;margin:0 0 1.2rem;
+}
+
+/* ============================================================
+   FIGURE READOUT STRIP
+   ============================================================ */
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.6rem,1fr));gap:.55rem;margin:1.2rem 0}
+.fig{background:var(--surface);border:1px solid var(--rule-2);border-radius:6px;
+  padding:.65rem .75rem;text-align:center}
+.stat .fig{background:var(--surface-2)}
+.fig .k{font-family:var(--mono);font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);display:block;line-height:1.35}
+.fig .v{font-family:var(--mono);font-size:1.3rem;font-weight:660;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;display:block;line-height:1.2;margin-top:.24rem;color:var(--accent)}
+.fig .s{font-size:.74rem;color:var(--ink-3);display:block;margin-top:.28rem;line-height:1.4}
+
+/* ============================================================
+   CALLOUTS
+   ============================================================ */
+.callout{border:1px solid var(--rule-2);border-left:4px solid var(--accent);background:var(--surface);
+  border-radius:0 6px 6px 0;padding:.9rem 1.05rem;margin:1.5rem 0}
+.callout > :last-child{margin-bottom:0}
+.callout .t{font-family:var(--mono);font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:.4rem;font-weight:600}
+.callout.good{border-left-color:var(--good);background:var(--good-soft)}
+.callout.good .t{color:var(--good)}
+.callout.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.callout.warn .t{color:var(--warn)}
+.callout.bad{border-left-color:var(--bad);background:var(--bad-soft)}
+.callout.bad .t{color:var(--bad)}
+
+/* ============================================================
+   PIPELINE FLOW
+   ============================================================ */
+.flow{display:grid;gap:0;margin:1.5rem 0;max-width:var(--maxw)}
+.flow-step{
+  display:grid;grid-template-columns:9.4rem minmax(0,1fr);gap:.8rem;align-items:start;
+  border:1px solid var(--rule);border-radius:5px;background:var(--surface-2);padding:.6rem .8rem;
+}
+.flow-step .stage{font-family:var(--mono);font-size:.78rem;font-weight:660;color:var(--accent);
+  line-height:1.4;word-break:break-word;padding-top:.08rem}
+.flow-step .what{font-size:.9rem;line-height:1.55;color:var(--ink-2)}
+.flow-step .what b{color:var(--ink);font-weight:640}
+.flow-arrow{height:1.05rem;width:1px;background:var(--rule-2);margin-left:2rem;position:relative}
+.flow-arrow::after{content:"";position:absolute;bottom:0;left:-3.5px;
+  border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--rule-2)}
+@media (max-width:620px){
+  .flow-step{grid-template-columns:1fr;gap:.25rem}
+  .flow-arrow{margin-left:1rem}
+}
+
+/* ============================================================
+   FILTER / EXIT CHAIN
+   ============================================================ */
+ol.chain{counter-reset:f;list-style:none;margin:1.35rem 0;padding:0;display:grid;gap:.4rem;
+  max-width:var(--maxw)}
+ol.chain > li{
+  counter-increment:f;display:grid;grid-template-columns:1.9rem minmax(0,1fr);gap:.6rem;
+  background:var(--surface-2);border:1px solid var(--rule-2);border-radius:5px;
+  padding:.55rem .75rem;margin:0;
+}
+ol.chain > li::before{
+  content:counter(f);font-family:var(--mono);font-size:.9rem;font-weight:660;color:var(--accent);
+  text-align:center;line-height:1.5;
+}
+.cond{font-family:var(--mono);font-size:.85rem;line-height:1.5;color:var(--ink);
+  word-break:break-word;margin-bottom:.22rem}
+.why{font-size:.92rem;line-height:1.55;color:var(--ink-2)}
+.why b{color:var(--ink)}
+
+/* ============================================================
+   COLOPHON
+   ============================================================ */
+.colophon{border-top:2px solid var(--ink);margin-top:2.4rem;padding-top:1.1rem;
+  font-size:.9rem;line-height:1.6;color:var(--ink-2)}
+.colophon .t{font-family:var(--mono);font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:.5rem}
+.colophon > :last-child{margin-bottom:0}
+
+/* ============================================================
+   BACK TO TOP
+   ============================================================ */
+#backTop{position:fixed;right:1rem;bottom:1rem;z-index:30;font-family:var(--mono);font-size:.68rem;
+  letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:#fff;border:0;border-radius:20px;
+  padding:.5rem .8rem;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .18s}
+#backTop.on{opacity:.92;pointer-events:auto}
+#backTop:hover{opacity:1}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+@media print{
+  :root{--paper:#fff;--surface:#fff;--surface-2:#fff}
+  body{font-size:10.5pt}
+  .layout{display:block}
+  #sidebar,.topbar,#scrim,#backTop{display:none !important}
+  main{max-width:none;padding:0}
+  .stat,.callout,.wide,.flow-step,ol.chain > li,details.primer{break-inside:avoid;box-shadow:none}
+  details.primer .body{display:block}
+  pre{border-color:#bbb}
+  a{color:inherit;text-decoration:none}
+  thead th,caption{background:#f2f2f2}
+}
+</style>
+
+<a class="skip" href="#main">Skip to content</a>
+<div class="topbar">
+  <button id="navToggle" aria-expanded="false" aria-controls="sidebar">Contents</button>
+  <div class="tt">Computation Ledger &mdash; HEDGE</div>
+</div>
+<div id="scrim"></div>
+<div class="layout">
+<nav id="sidebar" aria-label="Section navigation">
+  <div class="brand">ISEF &middot; Computation Reference</div>
+  <div class="brand-title">The HEDGE Computation Ledger
+    <span>research_analysis.py &middot; BTC/USDT 4H</span>
+  </div>
+  <ul id="nav">
+    <li><a href="#map"><span class="n">01</span><span>The machine</span></a></li>
+    <li><a href="#data"><span class="n">02</span><span>The data</span></a></li>
+    <li><a href="#indicators"><span class="n">03</span><span>Indicators</span></a></li>
+    <li><a href="#blocks"><span class="n">04</span><span>Order Blocks</span></a></li>
+    <li><a href="#entry"><span class="n">05</span><span>The entry gate</span></a></li>
+    <li><a href="#exit"><span class="n">06</span><span>The exit ladder</span></a></li>
+    <li><a href="#log"><span class="n">07</span><span>Trade log conventions</span></a></li>
+    <li><a href="#stats"><span class="n">08</span><span>The six statistics</span></a></li>
+    <li><a href="#applied"><span class="n">09</span><span>Applied analyses</span></a></li>
+    <li><a href="#numbers"><span class="n">10</span><span>Every number</span></a></li>
+    <li><a href="#audit" class="is-flag"><span class="n">11</span><span>Paper cross-check<em>7 findings</em></span></a></li>
+    <li><a href="#repro"><span class="n">12</span><span>Reproduce it</span></a></li>
+  </ul>
+  <div class="side-note">
+    <b>How to use this</b><br>
+    &sect;1&ndash;7 are the strategy: what the code does, bar by bar, and why each rule is there.
+    &sect;8&ndash;10 are the numbers. &sect;11 is where this page and the paper disagree.<br><br>
+    <b>Two tracks</b><br>
+    Main text is written for a defense panel. Every blue <b>Plain language</b> strip expands into the
+    same idea assuming no background at all.
+  </div>
+</nav>
+<main id="main">
+
+<header class="masthead">
+  <div class="eyebrow">
+    <span>Computation reference</span><span>research_analysis.py</span><span>BTC/USDT 4H</span><span>2022–2026</span>
+  </div>
+  <h1>The HEDGE Computation Ledger</h1>
+  <p class="standfirst">Every number in the paper, traced back to the line of code that produced it — what the strategy does, why each rule is there, how each statistic is computed, and where the paper and the codebase disagree.</p>
+  <div class="provenance">
+    <span class="prov-item"><b>Source</b> research_analysis.py · 5,493 lines</span>
+    <span class="prov-item"><b>Branch</b> development @ b9df7da + uncommitted</span>
+    <span class="prov-item"><b>Recomputed</b> 2026-09-01, offline pipeline run</span>
+    <span class="prov-item"><b>Checked against</b> HEDGE_Paper_Rebuild_Handoff.md</span>
+  </div>
+</header>
+
+<!-- ============================================================ 1 -->
+<section class="sec" id="map">
+  <div class="sec-head"><div class="sec-num">§ 1</div><h2>The machine, end to end</h2></div>
+  <p class="sec-sub">One file does everything. <code>research_analysis.py</code> is the backtest engine, the statistics pipeline, the database layer, and the dashboard's HTTP server — one process, no imports between stages.</p>
+
+  <p class="lede">Nothing in this project is fitted. A fixed set of rules walks forward through 8,767 candles one bar at a time, records 27 trades, and every published statistic is a function of that one trade log. The whole system is a straight line:</p>
+
+  <div class="flow">
+    <div class="flow-step"><div class="stage">load_candles()</div><div class="what"><b>artifacts/candles.csv</b> → 8,767 rows of OHLCV. Read from disk, never the network.</div></div>
+    <div class="flow-arrow"></div>
+    <div class="flow-step"><div class="stage">compute_indicators()</div><div class="what">Adds <b>MACD, MACD_signal, MACD_hist, RSV, K, D, J, ATR, ATR_200</b> as nine new columns. Pure column math, no loops.</div></div>
+    <div class="flow-arrow"></div>
+    <div class="flow-step"><div class="stage">compute_smc()</div><div class="what">Scans for market structure and returns <b>761 Order Block dicts</b>, each scored on five true/false quality criteria.</div></div>
+    <div class="flow-arrow"></div>
+    <div class="flow-step"><div class="stage">simulate_trades()</div><div class="what">The bar loop. Starts at bar 55, evaluates the entry gate when flat and the exit ladder when in a position. Produces the <b>27-trade log</b>.</div></div>
+    <div class="flow-arrow"></div>
+    <div class="flow-step"><div class="stage">Sections 5 &amp; 5B</div><div class="what">Six statistics plus the applied analyses (cost sensitivity, DCA head-to-head, regime split) — all computed <b>from the trade log alone</b>.</div></div>
+  </div>
+
+  <details class="primer">
+    <summary>Plain language — what "the trade log alone" means</summary>
+    <div class="body">
+      <p>Once the simulation finishes, the price data is done doing work. What remains is a table of 27 rows: side, entry bar, exit bar, entry price, exit price, percentage return, bars held, exit reason. <strong>Every headline statistic in the paper is arithmetic on that table.</strong></p>
+      <p>The win rate counts how many of the 27 <code>pnl_pct</code> values are above zero. The total return adds all 27 together. The bootstrap draws 27 values from that column at random ten thousand times. The correlation compares two of its columns. This is why the paper can be checked by hand — and why the appendix prints all 27 rows.</p>
+    </div>
+  </details>
+
+  <h3>Where each thing lives</h3>
+  <p>The file is organized into numbered banner sections. Line numbers below are from the current working tree; they shift when the file changes, so the section number is the durable reference.</p>
+
+  <div class="wide">
+  <table>
+    <caption>Table 1.1 — Section map of research_analysis.py</caption>
+    <thead><tr><th>§</th><th class="n">Lines</th><th>Contains</th><th>Feeds the paper?</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">1 / 1B</td><td class="n">126–461</td><td>Fixed parameters, <code>report_stat()</code>, SQLAlchemy models</td><td><span class="chip note">Infrastructure</span></td></tr>
+      <tr><td class="mono">2</td><td class="n">462–520</td><td><code>load_candles()</code>, extended-window loader</td><td><span class="chip ok">Yes</span></td></tr>
+      <tr><td class="mono">3</td><td class="n">521–1638</td><td><b>The engine.</b> Indicators, SMC detection, KDJ exit machine, <code>simulate_trades()</code></td><td><span class="chip ok">Yes</span></td></tr>
+      <tr><td class="mono">3B</td><td class="n">1639–2718</td><td>Live Binance pull, Google Sheets export, the <code>HandCalc</code> spreadsheet tabs</td><td><span class="chip note">Export only</span></td></tr>
+      <tr><td class="mono">4</td><td class="n">2719–3144</td><td>Three-arm ablation study</td><td><span class="chip flag">Excluded — §18</span></td></tr>
+      <tr><td class="mono">5</td><td class="n">3145–3363</td><td><b>Statistical primitives.</b> Binomial, bootstrap, Pearson, Spearman, max drawdown, Sharpe/Sortino</td><td><span class="chip ok">Yes</span></td></tr>
+      <tr><td class="mono">5B</td><td class="n">3364–4483</td><td>Buy-and-hold, DCA blend, cost sensitivity, regime split, forward OOS, paper sync</td><td><span class="chip ok">Yes</span></td></tr>
+      <tr><td class="mono">6</td><td class="n">4484–4940</td><td>Artifact export + database persistence</td><td><span class="chip note">Infrastructure</span></td></tr>
+      <tr><td class="mono">7</td><td class="n">4941–5210</td><td>HTTP server, dashboard endpoints</td><td><span class="chip note">Infrastructure</span></td></tr>
+      <tr><td class="mono">8</td><td class="n">5211–end</td><td><code>run_full_analysis_pipeline()</code> — the ten-step CLI run</td><td><span class="chip ok">Yes</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Three surfaces compute the same numbers</h3>
+  <p>The redundancy is deliberate. The same statistics are computed three times by three implementations that never talk to each other:</p>
+
+  <div class="wide">
+  <table>
+    <caption>Table 1.2 — Independent computation surfaces</caption>
+    <thead><tr><th>Surface</th><th>Language</th><th>Computes</th><th>Independence</th></tr></thead>
+    <tbody>
+      <tr><td><b>Python pipeline</b><br><span class="mono" style="font-size:.78rem;color:var(--ink-3)">research_analysis.py</span></td><td class="mono">Python / SciPy</td><td>All six statistics, canonical figures</td><td>The reference. B = 10,000, seed 42.</td></tr>
+      <tr><td><b>Dashboard</b><br><span class="mono" style="font-size:.78rem;color:var(--ink-3)">statsCompute.ts, statMath.ts</span></td><td class="mono">TypeScript</td><td>Win rate, binomial, Pearson, Spearman, bootstrap CI</td><td>Reimplemented from scratch. Imports <b>no</b> Python value. Own PRNG (mulberry32), B = 2,000.</td></tr>
+      <tr><td><b>HandCalc sheets</b><br><span class="mono" style="font-size:.78rem;color:var(--ink-3)">push_hand_reproducible_stats_to_gsheet()</span></td><td class="mono">Google Sheets formulas</td><td>Every headline and risk statistic</td><td>Live <code>SUM</code>/<code>STDEV.S</code>/<code>CORREL</code>/<code>BINOM.DIST</code>/<code>PERCENTILE.INC</code> over raw exported rows. Only the bootstrap is precomputed.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <div class="t">Why this matters at a defense</div>
+    <p>If a panelist asks "how do we know SciPy gave you the right answer," the answer is not "SciPy is trusted." It is that a spreadsheet formula and an independent TypeScript file arrive at the same figures from the same raw rows. The one place the surfaces visibly disagree — the bootstrap interval — was traced to its cause and is reported as two numbers rather than merged into one. That disagreement is evidence the cross-check is real.</p>
+  </div>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="sec" id="data">
+  <div class="sec-head"><div class="sec-num">§ 2</div><h2>The data</h2></div>
+  <p class="sec-sub">One frozen CSV. Everything downstream is deterministic from it.</p>
+
+  <div class="figs">
+    <div class="fig"><span class="k">Rows</span><span class="v">8,767</span><span class="s">4-hour candles</span></div>
+    <div class="fig"><span class="k">First bar</span><span class="v">2022-01-01</span><span class="s">08:00 (UTC+8)</span></div>
+    <div class="fig"><span class="k">Last bar</span><span class="v">2026-01-01</span><span class="s">08:00 (UTC+8)</span></div>
+    <div class="fig"><span class="k">Gaps</span><span class="v">0</span><span class="s">all deltas = 4h</span></div>
+  </div>
+
+  <h4>Why 8,767 and not 8,760</h4>
+  <p>2022-01-01 to 2026-01-01 is exactly 1,461 calendar days — 365 + 365 + <b>366</b> (2024 is a leap year) + 365. At six 4-hour bars per day that is 1,461 × 6 = 8,766 intervals. The final bar at 2026-01-01 08:00 is included as a row rather than used as an exclusive upper bound, giving 8,766 + 1 = <b>8,767</b>.</p>
+  <p>An earlier draft cited 8,760, a plain 365 × 24 arithmetic figure that dropped both the leap day and the endpoint bar. That was corrected; the manifest, the loader, and the paper all now agree on 8,767.</p>
+
+  <h4>The timestamp convention</h4>
+  <p>Binance returns <code>open_time</code> in milliseconds UTC. <code>get_candles()</code> converts it and adds a fixed <code>+8 hours</code>. Every timestamp in <code>candles.csv</code>, in the trade log, and in the paper is therefore <b>UTC+8</b>, not raw UTC. This shifts labels only — it does not reorder bars or change any computed value.</p>
+
+  <h4>The second window</h4>
+  <p><code>load_formulation_period_window()</code> reads <code>artifacts/candles_extended.json</code> and returns the <b>2018-01-01 08:00 → 2022-01-01 04:00</b> window, <b>8,750 rows</b>. This is the period the strategy's rules were formed against by visual inspection, so it is <em>not</em> out-of-sample. It ends one bar short of the main window's first bar so the two never overlap.</p>
+
+  <details class="primer">
+    <summary>Plain language — why the formulation window is reported at all</summary>
+    <div class="body">
+      <p>Rules that were invented by looking at a chart usually look best on that same chart. That is the classic overfitting signature, and it is what a skeptical reader will suspect first.</p>
+      <p>So the study reports the formulation window on purpose, as a self-incrimination test. The strategy scores <strong>60.00% and +21.82% there, against 70.37% and +30.31% on the reported window.</strong> It does worse on the data it was built from. That is the opposite of what curve-fitting produces, and it is the single strongest piece of evidence in the paper that the rules were not tuned.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="sec" id="indicators">
+  <div class="sec-head"><div class="sec-num">§ 3</div><h2>Indicators — three questions about one price series</h2></div>
+  <p class="sec-sub"><code>compute_indicators(df, kdj_period=9, atr_period=14)</code>, Section 3. Nine columns, all computed causally: each row uses only that row and earlier rows.</p>
+
+  <p>The three indicator families are not redundant. Each answers a different question, and the entry gate requires all three to answer at once.</p>
+
+  <div class="wide">
+  <table>
+    <caption>Table 3.1 — What each indicator is asked</caption>
+    <thead><tr><th>Family</th><th>Question it answers</th><th>Role in the strategy</th></tr></thead>
+    <tbody>
+      <tr><td><b>MACD</b> (12, 26, 9)</td><td>Which way is momentum turning, and is the turn building or fading?</td><td>Directional trigger</td></tr>
+      <tr><td><b>KDJ</b> (9, 3, 3)</td><td>Is this pullback running out of strength right now?</td><td>Timing / exhaustion gate</td></tr>
+      <tr><td><b>ATR</b> (14) and <b>ATR</b> (200)</td><td>How violently is price moving, versus its own long-run normal?</td><td>Risk sizing + regime filter</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>MACD (12, 26, 9)</h3>
+  <p class="codecap">research_analysis.py · Section 3</p>
+  <pre><span class="cm"># --- MACD (12, 26, 9) ---</span>
+ema_fast = df["close"].ewm(span=12, adjust=False).mean()
+ema_slow = df["close"].ewm(span=26, adjust=False).mean()
+df["MACD"]        = ema_fast - ema_slow
+df["MACD_signal"] = df["MACD"].ewm(span=9, adjust=False).mean()
+df["MACD_hist"]   = df["MACD"] - df["MACD_signal"]</pre>
+
+  <div class="formula">
+    <span class="lbl">Expanded — pandas span n means alpha = 2/(n+1)</span><br>
+    EMA₁₂(t) = C(t)·(2/13) + EMA₁₂(t−1)·(11/13)<br>
+    EMA₂₆(t) = C(t)·(2/27) + EMA₂₆(t−1)·(25/27)<br>
+    MACD(t)  = EMA₁₂(t) − EMA₂₆(t)<br>
+    Signal(t) = MACD(t)·(2/10) + Signal(t−1)·(8/10)<br>
+    Hist(t)  = MACD(t) − Signal(t)
+  </div>
+
+  <p><code>adjust=False</code> is the load-bearing argument. It selects the pure recursive form above — each value depends only on the current close and the previous EMA. The alternative, <code>adjust=True</code>, rescales early values using the full window and would make the series depend on where the data happens to start.</p>
+
+  <p><b>Only <code>MACD_hist</code> is read by the strategy.</b> The <code>MACD</code> and <code>MACD_signal</code> columns are exported for the dashboard and the diagnostic touch log, but no entry or exit condition references them.</p>
+
+  <details class="primer">
+    <summary>Plain language — reading the histogram</summary>
+    <div class="body">
+      <p>An exponential moving average is a running average that weights recent candles more heavily. MACD subtracts a slow one from a fast one: when the fast average pulls above the slow one, recent prices are outrunning older prices, and momentum is upward.</p>
+      <p>The <strong>histogram</strong> goes one level further — it is the gap between the MACD line and its own smoothed version. What matters to this strategy is not whether the histogram is positive, but <strong>which way it is moving.</strong> A histogram that is below zero but rising means the sellers are still in control but losing grip. That is the moment the long entry is looking for: not a reversal that has already happened, but one that is starting.</p>
+    </div>
+  </details>
+
+  <h3>KDJ (9, 3, 3) — the fixed entry series</h3>
+  <pre><span class="cm"># --- KDJ -- EWM alpha = 1/3, matching the standard KDJ smoothing ---</span>
+period = int(kdj_period)                                  <span class="cm"># 9</span>
+rolling_low_min  = df["low"].rolling(period, min_periods=1).min()
+rolling_high_max = df["high"].rolling(period, min_periods=1).max()
+rsv_denominator  = (rolling_high_max - rolling_low_min).replace(0, np.nan)
+raw_stochastic_value = ((df["close"] - rolling_low_min) / rsv_denominator * 100).fillna(50)
+
+kdj_smoothing_alpha = 1.0 / 3.0
+df["K"] = raw_stochastic_value.ewm(alpha=kdj_smoothing_alpha, adjust=False).mean()
+df["D"] = df["K"].ewm(alpha=kdj_smoothing_alpha, adjust=False).mean()
+df["J"] = 3 * df["K"] - 2 * df["D"]</pre>
+
+  <div class="formula">
+    <span class="lbl">Formula</span><br>
+    RSV(t) = 100 · [ C(t) − min(L over last 9) ] / [ max(H over last 9) − min(L over last 9) ]<br>
+    K(t) = ⅔·K(t−1) + ⅓·RSV(t)<br>
+    D(t) = ⅔·D(t−1) + ⅓·K(t)<br>
+    J(t) = 3·K(t) − 2·D(t)
+  </div>
+
+  <p>Two edge-case details that the formula alone does not show, both in the code above:</p>
+  <ul>
+    <li><code>min_periods=1</code> — the rolling window produces a value from the very first bar rather than nine NaNs. The first bars use a shorter effective window.</li>
+    <li><code>.replace(0, np.nan)</code> then <code>.fillna(50)</code> — if a 9-bar window has an identical high and low (a completely flat stretch), the RSV denominator would be zero. That bar's RSV is set to the neutral <b>50</b> rather than producing a division error.</li>
+  </ul>
+
+  <div class="callout">
+    <div class="t">The most misunderstood part of this strategy</div>
+    <p>There are <b>two</b> KDJ systems in this codebase, and they never share state. This one — the fixed 9-period series computed once over the whole dataset — is the only one the <em>entry</em> conditions ever read. A second, adaptive KDJ exists solely to time one exit signal after a trade is already open; it is described in <a href="#exit">§6</a>. Confusing the two is the single most common misreading of the design.</p>
+  </div>
+
+  <h3>ATR (14) and ATR (200)</h3>
+  <pre>previous_close = df["close"].shift(1)
+true_range = pd.concat([
+    df["high"] - df["low"],
+    (df["high"] - previous_close).abs(),
+    (df["low"]  - previous_close).abs(),
+], axis=1).max(axis=1)
+
+df["ATR"]     = true_range.rolling(atr_period, min_periods=1).mean()   <span class="cm"># 14</span>
+df["ATR_200"] = true_range.rolling(200, min_periods=1).mean()</pre>
+
+  <div class="formula">
+    <span class="lbl">Formula</span><br>
+    TR(t) = max( H(t) − L(t),  |H(t) − C(t−1)|,  |L(t) − C(t−1)| )<br>
+    ATR₁₄(t) = (1/14) · Σ TR(t−i), i = 0…13<br>
+    ATR₂₀₀(t) = (1/200) · Σ TR(t−i), i = 0…199
+  </div>
+
+  <div class="callout warn">
+    <div class="t">Known stale comment — already disclosed in the paper</div>
+    <p>The comment directly above this code in <code>research_analysis.py</code> says <em>"Wilder's smoothing (RMA)… equivalent to <code>ewm(alpha=1/n, adjust=False)</code>."</em> <b>The executed code is a plain rolling arithmetic mean, not Wilder's smoothing.</b> The two produce different numbers.</p>
+    <p>The paper is correct and already states this explicitly: <em>"Both ATR windows are computed as a simple rolling mean rather than Wilder's original exponential smoothing, despite an inherited code comment suggesting otherwise."</em> The rolling mean is the deliberate choice — an orphaned <code>Binance backtest bot (Wilder ATR backup).py</code> confirms the exponential version was the one abandoned. Only the comment is wrong, and correcting a comment changes no number. It is listed again in <a href="#audit">§11</a> because it is exactly the kind of thing a panelist reading source will spot.</p>
+  </div>
+
+  <p><b>ATR₁₄</b> sizes risk: stop-loss distance, the minimum-stop filter, the ATR-move exit, and the breakeven ratchet all multiply it. <b>ATR₂₀₀</b> is the long-run volatility baseline: it forms the regime ratio used as an entry filter, and it is the yardstick for two of the five Order Block quality criteria.</p>
+
+  <details class="primer">
+    <summary>Plain language — why true range, not just high minus low</summary>
+    <div class="body">
+      <p>The obvious way to measure a candle's size is high minus low. That undercounts gaps. If Bitcoin closes at $40,000 and the next candle opens and trades entirely between $42,000 and $42,500, its high-minus-low is only $500 — but price actually moved $2,500.</p>
+      <p><strong>True range</strong> fixes this by taking the largest of three spans: the candle's own range, and the distance from the previous close to this candle's high and low. Averaging true range over 14 candles gives ATR — a plain-language answer to "how far does this market typically travel in one candle right now."</p>
+      <p>That number is what makes the stop-loss adaptive. A fixed 2% stop is too tight in a violent market and too loose in a quiet one. A stop placed a multiple of ATR away is the same <em>amount of market noise</em> away in both.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="sec" id="blocks">
+  <div class="sec-head"><div class="sec-num">§ 4</div><h2>Order Blocks — where the large participants already acted</h2></div>
+  <p class="sec-sub"><code>compute_smc(df)</code> and <code>_build_order_block_from_crossover()</code>, Section 3. Returns a list of 761 dictionaries.</p>
+
+  <p>MACD and KDJ say <em>when</em>. Order Blocks say <em>where</em>. The strategy will not take a momentum signal that occurs at an arbitrary price — it only acts when price has returned to a zone where a decisive move previously originated.</p>
+
+  <div class="figs">
+    <div class="fig"><span class="k">Detected</span><span class="v">761</span><span class="s">order blocks</span></div>
+    <div class="fig"><span class="k">Supply</span><span class="v">383</span><span class="s">sell-side zones</span></div>
+    <div class="fig"><span class="k">Demand</span><span class="v">378</span><span class="s">buy-side zones</span></div>
+    <div class="fig"><span class="k">Internal</span><span class="v">659</span><span class="s">5-bar pivots</span></div>
+    <div class="fig"><span class="k">Swing</span><span class="v">102</span><span class="s">50-bar pivots</span></div>
+  </div>
+
+  <h3>How a block is found</h3>
+  <p>Two independent structural passes run over the same series, differing only in pivot lookback: <code>INTERNAL_STRUCTURE_LOOKBACK_BARS = 5</code> and <code>SWING_STRUCTURE_LOOKBACK_BARS = 50</code>. In each pass:</p>
+  <ol>
+    <li>A candle at index <code>pb = i − size</code> is confirmed as a <b>pivot high</b> only by strict right-side comparison: <code>H[pb] &gt; max(H[pb+1 … i])</code>. Mirror condition for a pivot low. No candle after <code>i</code> is read.</li>
+    <li>When price later <b>closes across</b> a tracked pivot level, a break of structure (BOS) or change of character (CHoCH) is flagged.</li>
+    <li>The Order Block is built from the price segment between the pivot candle and the crossover candle.</li>
+  </ol>
+
+  <p>Two indices are kept deliberately distinct, and confusing them is how lookahead bugs get in:</p>
+  <ul>
+    <li><code>ob_bar</code> — the candle holding the block's own extreme. This is what the KDJ exit window measures back to.</li>
+    <li><code>created_at</code> — the candle on which the breakout <em>closes</em>. The block does not exist to the simulator until after this bar.</li>
+  </ul>
+
+  <p>A block is eligible for entry only while <code>created_at &lt; i &lt; mitigated_at</code> and <code>i − created_at ≤ 500</code>. It dies at 500 candles of age, or the moment price closes back through its boundary.</p>
+
+  <h3>The five quality criteria</h3>
+  <p>Each block is scored on five independently evaluated booleans. Their sum, 0 to 5, is stored as <code>quality</code>.</p>
+
+  <div class="wide">
+  <table>
+    <caption>Table 4.1 — Quality criteria, definitions, and how often each fires</caption>
+    <thead><tr><th>Criterion</th><th>Condition</th><th class="n">True across all 761</th><th class="n">True among the 27 entry blocks</th></tr></thead>
+    <tbody>
+      <tr><td><b>Displacement</b></td><td>A candle body move of at least 1.5 × ATR₂₀₀ (measured at the block's own candle) occurs in the block's direction, within a window bounded at the block's confirmation candle</td><td class="n">107 <span style="color:var(--ink-3)">(14.1%)</span></td><td class="n">4</td></tr>
+      <tr><td><b>Large origin candle</b></td><td>H(i) − L(i) ≥ ATR₂₀₀(i)</td><td class="n">444 <span style="color:var(--ink-3)">(58.3%)</span></td><td class="n">20</td></tr>
+      <tr><td><b>Fair value gap</b></td><td>Three-candle imbalance: L(j+2) &gt; H(j) for demand, mirrored for supply, inside a bounded window</td><td class="n">253 <span style="color:var(--ink-3)">(33.2%)</span></td><td class="n">11</td></tr>
+      <tr><td><b>Liquidity sweep</b></td><td>L(i) ≤ min(L) over the prior 10 candles for demand; H(i) ≥ max(H) over the prior 10 for supply</td><td class="n">406 <span style="color:var(--ink-3)">(53.4%)</span></td><td class="n">15</td></tr>
+      <tr><td><b>Volume expansion</b></td><td>V(i) ≥ 1.25 × mean(V) over the prior 20 candles, <b>or</b> body &gt; 60% of the candle's own range</td><td class="n">412 <span style="color:var(--ink-3)">(54.1%)</span></td><td class="n">15</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <div class="t">The quality score gates nothing in the headline result</div>
+    <p>The published baseline runs at <code>min_ob_quality = 0</code>, so <b>no block is excluded by score.</b> All five criteria are diagnostic in the reported result — they are recorded per trade and exported, but they filter nothing.</p>
+    <p>Two consequences worth knowing before a Q&amp;A. First, the composite score across the 761 blocks runs 0–5 (93 / 154 / 206 / 197 / 90 / 21), but among the 27 blocks that actually triggered a trade the maximum is <b>4</b> — none of the 21 perfect-scoring blocks ever produced an entry. Second, the module constant <code>DEFAULT_MIN_OB_QUALITY</code> is <b>1</b>, not 0. Calling <code>simulate_trades()</code> without an explicit threshold gives the 25-trade set, which is also what <code>artifacts/trades_default_view.csv</code> holds. The paper's 27 trades require <code>min_ob_quality=0</code> passed explicitly.</p>
+  </div>
+
+  <h3>The lookahead correction</h3>
+  <p>This is the disclosed engine bug. The forward-search loops for <b>Displacement</b> and <b>Fair Value Gap</b> were originally bounded by the length of the whole dataset instead of by each block's own confirmation candle — so they could read one to two candles that would not have been available when the block became tradeable. Genuine data leakage.</p>
+  <p>Fixed by freezing every forward-search window at the confirmation bar, with runtime assertions left at each read site so a regression fails immediately rather than waiting for another audit. <b>The 27-trade baseline is unchanged by the fix</b>, because that baseline runs at threshold 0 and is unaffected by quality filtering.</p>
+
+  <details class="primer">
+    <summary>Plain language — why a one-candle leak is fatal</summary>
+    <div class="body">
+      <p>A backtest's only claim to meaning is that it made each decision using only what was knowable at that moment. If a rule reads even one candle into the future, the backtest is no longer simulating trading — it is measuring how well a rule performs when it can see the answer.</p>
+      <p>The leak here was small and confined to two quality scores, and the reported result does not use those scores. That does not make it harmless. It makes it exactly the kind of defect that is invisible in the output and has to be caught by reading the loop bounds, which is what the no-lookahead audit did.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="sec" id="entry">
+  <div class="sec-head"><div class="sec-num">§ 5</div><h2>The entry gate</h2></div>
+  <p class="sec-sub"><code>_try_enter_long()</code> and <code>_try_enter_short()</code>, Section 3. Evaluated at every bar the simulator is flat, against every currently-active block in turn. The first block passing all filters takes the trade.</p>
+
+  <p>The bar loop starts at index <b>55</b> (<code>SWING_STRUCTURE_LOOKBACK_BARS + 5</code>), so the 50-bar pivot structure has room to form. At each bar the loop reads the current and two previous values of <code>MACD_hist</code> and <code>K</code>, and derives two quantities:</p>
+
+  <div class="formula">
+    <span class="lbl">Derived per bar</span><br>
+    k_accel = (K(t) − K(t−1)) − (K(t−1) − K(t−2))   <span style="color:var(--ink-3)">← second difference of K</span><br>
+    atr_r   = ATR₁₄(t) / ATR₂₀₀(t)                  <span style="color:var(--ink-3)">← volatility regime ratio</span>
+  </div>
+
+  <h3>Long entry — the full chain</h3>
+  <p>Every condition must hold at the same candle close. A failure at any step moves to the next block; if no block passes, no trade opens on that bar.</p>
+
+  <ol class="chain">
+    <li>
+      <div class="cond">low &lt;= ob["top"] and close &gt;= ob["bottom"]</div>
+      <div class="why"><b>Price is touching the zone.</b> The candle must actually reach into the demand block. This is the "where" condition — everything after it is the "when".</div>
+    </li>
+    <li>
+      <div class="cond">macd_hist &lt; 0 and macd_hist &gt; macd_hist_prev</div>
+      <div class="why"><b>Momentum is negative but turning up.</b> Buying into a zone while the histogram is still falling means catching the move too early; buying once it is already positive means catching it too late.</div>
+    </li>
+    <li>
+      <div class="cond">macd_hist_prev &gt; macd_hist_two_bars_ago</div>
+      <div class="why"><b>Rising for at least two bars.</b> One rising bar is noise. Requiring two consecutive rises makes the turn a trend rather than a flicker.</div>
+    </li>
+    <li>
+      <div class="cond">K &lt; 50.0 and K &gt; K_prev and J &lt; 60.0</div>
+      <div class="why"><b>Oscillator is low and lifting.</b> <code>K &lt; 50</code> and <code>J &lt; 60</code> confirm the pullback is genuinely oversold rather than a pause mid-rally; <code>K &gt; K_prev</code> confirms it has started to recover.</div>
+    </li>
+    <li>
+      <div class="cond">1 &lt;= k_accel &lt;= 6</div>
+      <div class="why"><b>K is accelerating, but not spiking.</b> At or below 0, K is not yet accelerating in the trade's favour. Above 6, a single-bar spike — which, per the code comment, "tends to reset immediately" and is treated as noise.</div>
+    </li>
+    <li>
+      <div class="cond">not (0.8 &lt;= atr_r &lt;= 1.0)</div>
+      <div class="why"><b>Skip the dead zone.</b> When short-term volatility sits just below its long-run baseline, the market is neither trending nor genuinely quiet. Entries are filtered out of that band entirely.</div>
+    </li>
+    <li>
+      <div class="cond">stop_loss = ob["bottom"] − ATR₁₄ × 0.5 ; risk = close − stop_loss ; risk &gt; 0</div>
+      <div class="why"><b>Place the stop below the zone, with an ATR buffer.</b> Half an ATR below the block's floor, so ordinary noise around the zone edge does not trigger it.</div>
+    </li>
+    <li>
+      <div class="cond">risk / close &gt;= 0.015</div>
+      <div class="why"><b>The stop must be at least 1.5% away.</b> Verbatim from the code: thin blocks "sit inside normal 4H noise and get stopped before the move even starts." A block too thin to clear this is rejected outright rather than traded with a tight stop.</div>
+    </li>
+    <li>
+      <div class="cond">tp = get_structural_tp(...) or close + risk × 2.0</div>
+      <div class="why"><b>Target real structure when it exists.</b> <code>get_structural_tp()</code> returns the <em>nearest opposing</em> block above price — the lowest <code>bottom</code> among active supply blocks. If there is none, fall back to twice the risk distance.</div>
+    </li>
+    <li>
+      <div class="cond">(tp − close) / risk &gt;= 1.5</div>
+      <div class="why"><b>Minimum 1.5 : 1 reward-to-risk.</b> The last gate. A structural target sitting too close to entry fails here and the trade is skipped, even though every momentum condition passed.</div>
+    </li>
+  </ol>
+
+  <p><b>Short entries mirror this exactly</b>, against supply blocks, with the histogram positive and falling, <code>K &gt; 70.0</code>, <code>J &lt;= 100.0</code>, the stop at <code>ob["top"] + ATR₁₄ × 0.5</code>, and the structural target being the highest <code>top</code> among active demand blocks below price.</p>
+
+  <details class="primer">
+    <summary>Plain language — what the whole chain is doing</summary>
+    <div class="body">
+      <p>Read the ten filters as one sentence: <em>price has come back to a zone where a big move once started; selling pressure there is measurably fading rather than merely paused; the market is not in its indecisive volatility band; and the trade that results is far enough from its stop to survive normal noise while still offering at least one and a half times that risk in reward.</em></p>
+      <p>Each condition on its own is weak — thousands of candles satisfy any one of them. The point of the confluence is the intersection. Across 8,767 candles, all ten held simultaneously on only <strong>27</strong> occasions.</p>
+      <p>That is also the study's central weakness, stated plainly: a rule this restrictive produces a sample too small for strong statistical claims, which is precisely why the paper reports a wide bootstrap interval and refuses to claim more than the 27 trades support.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="sec" id="exit">
+  <div class="sec-head"><div class="sec-num">§ 6</div><h2>The exit ladder</h2></div>
+  <p class="sec-sub"><code>_check_long_exit_conditions()</code> and its short mirror, Section 3. Evaluated every bar while a position is open, in a fixed priority order. The first condition satisfied closes the trade; the rest are not evaluated on that bar.</p>
+
+  <ol class="chain">
+    <li>
+      <div class="cond">peak_pnl &gt;= 1.5 and close &lt;= entry × (1 + peak_pnl × 0.5 / 100)</div>
+      <div class="why"><b>Trailing 50% retrace.</b> Once a trade has been up 1.5% at any point, it closes if it gives back half of its best unrealized gain. Arms only after the 1.5% threshold, so a trade is never trailed out before it has done anything.</div>
+    </li>
+    <li>
+      <div class="cond">(i − entry_idx) &gt;= 3 and kdj_reset_exit(state, "LONG")</div>
+      <div class="why"><b>KDJ-reset exit.</b> The adaptive exit oscillator has crossed back against the trade. Suppressed for the first three bars — per the code, single-bar KDJ fluctuations in bars 1–2 should not close a position.</div>
+    </li>
+    <li>
+      <div class="cond">close &gt;= entry + entry_atr × 1.8</div>
+      <div class="why"><b>ATR-move exit.</b> The trade has travelled 1.8 × the ATR measured <em>at entry</em>. A volatility-scaled profit target: the same amount of market movement in every regime.</div>
+    </li>
+    <li>
+      <div class="cond">close &gt;= entry + entry_atr × 2.0 → stop_loss = max(stop_loss, entry)</div>
+      <div class="why"><b>Breakeven ratchet.</b> Not an exit — it moves the stop up to entry, making the trade risk-free from that point. Note it sits <em>below</em> the 1.8 × ATR exit in priority, so a trade that reaches 2.0 × ATR has already exited at 1.8 × on an earlier bar.</div>
+    </li>
+    <li>
+      <div class="cond">close &lt;= stop_loss  →  "HIT STOP LOSS"</div>
+      <div class="why"><b>Hard stop.</b> Evaluated on the close, not intrabar. P&amp;L is recomputed from the actual close rather than assuming a fill at the stop price.</div>
+    </li>
+    <li>
+      <div class="cond">close &gt;= take_profit  →  "HIT TAKE PROFIT"</div>
+      <div class="why"><b>Hard target.</b> The structural or 2× -risk target set at entry. In the 27-trade baseline this fires <b>zero</b> times — the ATR and trailing exits always arrive first.</div>
+    </li>
+  </ol>
+
+  <div class="callout">
+    <div class="t">One ordering detail that changes results if moved</div>
+    <p>The adaptive KDJ state is advanced with <em>this</em> bar's price action — <code>kdj_reset_update()</code> — <b>after</b> the trailing-exit check but <b>before</b> the KDJ-reset check. So on a bar where the trailing exit fires, the KDJ state is never advanced at all. Reordering these two lines changes which bar's data the exit signal is allowed to react to, and therefore changes the trade log.</p>
+  </div>
+
+  <h3>The adaptive exit KDJ — the second system</h3>
+  <p>This is the KDJ that <em>is not</em> the entry KDJ. It exists only to time exit rung 2, and it never touches the entry gate.</p>
+
+  <div class="wide">
+  <table>
+    <caption>Table 6.1 — The two KDJ systems side by side</caption>
+    <thead><tr><th></th><th>Entry-gating KDJ</th><th>Post-entry exit KDJ</th></tr></thead>
+    <tbody>
+      <tr><td><b>Where</b></td><td class="mono">compute_indicators()</td><td class="mono">kdj_reset_init / update / exit</td></tr>
+      <tr><td><b>Period</b></td><td>Fixed 9, always</td><td><code>w = max(1, entry_idx − ob_bar)</code>, frozen for the trade's life</td></tr>
+      <tr><td><b>Computed</b></td><td>Once, over the whole dataset</td><td>Fresh per trade, per bar, from the entry bar forward</td></tr>
+      <tr><td><b>Seed</b></td><td>n/a</td><td>The <em>static</em> series' K and D at the entry bar — not 50, not backfilled</td></tr>
+      <tr><td><b>Reads</b></td><td>Entry conditions only</td><td>Exit rung 2 only</td></tr>
+      <tr><td><b>Varies by trade?</b></td><td>Never</td><td>Only via <code>w</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="formula">
+    <span class="lbl">Exit-side recursion, per bar, with the trade's frozen w</span><br>
+    RSV = 100 · [ C(cur) − min(L over the last w bars) ] / [ max(H over w) − min(L over w) ]<br>
+    K = ⅔·K_prev + ⅓·RSV &nbsp;&nbsp; D = ⅔·D_prev + ⅓·K<br><br>
+    <span class="lbl">Arm, then fire</span><br>
+    armed ← true once K &gt; D (long) or K &lt; D (short) — the first favourable cross<br>
+    exit  ← armed AND K crosses back against the trade this bar
+  </div>
+
+  <p>The state machine must <b>arm</b> before it can fire: it waits for one favourable K/D cross, then exits on the first cross back. A trade that never sees a favourable cross never exits this way.</p>
+
+  <div class="figs">
+    <div class="fig"><span class="k">w minimum</span><span class="v">14</span><span class="s">bars</span></div>
+    <div class="fig"><span class="k">w median</span><span class="v">74</span><span class="s">bars</span></div>
+    <div class="fig"><span class="k">w maximum</span><span class="v">439</span><span class="s">bars</span></div>
+  </div>
+
+  <p>Verified across all 27 trades. <b>w never approaches single digits.</b> An earlier paper draft used a "two-bar window" as an illustrative example; that was corrected in the text, and the code was never changed.</p>
+
+  <details class="primer">
+    <summary>Plain language — why the exit window is tied to the Order Block</summary>
+    <div class="body">
+      <p>The window length <code>w</code> is the number of candles between the block that triggered the trade and the entry itself. A block that formed 400 candles ago produced a trade on a slow structural timeframe; a block that formed 14 candles ago produced a fast one.</p>
+      <p>Setting the exit oscillator's window to that same distance means the exit is measured on the same timeframe as the setup. A slow trade gets a slow exit signal; a fast trade gets a fast one. The alternative — one fixed exit period for every trade — would apply a fast trade's sensitivity to a slow trade and close it on noise.</p>
+      <p>The entry side deliberately does <em>not</em> do this. It stays on a fixed 9-period series so that the decision to enter is measured identically for every trade, which is what makes the 27 entries comparable to one another.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============================================================ 7 -->
+<section class="sec" id="log">
+  <div class="sec-head"><div class="sec-num">§ 7</div><h2>Trade log conventions</h2></div>
+  <p class="sec-sub">Four definitions that every downstream statistic inherits. Getting these wrong is how two correct implementations produce different numbers.</p>
+
+  <div class="wide">
+  <table>
+    <caption>Table 7.1 — Definitions in force</caption>
+    <thead><tr><th>Quantity</th><th>Definition in code</th><th>Consequence</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>pnl_pct</b></td>
+        <td class="mono">LONG: (exit − entry)/entry × 100<br>SHORT: (entry − exit)/entry × 100</td>
+        <td>Percentage of entry price. Gross — no fee or slippage is modelled anywhere inside <code>simulate_trades()</code>.</td>
+      </tr>
+      <tr>
+        <td><b>A "win"</b></td>
+        <td class="mono">pnl_pct &gt; 0</td>
+        <td>Strictly greater than zero. A trade that closes exactly flat counts as a loss.</td>
+      </tr>
+      <tr>
+        <td><b>Total net return</b></td>
+        <td class="mono">trades["pnl_pct"].sum()</td>
+        <td><b>Arithmetic sum, not compounded.</b> +30.31% is 27 percentages added together.</td>
+      </tr>
+      <tr>
+        <td><b>hold_bars</b></td>
+        <td class="mono">exit_idx − entry_idx</td>
+        <td>Bars, not hours. Range 1–16, mean 8.56, median 10.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <div class="t">Summed versus compounded — the reconciliation to state out loud</div>
+    <p>The headline <b>+30.31%</b> is the arithmetic sum of the 27 trade returns. The dollar figure <b>$13,417.77</b> is those same 27 returns compounded in sequence from $10,000, which is <b>+34.18%</b>.</p>
+    <p>Both are correct; they are different quantities. The code makes this explicit rather than reconciling it — <code>_run_strategy_dollar_arm()</code> carries the comment that <code>final_capital</code> "is the REAL final value of the compounded, sequential equity curve — NOT back-derived from <code>total_return_pct</code>." The passive arms hold one position throughout, so no such gap arises for them.</p>
+  </div>
+
+  <h3>The strategy equity curve</h3>
+  <p>Because <code>simulate_trades()</code> never holds overlapping positions, the equity curve can be built by a simple sequential walk over exit bars — exact, not an approximation:</p>
+  <pre>equity[0] = starting_capital
+running_equity = starting_capital
+for i in range(1, n_bars):
+    if i in exit_pnl_by_bar:                      <span class="cm"># a trade closed on this bar</span>
+        running_equity *= (1 + exit_pnl_by_bar[i] / 100)
+    equity[i] = running_equity                    <span class="cm"># flat between trades</span></pre>
+  <p>The curve is a staircase: flat everywhere, stepping only at the 27 exit bars. Sharpe, Sortino and max drawdown are all computed from this series' bar-to-bar percentage changes — which is why the strategy's drawdown is shallow. It is out of the market <b>97.37%</b> of the time and cannot draw down while flat.</p>
+</section>
+
+<!-- ============================================================ 8 -->
+<section class="sec" id="stats">
+  <div class="sec-head"><div class="sec-num">§ 8</div><h2>The six statistics</h2></div>
+  <p class="sec-sub">The paper reports exactly six quantities. Three are unmodified SciPy calls; three are formulas written for this study. Section 5 of the code holds all six.</p>
+
+  <div class="wide">
+  <table>
+    <caption>Table 8.1 — Scope, and what is deliberately absent</caption>
+    <thead><tr><th>Quantity</th><th>Routine</th><th>Kind</th></tr></thead>
+    <tbody>
+      <tr><td>Exact binomial test on win rate</td><td class="mono">scipy.stats.binomtest</td><td><span class="chip note">SciPy</span></td></tr>
+      <tr><td>Pearson's r and its p-value</td><td class="mono">scipy.stats.pearsonr</td><td><span class="chip note">SciPy</span></td></tr>
+      <tr><td>Spearman's ρ and its p-value</td><td class="mono">scipy.stats.spearmanr</td><td><span class="chip note">SciPy</span></td></tr>
+      <tr><td>Bootstrap CI on total return</td><td class="mono">bootstrap_resample / run_bootstrap_ci</td><td><span class="chip acc">Written here</span></td></tr>
+      <tr><td>Maximum drawdown</td><td class="mono">max_drawdown_pct</td><td><span class="chip acc">Written here</span></td></tr>
+      <tr><td>Sharpe and Sortino ratios</td><td class="mono">sharpe_sortino_ratios</td><td><span class="chip acc">Written here</span></td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="3">Sharpe, Sortino and maximum drawdown are <b>descriptive performance metrics, not hypothesis tests.</b> No p-value is ever attached to them. Commit <code>b9df7da</code> removed Fisher's exact test, Welch's t-test and the minimum-detectable-effect power analysis from the code entirely; they are confirmed absent from the current source.</td></tr></tfoot>
+  </table>
+  </div>
+
+  <!-- ---- STAT 1 ---- -->
+  <div class="stat">
+    <header><h3>1 · Exact binomial test</h3><span class="fn">binomial_test(win_count, trade_count, null_win_probability=0.5)</span></header>
+    <div class="inner">
+      <p class="qrow">If trades were coin flips with a 50% win probability, how surprising is 19 wins out of 27?</p>
+
+      <h4>The computation</h4>
+      <pre>one_sided = scipy_stats.binomtest(win_count, trade_count, null_win_probability, alternative=<span class="hl">"greater"</span>)
+two_sided = scipy_stats.binomtest(win_count, trade_count, null_win_probability, alternative=<span class="hl">"two-sided"</span>)
+return {"p_one_sided": one_sided.pvalue, "p_two_sided": two_sided.pvalue}</pre>
+
+      <div class="formula">
+        <span class="lbl">One-sided form</span><br>
+        p = Σ<sub>k=19</sub><sup>27</sup> C(27, k) · (0.5)<sup>27</sup> = <b>0.0261</b>
+      </div>
+
+      <h4>Inputs actually used</h4>
+      <p><code>win_count = 19</code>, <code>trade_count = 27</code>, <code>null_win_probability = 0.5</code>. The 19 comes from <code>(trades["pnl_pct"] &gt; 0).sum()</code> on the baseline log.</p>
+
+      <div class="figs">
+        <div class="fig"><span class="k">p one-sided</span><span class="v">0.0261</span><span class="s">alternative = greater</span></div>
+        <div class="fig"><span class="k">p two-sided</span><span class="v">0.0522</span><span class="s">reported for reference</span></div>
+      </div>
+
+      <h4>Why one-sided is primary</h4>
+      <p>The hypothesis is directional: the strategy is constructed to beat chance, not merely to differ from it in an unspecified direction. The two-sided value is reported alongside as the more conservative figure, and it sits just above 0.05 — which the paper states rather than omits.</p>
+
+      <div class="callout warn">
+        <div class="t">This result does not survive costs</div>
+        <p>At the primary cost assumption of a 0.20% round trip, two trades — entered at candles <b>7938</b> and <b>8188</b>, worth +0.12% and +0.13% gross — cross from winners into losers. The win rate falls to 62.96% and <b>p rises from 0.0261 to 0.1239.</b> Each cost scenario re-runs the binomial test in full on its own adjusted trade set rather than adjusting the gross p-value analytically. The honest overall answer is that the null is <em>not</em> rejected once realistic costs are charged.</p>
+      </div>
+
+      <details class="primer">
+        <summary>Plain language — what a p-value of 0.0261 is saying</summary>
+        <div class="body">
+          <p>Imagine flipping a fair coin 27 times and counting heads. Most of the time you get somewhere near 13 or 14. Getting 19 or more is possible, just uncommon.</p>
+          <p><strong>0.0261 is exactly how uncommon: about 26 times in every 1,000 attempts.</strong> So if the strategy genuinely had no edge, a run this good would still happen roughly once every 38 tries. That is unlikely enough to take seriously and nowhere near unlikely enough to be conclusive — especially on 27 trades.</p>
+          <p>The exact test is used rather than a normal approximation because 27 is small. The formula sums real binomial probabilities instead of assuming a bell curve, so no approximation error enters at a sample size where approximation error would matter.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ---- STAT 2 ---- -->
+  <div class="stat">
+    <header><h3>2 · Percentile bootstrap confidence interval</h3><span class="fn">bootstrap_resample() → run_bootstrap_ci()</span></header>
+    <div class="inner">
+      <p class="qrow">How much sampling uncertainty surrounds the +30.31% total return figure?</p>
+
+      <h4>The computation</h4>
+      <pre>values = np.asarray(values)
+n = resample_size if resample_size is not None else len(values)     <span class="cm"># 27</span>
+rng = np.random.default_rng(seed)                                   <span class="cm"># seed = 42</span>
+resample_totals = np.empty(bootstrap_resamples)
+resample_means  = np.empty(bootstrap_resamples)
+for k in range(bootstrap_resamples):                                <span class="cm"># B = 10,000</span>
+    sample = rng.choice(values, size=n, replace=<span class="hl">True</span>)
+    resample_totals[k] = sample.sum()
+    resample_means[k]  = sample.mean()
+
+<span class="cm"># then, in run_bootstrap_ci():</span>
+total_ci = np.percentile(resamples["resample_totals"], [2.5, 97.5])
+mean_ci  = np.percentile(resamples["resample_means"],  [2.5, 97.5])</pre>
+
+      <p>Four parameters carry the whole method: <b>B = 10,000</b> repetitions, <b>n = 27</b> draws each, <b>with replacement</b>, <b>seed 42</b>. The interval is the 2.5th and 97.5th percentiles of the 10,000 recorded totals.</p>
+
+      <div class="figs">
+        <div class="fig"><span class="k">Point estimate</span><span class="v">+30.3065%</span><span class="s">= the observed sum</span></div>
+        <div class="fig"><span class="k">95% CI, total</span><span class="v">+5.99 → +54.99</span><span class="s">percent</span></div>
+        <div class="fig"><span class="k">95% CI, average</span><span class="v">+0.22 → +2.04</span><span class="s">percent per trade</span></div>
+        <div class="fig"><span class="k">Resamples ≤ 0</span><span class="v">0.75%</span><span class="s">99.25% positive</span></div>
+      </div>
+
+      <h4>Design choices, each defensible by name</h4>
+      <ul>
+        <li><b>Why bootstrap at all.</b> 27 trades is too few, and too skewed by a handful of large winners, to trust a normal-theory "mean ± 1.96 standard errors" interval. The bootstrap assumes nothing about distributional shape; it reuses the data's own shape.</li>
+        <li><b>Why with replacement.</b> Drawing without replacement would just reshuffle the same 27 values and every resample total would be identical. Replacement is what lets a resample differ from the original at all.</li>
+        <li><b>Why exactly n = 27.</b> Efron's prescription. Resampling at the original sample size makes the spread between resamples reflect genuine sampling uncertainty rather than an artifact of a changed sample size.</li>
+        <li><b>Why <code>default_rng</code>.</b> The modern NumPy Generator API, not the legacy <code>RandomState</code>. With a fixed seed the 10,000 draws are byte-reproducible on any machine.</li>
+      </ul>
+
+      <div class="callout">
+        <div class="t">Disclosed simplification</div>
+        <p>This is the <b>plain percentile bootstrap</b>, not the bias-corrected and accelerated (BCa) variant, which adjusts the percentile cutoffs for skewness in the resampling distribution. The plain form is the standard textbook procedure. It is disclosed as a deliberate simplification rather than presented as the only option.</p>
+      </div>
+
+      <div class="callout">
+        <div class="t">The two-interval disclosure</div>
+        <p>The dashboard computes the same bootstrap in TypeScript at <b>B = 2,000</b> with its own mulberry32 PRNG, and lands on <b>[+7.48%, +54.46%]</b>. The cause was proven rather than assumed: mulberry32 was reimplemented in Python and run at B = 2,000, reproducing [+7.48%, +54.46%] <em>exactly</em>. The gap is the resample count alone — not a different method, seed, or trade set. Both are reported; they are not merged, because the dashboard's independence is what makes it a cross-check.</p>
+      </div>
+
+      <details class="primer">
+        <summary>Plain language — what resampling actually simulates</summary>
+        <div class="body">
+          <p>You have 27 trade results and you want to know how much of the +30.31% was skill and how much was the particular order history happened to take. You cannot rerun 2022–2026. So you do the next best thing.</p>
+          <p>Put the 27 returns in a hat. Draw one, write it down, <em>put it back</em>, and repeat 27 times. You now have an alternative 27-trade history — some trades appearing twice, some not at all. Total it up. Do that 10,000 times and you have 10,000 plausible alternative outcomes.</p>
+          <p>Sort them, and the 250th and 9,750th values mark the middle 95%. That range is <strong>+5.99% to +54.99%</strong>. It is wide, which honestly reflects 27 trades. It excludes zero, and 99.25% of the alternative histories still made money.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ---- STAT 3+4 ---- -->
+  <div class="stat">
+    <header><h3>3 &amp; 4 · Pearson's r and Spearman's ρ</h3><span class="fn">pearson_correlation() · spearman_correlation()</span></header>
+    <div class="inner">
+      <p class="qrow">Do trades held longer tend to end up larger?</p>
+
+      <pre>r, p_value   = scipy_stats.pearsonr(x_values, y_values)
+rho, p_value = scipy_stats.spearmanr(x_values, y_values)</pre>
+
+      <p>Both are called with <code>x = trades["hold_bars"]</code> and <code>y = trades["pnl_pct"]</code> across the same 27 baseline trades. Two thin wrappers around two SciPy calls; no custom math.</p>
+
+      <div class="figs">
+        <div class="fig"><span class="k">Pearson r</span><span class="v">+0.4907</span><span class="s">t = 2.82, df = 25</span></div>
+        <div class="fig"><span class="k">Pearson p</span><span class="v">0.0094</span><span class="s">linear association</span></div>
+        <div class="fig"><span class="k">Spearman ρ</span><span class="v">+0.4797</span><span class="s">on ranks</span></div>
+        <div class="fig"><span class="k">Spearman p</span><span class="v">0.0113</span><span class="s">monotonic association</span></div>
+      </div>
+
+      <h4>Why both</h4>
+      <p>Pearson assumes a straight-line relationship and is sensitive to outliers — a concern here, since three trades carry 51.7% of total return. Spearman ranks the values first and asks only whether the relationship is consistently directional. <b>They agree in sign and significance</b>, so the association is not an artifact of a few extreme trades. That agreement is the point of reporting both.</p>
+
+      <div class="callout warn">
+        <div class="t">A corrected reporting error</div>
+        <p>Two draft documents reported these p-values as <b>p &lt; 0.001</b>. Independent recomputation gives <b>0.0094</b> and <b>0.0113</b> — still significant at α = 0.05 and α = 0.01, but the original claim overstated them by roughly a factor of ten and placed them in the wrong significance bucket. Both source documents were corrected. <code>spearman_correlation()</code> is also the one genuinely new function in the consolidated file: no earlier script in this repository computed Spearman's ρ, and it was added specifically so the already-published figure has committed code behind it.</p>
+      </div>
+
+      <details class="primer">
+        <summary>Plain language — and the trap in this result</summary>
+        <div class="body">
+          <p>A correlation of +0.49 means the two quantities move together, moderately. Trades held longer did tend to earn more.</p>
+          <p><strong>The trap: this is not advice to hold trades longer.</strong> The causation almost certainly runs the other way. A trade that is working keeps satisfying none of the exit conditions and so stays open; a trade that is failing hits its stop or its KDJ reset quickly and closes. Duration is largely an <em>effect</em> of the trade going well, not a cause. The correlation describes the exit ladder's behaviour, not a lever anyone could pull.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ---- STAT 5 ---- -->
+  <div class="stat">
+    <header><h3>5 · Maximum drawdown</h3><span class="fn">max_drawdown_pct(equity_curve)</span></header>
+    <div class="inner">
+      <p class="qrow">What was the worst peak-to-trough fall this equity curve suffered along the way?</p>
+
+      <pre>equity_curve = pd.Series(equity_curve)
+running_max  = equity_curve.cummax()
+drawdown_pct = (equity_curve - running_max) / running_max * 100
+return drawdown_pct.min()</pre>
+
+      <div class="formula">
+        <span class="lbl">Formula</span><br>
+        P(t) = max<sub>u ≤ t</sub> E(u) &nbsp;&nbsp;&nbsp; DD(t) = 100 · (E(t) − P(t)) / P(t) &nbsp;&nbsp;&nbsp; MDD = min<sub>t</sub> DD(t)
+      </div>
+
+      <p>Three lines, one subtlety: <code>cummax()</code> is the <b>running</b> peak, not the global maximum. Comparing against the global maximum would only measure the fall from the all-time high to the end, and would miss a deep decline that happened mid-window and later recovered.</p>
+
+      <div class="figs">
+        <div class="fig"><span class="k">Strategy</span><span class="v">−6.46%</span><span class="s">2.63% in market</span></div>
+        <div class="fig"><span class="k">Weekly DCA</span><span class="v">−27.85%</span><span class="s">100% in market</span></div>
+        <div class="fig"><span class="k">Lump-sum B&amp;H</span><span class="v">−67.21%</span><span class="s">100% in market</span></div>
+      </div>
+
+      <p>Reported as a percentage rather than in dollars so three arms with very different equity-curve shapes can be compared directly from the same $10,000 start.</p>
+
+      <details class="primer">
+        <summary>Plain language — why this is the number an investor feels</summary>
+        <div class="body">
+          <p>Total return tells you where you ended. Maximum drawdown tells you the worst moment along the way — how far your account fell from its own high-water mark before recovering.</p>
+          <p>Lump-sum buy-and-hold returned +90.07% over this window, but to collect it you had to sit through your account being worth <strong>67% less than its peak.</strong> Most people sell before that. The strategy's −6.46% is not the product of better trading so much as of being out of the market almost all the time: it holds a position on only 2.63% of candles and cannot fall while it holds nothing.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ---- STAT 6 ---- -->
+  <div class="stat">
+    <header><h3>6 · Sharpe and Sortino ratios</h3><span class="fn">sharpe_sortino_ratios(bar_returns, periods_per_year)</span></header>
+    <div class="inner">
+      <p class="qrow">How much return did this arm earn per unit of the risk it took?</p>
+
+      <pre>mean_return = np.mean(bar_returns)
+return_std  = np.std(bar_returns, <span class="hl">ddof=1</span>)
+sharpe = (mean_return / return_std) * np.sqrt(periods_per_year) if return_std &gt; 0 else float("nan")
+
+downside_returns   = np.minimum(bar_returns, 0.0)
+downside_deviation = np.sqrt(np.mean(np.asarray(downside_returns) ** 2))
+sortino = (mean_return / downside_deviation) * np.sqrt(periods_per_year) if downside_deviation &gt; 0 else float("nan")</pre>
+
+      <div class="formula">
+        <span class="lbl">Formulas</span><br>
+        SR = ( R̄ / s<sub>R</sub> ) · √m &nbsp;&nbsp; with s<sub>R</sub> the sample SD, ddof = 1<br>
+        σ<sub>d</sub> = √( (1/N) · Σ [min(R(t), 0)]² ) &nbsp;&nbsp;&nbsp; SoR = ( R̄ / σ<sub>d</sub> ) · √m
+      </div>
+
+      <h4>The annualization factor</h4>
+      <p>Two constants, each matched to its arm's own reporting frequency:</p>
+      <ul>
+        <li><code>PERIODS_PER_YEAR_4H_BARS = 6 * 365.25 = 2,191.5</code> — for arms measured per 4-hour bar (strategy, lump-sum). The <code>.25</code> is leap-year averaging.</li>
+        <li><code>PERIODS_PER_YEAR_WEEKLY = 52</code> — for arms measured at weekly contribution bars (DCA, blended sleeves).</li>
+      </ul>
+
+      <div class="callout">
+        <div class="t">Two disclosed assumptions — know these by name</div>
+        <p><b>Risk-free rate = 0.</b> The textbook Sharpe ratio is <code>E[R − Rf] / σ</code>, where both numerator and denominator use <em>excess</em> return over a risk-free rate. This code uses raw per-bar returns, which is mathematically equivalent to setting Rf = 0. Defensible for a crypto strategy with no modelled cash leg, and every arm is treated identically so the ranking between arms is unaffected — but it is a real, nameable deviation from the general formula.</p>
+        <p><b>Minimum acceptable return = 0.</b> Sortino &amp; van der Meer's 1991 definition uses <code>min(0, R − T)</code> against a general target T. This code hardwires T = 0 via <code>np.minimum(bar_returns, 0.0)</code>.</p>
+      </div>
+
+      <div class="callout good">
+        <div class="t">A shortcut this code correctly refuses</div>
+        <p>The downside deviation divides by <b>N, the count of all periods</b> — <code>np.mean()</code> over the full array, most of whose entries are zero. This follows the original 1991 definition. A widely circulated online tutorial divides instead by the count of <em>losing</em> periods only, which inflates the ratio. This code does not take that shortcut, which is worth being able to say if a panelist raises it.</p>
+      </div>
+
+      <div class="wide">
+      <table>
+        <caption>Table 8.2 — All Sharpe and Sortino figures, gross, both windows</caption>
+        <thead><tr><th>Arm</th><th>Window</th><th class="n">Sharpe</th><th class="n">Sortino</th><th class="n">m</th></tr></thead>
+        <tbody>
+          <tr><td>OB-gated strategy</td><td>2022–2026</td><td class="n">1.1142</td><td class="n">2.7273</td><td class="n">2,191.5</td></tr>
+          <tr><td>Weekly DCA</td><td>2022–2026</td><td class="n">0.5559</td><td class="n">0.8857</td><td class="n">52</td></tr>
+          <tr><td>Lump-sum B&amp;H</td><td>2022–2026</td><td class="n">0.5642</td><td class="n">0.8034</td><td class="n">2,191.5</td></tr>
+          <tr><td>OB-gated strategy</td><td>2018–2022</td><td class="n">0.6812</td><td class="n">1.3025</td><td class="n">2,191.5</td></tr>
+          <tr><td>Weekly DCA</td><td>2018–2022</td><td class="n">0.8244</td><td class="n">1.2335</td><td class="n">52</td></tr>
+          <tr><td>Lump-sum B&amp;H</td><td>2018–2022</td><td class="n">0.7889</td><td class="n">1.1194</td><td class="n">2,191.5</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="callout warn">
+        <div class="t">The exposure caveat is not optional</div>
+        <p>The strategy's Sharpe of 1.114 exceeds buy-and-hold's 0.564 — but it holds a position on <b>2.63%</b> of candles against 100% continuous exposure. This is not a like-for-like comparison and must never be stated as the strategy outperforming Bitcoin's risk-adjusted profile outright. Any sentence citing the Sharpe gap carries the exposure figure in the same sentence.</p>
+      </div>
+
+      <details class="primer">
+        <summary>Plain language — the two ratios and the √m</summary>
+        <div class="body">
+          <p><strong>Sharpe</strong> divides average return by how much that return bounced around. Two strategies ending at the same place score differently if one got there smoothly and the other lurched.</p>
+          <p><strong>Sortino</strong> makes one change: only <em>downward</em> moves count as risk. The reasoning is that nobody complains about an unexpectedly good day. This is why the strategy's Sortino (2.73) is so much higher than its Sharpe (1.11) — its variability is heavily skewed toward the upside.</p>
+          <p>The <strong>√m</strong> converts a per-period figure to an annual one. Returns scale with time but their standard deviation scales with the square root of time, so annualizing a ratio of the two multiplies by √m rather than m. For 4-hour bars m = 2,191.5, so the multiplier is about 46.8.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 9 -->
+<section class="sec" id="applied">
+  <div class="sec-head"><div class="sec-num">§ 9</div><h2>Applied analyses</h2></div>
+  <p class="sec-sub">Section 5B. These do not introduce new statistics — each one rebuilds an equity curve or adjusts the trade log, then calls the same six primitives.</p>
+
+  <h3>Transaction-cost sensitivity</h3>
+  <p class="codecap">run_fee_slippage_sensitivity(trades_df, taker_fee_bps=5.0, slippage_bps=5.0)</p>
+  <p>The mechanism is a single subtraction — a flat percentage drag off every trade's return — followed by a full re-run of the binomial test on the adjusted set:</p>
+  <pre>adjusted["pnl_pct_adj"] = adjusted["pnl_pct"] - drag_pct
+wins    = int((adjusted["pnl_pct_adj"] &gt; 0).sum())
+flipped = adjusted[(trades_df["pnl_pct"] &gt; 0) &amp; (adjusted["pnl_pct_adj"] &lt;= 0)]</pre>
+  <p>Fee and slippage are kept as strictly separate line items because only one of them is a published number. <b>0.05% per side</b> is the confirmed Binance USDT-M Futures standard-tier taker rate; <b>0.05% per side</b> slippage is a conservative estimate for 4-hour bar-close execution, not an exchange figure.</p>
+
+  <div class="wide">
+  <table>
+    <caption>Table 9.1 — Six cost scenarios, recomputed 2026-09-01</caption>
+    <thead><tr><th>Scenario</th><th class="n">Round trip</th><th class="n">Win rate</th><th class="n">Total return</th><th class="n">Binomial p</th><th>Trades flipped</th></tr></thead>
+    <tbody>
+      <tr><td>Gross</td><td class="n">0.00%</td><td class="n">70.37%</td><td class="n">+30.31%</td><td class="n">0.0261</td><td>—</td></tr>
+      <tr><td>Fee only</td><td class="n">0.10%</td><td class="n">70.37%</td><td class="n">+27.61%</td><td class="n">0.0261</td><td>—</td></tr>
+      <tr><td>Low band</td><td class="n">0.14%</td><td class="n">62.96%</td><td class="n">+26.53%</td><td class="n">0.1239</td><td class="mono">7938, 8188</td></tr>
+      <tr style="background:var(--accent-soft)"><td><b>Primary</b></td><td class="n">0.20%</td><td class="n">62.96%</td><td class="n">+24.91%</td><td class="n"><b>0.1239</b></td><td class="mono">7938, 8188</td></tr>
+      <tr><td>Mid band</td><td class="n">0.24%</td><td class="n">62.96%</td><td class="n">+23.83%</td><td class="n">0.1239</td><td class="mono">7938, 8188</td></tr>
+      <tr><td>High band</td><td class="n">0.40%</td><td class="n">55.56%</td><td class="n">+19.51%</td><td class="n">0.3506</td><td class="mono">2859, 5825, 7938, 8188</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="6">The low / mid / high band predates the confirmed fee figure and is retained for comparison. Note the return is <em>linear</em> in the drag — 27 × 0.20% = 5.40%, and 30.31 − 5.40 = 24.91 — while the p-value is not, because it depends on how many trades cross zero.</td></tr></tfoot>
+  </table>
+  </div>
+
+  <h3>Head-to-head against passive strategies</h3>
+  <p class="codecap">run_benchmark_vs_passive(df_main, trades_main, df_formulation, trades_formulation, starting_capital=10000.0)</p>
+  <p>Three arms, one window, identical $10,000 start. The construction details are what make the table reproducible by hand:</p>
+
+  <div class="wide">
+  <table>
+    <caption>Table 9.2 — Arm construction</caption>
+    <thead><tr><th>Arm</th><th>Deploys</th><th>Transacts at</th><th>Return measured</th><th class="n">Annualized m</th></tr></thead>
+    <tbody>
+      <tr><td><b>Strategy</b></td><td>Full notional per trade, unlevered, never partially sized; cash between trades</td><td>Compounds only at the 27 exit bars</td><td>Per 4-hour bar</td><td class="n">2,191.5</td></tr>
+      <tr><td><b>Weekly DCA</b></td><td>$10,000 ÷ 210 = <b>$47.6190</b> per week</td><td>First bar of each ISO week, at its <b>close</b></td><td>Only at contribution bars, net of that week's own contribution</td><td class="n">52</td></tr>
+      <tr><td><b>Lump-sum</b></td><td>Full $10,000 at once, held to the end</td><td>Window's first bar, at its <b>open</b></td><td>Per 4-hour bar</td><td class="n">2,191.5</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="formula">
+    <span class="lbl">The contribution-netting formula — why injected capital is not counted as return</span><br>
+    r(k) = ( V(k) − C(k) ) / V(k−1) − 1<br>
+    <span style="color:var(--ink-3)">V = portfolio value at contribution bar k, C = that week's own contribution</span>
+  </div>
+  <p>Without subtracting <code>C(k)</code>, every weekly deposit would register as a gain and the DCA arm's Sharpe would be meaningless. The same formula governs the blended-sleeve model, so the two constructions cannot drift apart.</p>
+
+  <p><b>Net-of-cost variants:</b> the strategy is charged <b>0.20% round trip</b> subtracted from each trade's return; the two passive arms are charged <b>0.10% one-sided</b> as a buy-price markup, since they buy and hold rather than round-tripping. This is why costs barely move the passive arms — a single markup charged once, against 27 round trips.</p>
+
+  <h3>The blended sleeve</h3>
+  <p class="codecap">run_dca_blend_analysis(df, trades_df, contribution_amount=1.0, strategy_sleeve_fractions=(0.10, 0.20, 0.30))</p>
+  <p>Contributions here are <b>1.0 relative unit per ISO week across 210 weeks</b>, not dollars — so this table carries no dollar column. At a strategy share <code>f</code>, <code>(1 − f)</code> buys Bitcoin units and <code>f</code> joins a cash sleeve that compounds by each trade's return at its exit bar. The sleeve is never rebalanced back into Bitcoin. Portfolio value = Bitcoin units × close + sleeve cash.</p>
+
+  <div class="callout good">
+    <div class="t">A free consistency check the paper states out loud</div>
+    <p>The blend table's 100% / 0% row and the head-to-head table's Weekly DCA row report the <em>same</em> Sharpe (0.556), Sortino (0.886) and max drawdown (−27.85%). They agree because both use the identical weekly contribution convention. Two independently constructed tables meeting exactly at their shared point is a verification the reader can perform without running anything.</p>
+  </div>
+
+  <h3>Regime breakdown</h3>
+  <p class="codecap">run_regime_breakdown(df, trades_df, ath_seed=69000.0, bear_threshold_pct=-40.0, chop_threshold_pct=-12.0)</p>
+  <p>The same 27 trades are partitioned twice, by two independent definitions of "market condition", specifically so the reader can see how much the conclusion depends on the definition:</p>
+  <ul>
+    <li><b>Calendar method</b> — 2022 = bear, 2023 = chop, 2024–2025 = bull. Simple, and arbitrary.</li>
+    <li><b>Drawdown-from-high method</b> — distance below the running all-time high, seeded from Bitcoin's pre-window peak of <b>$69,000</b> (2021-11-10). Bear ≤ −40%, chop −40% to −12%, bull &gt; −12%.</li>
+  </ul>
+  <p>The two methods agree on only <b>13 of 27</b> assignments. Much of calendar-2023 sat 57–64% below the all-time high even though price that year was range-bound rather than falling. Both nonetheless agree on the point that matters: <b>bull is the strongest regime under either definition, at an 85.71% win rate in both.</b></p>
+
+  <h3>The remaining Section 5B routines</h3>
+  <div class="wide">
+  <table>
+    <caption>Table 9.3 — What else runs, and what it is for</caption>
+    <thead><tr><th>Function</th><th>Answers</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">run_benchmark_vs_buy_and_hold()</td><td>Strategy vs. a 100-indexed close-to-close BTC hold, plus the Pearson correlation between each trade's return and BTC's return over that trade's own window (<b>r = −0.369</b>, p = 0.058) — a check that the strategy is not simply directional beta</td><td><span class="chip note">Runs, partly cited</span></td></tr>
+      <tr><td class="mono">run_forward_oos_validation()</td><td>2026-01 to 2026-07, genuinely postdating every code change: <b>4 trades, 1 win, −3.45%</b></td><td><span class="chip flag">Live pull — gated behind <code>--include-oos-live</code></span></td></tr>
+      <tr><td class="mono">run_paper_sync_check()</td><td>Re-derives every headline figure and asserts it against the <code>LOCKED_*</code> constants; prints MATCH or DIVERGE, never silently reconciles</td><td><span class="chip ok">MATCH, 2026-09-01</span></td></tr>
+      <tr><td class="mono">reconcile_formulation_window_trades()</td><td>Checks the 2018–2022 trade set against the published JSON</td><td><span class="chip ok">MATCH</span></td></tr>
+      <tr><td class="mono">run_ablation_study()</td><td>Three-arm indicators-only comparison</td><td><span class="chip flag">Runs, but excluded from the paper by §18</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <div class="t">The eight-year backfill check</div>
+    <p>MACD's exponential moving averages and the fixed KDJ series are recursive — they carry memory with no theoretical cut-off — so where the data starts could in principle change results anywhere in it. The identical frozen pipeline was run against data extended back to 2018-01-01 to test this. All 27 locked trades matched by entry timestamp, with a maximum P&amp;L difference of <b>0.0000000000%</b>. This audit lives in <code>legacy_pre_consolidation/</code> and is not part of the routine pipeline.</p>
+  </div>
+</section>
+
+<!-- ============================================================ 10 -->
+<section class="sec" id="numbers">
+  <div class="sec-head"><div class="sec-num">§ 10</div><h2>Every number</h2></div>
+  <p class="sec-sub">All figures below were regenerated on 2026-09-01 by <code>python research_analysis.py</code> against the committed <code>artifacts/candles.csv</code>, not copied from stored artifacts.</p>
+
+  <h3>Baseline</h3>
+  <div class="wide">
+  <table>
+    <caption>Table 10.1 — Baseline strategy performance, 2022–2026, gross</caption>
+    <thead><tr><th>Metric</th><th class="n">Value</th><th class="n">Full precision</th></tr></thead>
+    <tbody>
+      <tr><td>Trades</td><td class="n">27</td><td class="n">—</td></tr>
+      <tr><td>Wins / losses</td><td class="n">19 / 8</td><td class="n">—</td></tr>
+      <tr><td>Win rate</td><td class="n">70.37%</td><td class="n">70.3703703704</td></tr>
+      <tr><td>Total net return (summed)</td><td class="n">+30.31%</td><td class="n">30.3064563560</td></tr>
+      <tr><td>Total net return (compounded)</td><td class="n">+34.18%</td><td class="n">34.1777347351</td></tr>
+      <tr><td>Average return per trade</td><td class="n">+1.1225%</td><td class="n">1.1224613465</td></tr>
+      <tr><td>SD of return per trade</td><td class="n">2.41%</td><td class="n">2.4101357189</td></tr>
+      <tr><td>Binomial p, one-sided</td><td class="n">0.0261</td><td class="n">0.0261194929</td></tr>
+      <tr><td>Binomial p, two-sided</td><td class="n">0.0522</td><td class="n">0.0522389859</td></tr>
+      <tr><td>Bars of exposure</td><td class="n">231</td><td class="n">2.6348808030%</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><b>The 27 trades, by entry candle index:</b></p>
+  <div class="formula">335, 359, 673, 902, 1050, 1158, 1913, 2624, 2859, 3100, 3196, 3859, 3947, 4455, 5800, 5825, 6040, 6109, 6366, 6537, 6991, 7109, 7938, 7964, 8188, 8280, 8596</div>
+  <p>Every statement about "the 27 baseline trades" refers to exactly this set. Verified identical to the paper's list.</p>
+
+  <h3>Trade log composition</h3>
+  <div class="wide">
+  <table>
+    <caption>Table 10.2 — Exits and direction</caption>
+    <thead><tr><th>Breakdown</th><th class="n">n</th><th class="n">Wins</th><th class="n">Win rate</th><th class="n">Return contribution</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">By exit reason</td></tr>
+      <tr><td>ATR move exit</td><td class="n">9</td><td class="n">9</td><td class="n">100.00%</td><td class="n">+34.70%</td></tr>
+      <tr><td>Trailing exit (50% retrace)</td><td class="n">8</td><td class="n">6</td><td class="n">75.00%</td><td class="n">+4.33%</td></tr>
+      <tr><td>KDJ reset exit</td><td class="n">8</td><td class="n">4</td><td class="n">50.00%</td><td class="n">−2.46%</td></tr>
+      <tr><td>Hit stop loss</td><td class="n">2</td><td class="n">0</td><td class="n">0.00%</td><td class="n">−6.26%</td></tr>
+      <tr><td>Hit take profit</td><td class="n">0</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+      <tr class="grp"><td colspan="5">By direction</td></tr>
+      <tr><td>Long</td><td class="n">15</td><td class="n">12</td><td class="n">80.00%</td><td class="n">+18.54%</td></tr>
+      <tr><td>Short</td><td class="n">12</td><td class="n">7</td><td class="n">58.33%</td><td class="n">+11.76%</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="5">The ATR move exit is the whole result: 9 trades, all winners, +34.70% — more than the +30.31% total, meaning the other 18 trades net to −4.39%. The hard take-profit never fires; the ATR and trailing exits always arrive first.</td></tr></tfoot>
+  </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="t">Concentration — report unsoftened</div>
+    <p>The three largest winners (+6.69%, +4.62%, +4.36%) sum to +15.68%, which is <b>51.72% of total net return.</b> Half the result rests on three of 27 trades. Under both regime definitions those three are not clustered in a single regime, but the concentration itself stands regardless.</p>
+  </div>
+
+  <h3>Head-to-head, both windows</h3>
+  <div class="wide">
+  <table>
+    <caption>Table 10.3 — Three arms, $10,000 start</caption>
+    <thead><tr><th>Arm</th><th class="n">Total return</th><th class="n">Final capital</th><th class="n">Sharpe</th><th class="n">Sortino</th><th class="n">Max DD</th><th class="n">In market</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="7">2022–2026 · gross</td></tr>
+      <tr><td>OB-gated strategy</td><td class="n">+30.31%</td><td class="n">$13,417.77</td><td class="n">1.1142</td><td class="n">2.7273</td><td class="n">−6.46%</td><td class="n">2.63%</td></tr>
+      <tr><td>Weekly DCA into BTC</td><td class="n">+123.13%</td><td class="n">$22,312.94</td><td class="n">0.5559</td><td class="n">0.8857</td><td class="n">−27.85%</td><td class="n">100%</td></tr>
+      <tr><td>Lump-sum buy &amp; hold</td><td class="n">+90.07%</td><td class="n">$19,007.32</td><td class="n">0.5642</td><td class="n">0.8034</td><td class="n">−67.21%</td><td class="n">100%</td></tr>
+      <tr class="grp"><td colspan="7">2022–2026 · net of costs</td></tr>
+      <tr><td>OB-gated strategy</td><td class="n">+24.91%</td><td class="n">$12,719.01</td><td class="n">0.9442</td><td class="n">2.0830</td><td class="n">−7.78%</td><td class="n">2.63%</td></tr>
+      <tr><td>Weekly DCA into BTC</td><td class="n">+122.91%</td><td class="n">$22,290.65</td><td class="n">0.5529</td><td class="n">0.8806</td><td class="n">−27.85%</td><td class="n">100%</td></tr>
+      <tr><td>Lump-sum buy &amp; hold</td><td class="n">+89.88%</td><td class="n">$18,988.34</td><td class="n">0.5642</td><td class="n">0.8034</td><td class="n">−67.21%</td><td class="n">100%</td></tr>
+      <tr class="grp"><td colspan="7">2018–2022 formulation window · gross · NOT out-of-sample</td></tr>
+      <tr><td>OB-gated strategy</td><td class="n">+21.82%</td><td class="n">$12,282.53</td><td class="n">0.6812</td><td class="n">1.3025</td><td class="n">−6.00%</td><td class="n">1.87%</td></tr>
+      <tr><td>Weekly DCA into BTC</td><td class="n">+439.88%</td><td class="n">$53,987.55</td><td class="n">0.8244</td><td class="n">1.2335</td><td class="n">−46.16%</td><td class="n">100%</td></tr>
+      <tr><td>Lump-sum buy &amp; hold</td><td class="n">+236.96%</td><td class="n">$33,696.49</td><td class="n">0.7889</td><td class="n">1.1194</td><td class="n">−81.42%</td><td class="n">100%</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="7"><b>DCA beat the strategy on raw final value in both windows, by a wide margin.</b> This is not a favourable result and is not to be minimized. What the strategy offers instead is a better risk-adjusted profile at 2.63% exposure. The 2018–2022 window contained a much larger fall-and-recovery cycle, which mechanically favours DCA by lowering its average purchase price — a property of that price path, not a statement about the strategy.</td></tr></tfoot>
+  </table>
+  </div>
+
+  <h3>Blended sleeve, regimes, and windows</h3>
+  <div class="wide">
+  <table>
+    <caption>Table 10.4 — Blended DCA portfolio, 210 weekly contributions</caption>
+    <thead><tr><th>BTC-DCA / Strategy</th><th class="n">Sharpe</th><th class="n">Sortino</th><th class="n">Max drawdown</th></tr></thead>
+    <tbody>
+      <tr><td>100% / 0%</td><td class="n">0.556</td><td class="n">0.886</td><td class="n">−27.85%</td></tr>
+      <tr><td>90% / 10%</td><td class="n">0.581</td><td class="n">0.930</td><td class="n">−26.51%</td></tr>
+      <tr><td>80% / 20%</td><td class="n">0.607</td><td class="n">0.978</td><td class="n">−24.97%</td></tr>
+      <tr><td>70% / 30%</td><td class="n">0.637</td><td class="n">1.032</td><td class="n">−23.18%</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="4">All three measures improve monotonically across all four allocation levels, with no reversal. This rests on one realized price path, carries no p-value, and establishes what a blend <em>would have done</em> over this window — not what it will do over another.</td></tr></tfoot>
+  </table>
+  </div>
+
+  <div class="wide">
+  <table>
+    <caption>Table 10.5 — The same 27 trades, partitioned two ways</caption>
+    <thead><tr><th>Regime</th><th class="n">Trades</th><th class="n">Win rate</th><th class="n">Return contribution</th><th class="n">Share of total</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">Calendar method</td></tr>
+      <tr><td>Bear (2022)</td><td class="n">7</td><td class="n">57.14%</td><td class="n">+10.45%</td><td class="n">+34.5%</td></tr>
+      <tr><td>Chop (2023)</td><td class="n">6</td><td class="n">50.00%</td><td class="n">−5.39%</td><td class="n">−17.8%</td></tr>
+      <tr><td>Bull (2024–2025)</td><td class="n">14</td><td class="n">85.71%</td><td class="n">+25.25%</td><td class="n">+83.3%</td></tr>
+      <tr class="grp"><td colspan="5">Drawdown-from-high method · ATH seed $69,000</td></tr>
+      <tr><td>Bear (≤ −40%)</td><td class="n">12</td><td class="n">50.00%</td><td class="n">−1.63%</td><td class="n">−5.4%</td></tr>
+      <tr><td>Chop (−40% to −12%)</td><td class="n">8</td><td class="n">87.50%</td><td class="n">+18.89%</td><td class="n">+62.3%</td></tr>
+      <tr><td>Bull (&gt; −12%)</td><td class="n">7</td><td class="n">85.71%</td><td class="n">+13.05%</td><td class="n">+43.1%</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="5">Each partition covers all 27 trades and sums to +30.31%. The two methods agree on 13 of 27 assignments.</td></tr></tfoot>
+  </table>
+  </div>
+
+  <div class="wide">
+  <table>
+    <caption>Table 10.6 — Windows compared</caption>
+    <thead><tr><th>Window</th><th class="n">n</th><th class="n">Win rate</th><th class="n">Total return</th><th class="n">Avg / trade</th><th class="n">Binomial p</th></tr></thead>
+    <tbody>
+      <tr><td>2018-01 → 2022-01 · formulation, not OOS</td><td class="n">25</td><td class="n">60.00%</td><td class="n">+21.82%</td><td class="n">+0.87%</td><td class="n">0.2122</td></tr>
+      <tr><td>2022-01 → 2026-01 · primary reported</td><td class="n">27</td><td class="n">70.37%</td><td class="n">+30.31%</td><td class="n">+1.12%</td><td class="n">0.0261</td></tr>
+      <tr><td>2026-01 → 2026-07 · forward OOS</td><td class="n">4</td><td class="n">25.00%</td><td class="n">−3.45%</td><td class="n">−0.86%</td><td class="n">—</td></tr>
+      <tr><td>Combined · mixed provenance</td><td class="n">56</td><td class="n">62.50%</td><td class="n">+48.68%</td><td class="n">—</td><td class="n">0.0407</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="6">The arithmetic reconciles exactly: 25 + 27 + 4 = 56 trades; 15 + 19 + 1 = 35 wins = 62.50%; +21.82 + 30.31 − 3.45 = +48.68%. <b>The combined row must never be cited alone</b> — roughly half of it comes from the period the rules were formed against. The forward OOS row is small and directionally unfavourable, and is reported as it came out.</td></tr></tfoot>
+  </table>
+  </div>
+</section>
+
+<!-- ============================================================ 11 -->
+<section class="sec" id="audit">
+  <div class="sec-head"><div class="sec-num">§ 11</div><h2>Cross-check against the paper</h2></div>
+  <p class="sec-sub">Every figure in <code>HEDGE_Paper_Rebuild_Handoff.md</code> — the document the paper is being built to — was recomputed from source on 2026-09-01 and compared. Below: what matched, and the seven things that need a look.</p>
+
+  <div class="callout good">
+    <div class="t">Result: every reported number reproduces</div>
+    <p><b>Zero numerical discrepancies.</b> Tables 3 through 12 of the handoff — 100-plus individual figures across baseline performance, the bootstrap, both regime partitions, the blended sleeve, all three head-to-head tables, all six cost scenarios, and the window comparison — reproduce from a fresh offline pipeline run, to every decimal place shown. The 27 entry-candle indices match exactly. The w range (14–439, median 74), the three-trade concentration (51.7%), the 210 and 209 weekly contribution counts, the 8,767 and 8,750 row counts, and the summed-versus-compounded reconciliation (+30.31% vs +34.18%) all verify.</p>
+  </div>
+
+  <p>The findings below are <b>not wrong numbers.</b> They are one incorrect sentence about a number, and six repository-hygiene issues where the code or the artifacts contradict the paper's stated scope. All seven are things a judge reading the repository could surface.</p>
+
+  <div class="wide">
+  <table>
+    <caption>Table 11.1 — Findings, most consequential first</caption>
+    <thead><tr><th style="width:1%">#</th><th>Finding</th><th>Where</th><th>Severity</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">F1</td><td>The bootstrap section claims a difference between two numbers that are identical</td><td class="mono">Handoff §12</td><td><span class="chip flag">Fix the sentence</span></td></tr>
+      <tr><td class="mono">F2</td><td>A stale artifact still ships a full MDE / power-analysis block</td><td class="mono">artifacts/bootstrap_power_analysis.json</td><td><span class="chip flag">Prohibited by §18</span></td></tr>
+      <tr><td class="mono">F3</td><td>The default pipeline run prints ablation results the paper excludes</td><td class="mono">Section 4 · step 3/10</td><td><span class="chip flag">Prohibited by §18</span></td></tr>
+      <tr><td class="mono">F4</td><td>The module docstring names Fisher and Welch, both removed from the code</td><td class="mono">research_analysis.py:63</td><td><span class="chip note">Stale comment</span></td></tr>
+      <tr><td class="mono">F5</td><td>Two differently-defined buy-and-hold returns exist; the paper cites one</td><td class="mono">Section 5B</td><td><span class="chip note">Needs an appendix line</span></td></tr>
+      <tr><td class="mono">F6</td><td>A superseded doc still describes ANOVA and Kruskal–Wallis</td><td class="mono">docs/research_statistics_reference.md</td><td><span class="chip note">Repo hygiene</span></td></tr>
+      <tr><td class="mono">F7</td><td>Formulation-window caption is one bar imprecise</td><td class="mono">Handoff Table 9 note</td><td><span class="chip note">Caption only</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="f1">F1 · The bootstrap point estimate does not differ from the trade sum</h3>
+  <p>The handoff's bootstrap subsection reads:</p>
+  <blockquote style="margin:14px 0; padding:12px 18px; border-left:2px solid var(--rule); color:var(--ink-2); font-family:var(--serif); font-style:italic; max-width:var(--maxw)">"…gives a point estimate of <b>+30.3065%</b> total net return — which differs from the observed sum of the 27 trade returns, <b>+30.3064%</b>, only in the fourth decimal place…"</blockquote>
+
+  <p>There is no difference. <code>run_bootstrap_ci()</code> sets the point estimate to the observed sum, on one line:</p>
+  <pre>pnl_values  = trades_df["pnl_pct"].values
+total_point = <span class="hl">pnl_values.sum()</span>          <span class="cm"># ← this IS the observed sum</span>
+...
+"total_return_point_pct": total_point,</pre>
+
+  <p>Both figures are the same float, <code>30.306456356031937</code>. One was <em>rounded</em> to four decimals (30.3065) and the other <em>truncated</em> (30.3064). The bootstrap distribution influences the interval, never the point estimate.</p>
+
+  <div class="callout warn">
+    <div class="t">Why this one matters more than its size suggests</div>
+    <p>The sentence invites a question with no answer. A panelist who asks "why does your bootstrap point estimate differ from your trade sum?" is asking about a formatting artifact, and the only correct reply is that it does not differ — which reads as a retraction of a printed claim. <b>Recommended fix:</b> report one value at one precision, e.g. "the bootstrap's point estimate is the observed sum of the 27 trade returns, +30.3065%." No other number in the section changes.</p>
+  </div>
+
+  <h3>F2 · A stale artifact carries prohibited statistics</h3>
+  <p>Commit <code>b9df7da</code> removed the minimum-detectable-effect and power analysis from the code, and §18 prohibits MDE and power analysis from appearing anywhere in the paper "in any form." But <code>artifacts/bootstrap_power_analysis.json</code>, dated 2026-08-20 and still committed, contains a complete <code>mde_power</code> block: α, power, and per-criterion <code>n_true</code> / <code>sd_true</code> / <code>observed_diff</code> / <code>mde</code> / <code>detectable</code> entries for all five Order Block quality criteria.</p>
+  <p>The paper does not cite it. The file ships alongside the paper. <b>Recommended:</b> regenerate the artifact from the current code, or delete the <code>mde_power</code> key, before the repository is handed to anyone.</p>
+
+  <h3>F3 · The canonical entrypoint prints the excluded ablation</h3>
+  <p>§18 prohibits "any ablation, indicators-only arm, or component-isolation comparison, and any statistic computed from one." Running <code>python research_analysis.py</code> — the documented way to reproduce the paper — reaches step <code>[3/10]</code> and prints:</p>
+  <pre>Arm 2 (flat-ATR stop): N=140 win_rate=47.14% total_return=-13.72%
+  vs. locked N=140 win_rate=60.00% total_return=-14.63%  status=<span class="hl">DIVERGE</span>
+Arm 3 (swing-pivot stop): N=138 win_rate=43.48% total_return=-23.85%
+  vs. locked N=138 win_rate=55.07% total_return=-25.50%  status=<span class="hl">DIVERGE</span></pre>
+  <p>This is <em>correct behaviour for the code.</em> The script that produced the original ablation pools was never committed, so Section 4 is an honest reconstruction from the documented design, and it reports divergence loudly rather than reconciling it. The disclosure is exactly right.</p>
+  <p>The problem is placement: it is among the first things anyone reproducing the paper sees, it concerns a study the paper does not contain, and the word DIVERGE appears twice before any headline figure. The two locked ablation figures also still sit in the constants block as <code>LOCKED_ABLATION_ARMS</code> at line 158. <b>Recommended:</b> gate step 3 behind a flag, or add a README line saying what it is and why the paper excludes it.</p>
+
+  <h3>F4 · The module docstring names two removed tests</h3>
+  <p>Line 63, in the section map at the very top of the canonical file:</p>
+  <pre>  5    Statistical test primitives (binomial/<span class="hl">Fisher/Welch</span>/bootstrap/etc.)</pre>
+  <p>Both were removed by <code>b9df7da</code> and are confirmed absent from the source — a grep for <code>fisher_exact</code>, <code>ttest_ind</code>, <code>f_oneway</code> and <code>kruskal</code> returns nothing but this docstring line. Since §18 forbids Fisher's exact test and Welch's t-test from appearing "in any form, including as something considered and rejected," the first page of the file a reviewer opens naming both is worth ten seconds to fix.</p>
+
+  <h3>F5 · Two buy-and-hold returns, one cited</h3>
+  <p>The repository computes buy-and-hold twice, under two different and individually correct conventions:</p>
+  <div class="wide">
+  <table>
+    <thead><tr><th>Function</th><th>Buys at</th><th class="n">Price</th><th class="n">Total return</th><th class="n">Sharpe</th><th class="n">Max DD</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">run_benchmark_vs_passive()</td><td>First bar's <b>open</b></td><td class="n">$46,216.93</td><td class="n">+90.07%</td><td class="n">0.5642</td><td class="n">−67.21%</td></tr>
+      <tr><td class="mono">run_benchmark_vs_buy_and_hold()</td><td>First bar's <b>close</b></td><td class="n">$46,813.20</td><td class="n">+87.65%</td><td class="n">0.5642</td><td class="n">−67.21%</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="6">Both end at the same last close, $87,846.02. Sharpe and max drawdown are identical because they are computed from the same close-to-close bar returns; only the entry basis differs.</td></tr></tfoot>
+  </table>
+  </div>
+  <p>The paper cites <b>+90.07%</b>, which is correct — the handoff explicitly specifies the open-price convention for the lump-sum arm. But <b>+87.65%</b> is what the pipeline prints at step 5/10 and what <code>artifacts/benchmark_dca_analysis.json</code> stores, so anyone reproducing the run will see a buy-and-hold number that is not in the paper. <b>Recommended:</b> one line in Appendix A naming which function produced +90.07% and stating that the other figure is a different quantity, not a competing estimate of the same one.</p>
+
+  <h3>F6 · A superseded doc describes tests that no longer exist</h3>
+  <p><code>docs/research_statistics_reference.md</code> is titled "Research Statistics Reference &amp; Study Guide" and carries a superseded banner at the top. Below that banner it still documents <b>one-way ANOVA</b> and the <b>Kruskal–Wallis H-test</b>, complete with a worked ANOVA example — neither of which is among the six statistics in scope, and neither of which exists anywhere in the current code. Its threshold-sweep table is also flagged as not matching any disclosed value. The banner is easy to scroll past; the title is the one a judge would search for.</p>
+
+  <h3>F7 · A one-bar caption imprecision</h3>
+  <p>The handoff's Table 9 note describes the formulation window as "2018-01-01 to 2022-01-01." The code's actual window is <b>2018-01-01 08:00 → 2022-01-01 04:00</b> — it stops one 4-hour bar short so it never overlaps the main window's first bar at 2022-01-01 08:00. The behaviour is right and the row count the handoff states elsewhere (8,750) already reflects it; only the caption rounds.</p>
+
+  <h3>Two things that are correct and might look otherwise</h3>
+  <div class="callout good">
+    <div class="t">Already handled</div>
+    <p><b>The ATR comment.</b> The code comment says Wilder's RMA; the code computes a plain rolling mean. The paper states the discrepancy explicitly and reports the rolling mean, which is what actually executes. Nothing to correct in the paper — only the comment is stale.</p>
+    <p><b>The default quality threshold.</b> <code>DEFAULT_MIN_OB_QUALITY = 1</code> yields 25 trades, and that is what <code>artifacts/trades_default_view.csv</code> contains. The paper's 27 requires <code>min_ob_quality=0</code>. Both are correct; anyone comparing a CSV against the paper needs to know which threshold the CSV was written at.</p>
+  </div>
+</section>
+
+<!-- ============================================================ 12 -->
+<section class="sec" id="repro">
+  <div class="sec-head"><div class="sec-num">§ 12</div><h2>Reproduce it</h2></div>
+  <p class="sec-sub">Three commands, no network, no credentials.</p>
+
+  <h4>The full statistics pipeline</h4>
+  <pre>python research_analysis.py                      <span class="cm"># offline; prints every figure in §10</span>
+python research_analysis.py --json-out out.json  <span class="cm"># same run, machine-readable</span></pre>
+  <p>Runs strictly against <code>artifacts/candles.csv</code> and <code>artifacts/candles_extended.json</code>. The only network call in the whole file — <code>run_forward_oos_validation()</code>'s live Binance pull — is gated behind <code>--include-oos-live</code> and off by default, so a bare run never touches the network. Ten steps, roughly a minute.</p>
+
+  <h4>The regression harness</h4>
+  <pre>python scratch/regression.py</pre>
+  <p>The golden master. Recomputes indicators and the OB-gated simulation from raw candles and compares against committed fixtures: per-bar indicator series to <b>1e-6</b>, and all 27 trades matched on <code>entry_idx</code> to <b>1e-5</b>. It names the first divergent trade rather than only failing. Run after every change; any diff means revert. Never regenerate the fixtures without asking first.</p>
+
+  <h4>The dashboard</h4>
+  <pre>python research_analysis.py --serve --levels 0,1,2,3   <span class="cm"># port 8765</span>
+python Run_All.py                                       <span class="cm"># same, plus dependency install/build</span></pre>
+  <p>Exports artifacts and database rows, then serves the TypeScript dashboard — the independent cross-check. Note <code>--serve</code> <em>writes</em> to <code>artifacts/</code>, and it does pull live candles (falling back to the local cache on failure), since producing a fresh snapshot is its purpose.</p>
+
+  <div class="callout">
+    <div class="t">Reading order for a cold start</div>
+    <p><b>1.</b> <code>docs/SCRATCH_RESULTS_METHODS.md</code> — the canonical record of locked results, corrections, and open questions. Cite this for any number, never <code>CLAUDE.md</code>. <b>2.</b> <code>docs/finalists/HEDGE_Paper_Rebuild_Handoff.md</code> — the paper's build specification and the authority on scope. <b>3.</b> This page — how the code gets there. <b>4.</b> <code>research_analysis.py</code>'s own module docstring — the section map, kept current in the file itself.</p>
+  </div>
+
+  <div class="colophon">
+    <div class="t">Colophon</div>
+    <p>Compiled 2026-09-01 against branch <code>development</code> at <code>b9df7da</code> plus uncommitted working-tree changes (the <code>HandCalc</code> Google Sheets tab set, +646 lines). Every figure on this page was regenerated by executing the pipeline, not transcribed from stored artifacts; every claim about the code was read from the current source. Line numbers are current as of compilation and drift with the file — the banner section numbers do not.</p>
+    <p>Where this page and the paper disagree, the disagreements are enumerated in <a href="#audit">§11</a> rather than silently resolved.</p>
+  </div>
+</section>
+
+</main>
+</div>
+
+<button id="backTop" type="button">&uarr; Top</button>
+
+<script>
+/* ============ navigation + back-to-top ============ */
+(function(){
+"use strict";
+var sidebar=document.getElementById('sidebar'),
+    toggle=document.getElementById('navToggle'),
+    scrim=document.getElementById('scrim'),
+    links=[].slice.call(document.querySelectorAll('#nav a')),
+    secs=[].slice.call(document.querySelectorAll('section.sec')),
+    backTop=document.getElementById('backTop');
+
+function closeNav(){sidebar.classList.remove('open');scrim.classList.remove('on');
+  toggle.setAttribute('aria-expanded','false');}
+if(toggle){
+  toggle.addEventListener('click',function(){
+    var open=sidebar.classList.toggle('open');
+    scrim.classList.toggle('on',open);
+    toggle.setAttribute('aria-expanded',open?'true':'false');
+  });
+}
+if(scrim){scrim.addEventListener('click',closeNav);}
+links.forEach(function(a){a.addEventListener('click',closeNav);});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeNav();}});
+
+/* active section highlight */
+if('IntersectionObserver' in window){
+  var seen={};
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){seen[en.target.id]=en.isIntersecting?en.intersectionRatio:0;});
+    var best=null,bv=0;
+    Object.keys(seen).forEach(function(k){if(seen[k]>bv){bv=seen[k];best=k;}});
+    if(best){links.forEach(function(a){
+      a.classList.toggle('active',a.getAttribute('href')==='#'+best);});}
+  },{rootMargin:'-10% 0px -70% 0px',threshold:[0,0.15,0.4,0.8]});
+  secs.forEach(function(s){io.observe(s);});
+}
+
+/* back to top */
+if(backTop){
+  backTop.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
+  window.addEventListener('scroll',function(){
+    backTop.classList.toggle('on',window.scrollY>700);
+  },{passive:true});
+}
+})();
+</script>

@@ -18,22 +18,22 @@
   "recalculation_hashes_by_threshold": {
     "0": {
       "orderblocks_hash": "e200441771b4cc5843762982f05c0db575fc7ede6f4c443b992b8159c71351ed",
-      "trades_hash": "9cdba56402fb323b8bd2db9962c312ee1ded022e65ff0989e5c46275636c889c",
+      "trades_hash": "3f1f57e5f7a85804f45f7d4812c70effbfb2071d47b6005192c1d340ae595a12",
       "stats_hash": "6a1008ce370a7ee921da2d09b8b03b08ab08862ee5e724246d40f57209376625"
     },
     "1": {
       "orderblocks_hash": "e200441771b4cc5843762982f05c0db575fc7ede6f4c443b992b8159c71351ed",
-      "trades_hash": "fdedf6b8b03d56126bf6f95893b64a008961fae0660644641607b8b7a966460d",
+      "trades_hash": "c1b29e08dd28295a9c955a3a6320761be1394922c7c0d8ce2c5303184faf7d42",
       "stats_hash": "0d0cb242f93fa398fcec0ac65f14b59e110cc5fe1dbc74910f841ce62906ca9d"
     },
     "2": {
       "orderblocks_hash": "e200441771b4cc5843762982f05c0db575fc7ede6f4c443b992b8159c71351ed",
-      "trades_hash": "558abdfb1f733890d201861e9f38a77654a23cc924cfc7c08360668da4bbb724",
+      "trades_hash": "1838f181a5d88d1611aebdd0a40dd6451574de8eb87995e2112c11bcbde4fcb2",
       "stats_hash": "0f7b6173737ff5efec036a10cc3763ec62abb36baf69fa6e68370e76426f0f7c"
     },
     "3": {
       "orderblocks_hash": "e200441771b4cc5843762982f05c0db575fc7ede6f4c443b992b8159c71351ed",
-      "trades_hash": "c17851539557dbdfeb1fa63e4c942ace7d11c785e37df7394c1fd1cb5f1e6ef1",
+      "trades_hash": "771125038d275ddf846cc9565b9f859091c192aae89578483ab96ffe793f3a4d",
       "stats_hash": "05e10220a847e343fd554ad5e3c141b38b1e116d8f37b5f758d512ca04228375"
     }
   }

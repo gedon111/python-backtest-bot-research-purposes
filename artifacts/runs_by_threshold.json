@@ -12205,7 +12205,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 9,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 28
       },
       {
         "side": "SHORT",
@@ -12233,7 +12234,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 13,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 115
       },
       {
         "side": "LONG",
@@ -12261,7 +12263,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 30
       },
       {
         "side": "SHORT",
@@ -12289,7 +12292,8 @@
         "tp_ob_level": "swing",
         "tp_ob_type": "DEMAND",
         "hold_bars": 7,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 126
       },
       {
         "side": "SHORT",
@@ -12317,7 +12321,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 4,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 21
       },
       {
         "side": "LONG",
@@ -12345,7 +12350,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 3,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 59
       },
       {
         "side": "SHORT",
@@ -12373,7 +12379,8 @@
         "tp_ob_level": null,
         "tp_ob_type": null,
         "hold_bars": 12,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 20
       },
       {
         "side": "SHORT",
@@ -12401,7 +12408,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 1,
-        "exit_reason": "HIT STOP LOSS"
+        "exit_reason": "HIT STOP LOSS",
+        "kdj_exit_window": 137
       },
       {
         "side": "LONG",
@@ -12429,7 +12437,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 3,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 112
       },
       {
         "side": "LONG",
@@ -12457,7 +12466,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 13,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 31
       },
       {
         "side": "SHORT",
@@ -12485,7 +12495,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 12,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 49
       },
       {
         "side": "LONG",
@@ -12513,7 +12524,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 13,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 14
       },
       {
         "side": "SHORT",
@@ -12541,7 +12553,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 5,
-        "exit_reason": "HIT STOP LOSS"
+        "exit_reason": "HIT STOP LOSS",
+        "kdj_exit_window": 439
       },
       {
         "side": "LONG",
@@ -12569,7 +12582,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 7,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 149
       },
       {
         "side": "SHORT",
@@ -12597,7 +12611,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 16,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 136
       },
       {
         "side": "LONG",
@@ -12625,7 +12640,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 5,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 57
       },
       {
         "side": "LONG",
@@ -12653,7 +12669,8 @@
         "tp_ob_level": "swing",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 14,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 91
       },
       {
         "side": "SHORT",
@@ -12681,7 +12698,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 3,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 106
       },
       {
         "side": "LONG",
@@ -12709,7 +12727,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 4,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 49
       },
       {
         "side": "SHORT",
@@ -12737,7 +12756,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 26
       },
       {
         "side": "LONG",
@@ -12765,7 +12785,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 8,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 65
       },
       {
         "side": "LONG",
@@ -12793,7 +12814,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 74
       },
       {
         "side": "LONG",
@@ -12821,7 +12843,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 45
       },
       {
         "side": "LONG",
@@ -12849,7 +12872,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 13,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 104
       },
       {
         "side": "LONG",
@@ -12877,7 +12901,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 4,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 153
       },
       {
         "side": "LONG",
@@ -12905,7 +12930,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 94
       },
       {
         "side": "SHORT",
@@ -12933,7 +12959,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 12,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 90
       }
     ],
     "stats": {
@@ -25149,7 +25176,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 9,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 28
       },
       {
         "side": "SHORT",
@@ -25177,7 +25205,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 13,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 115
       },
       {
         "side": "LONG",
@@ -25205,7 +25234,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 30
       },
       {
         "side": "SHORT",
@@ -25233,7 +25263,8 @@
         "tp_ob_level": "swing",
         "tp_ob_type": "DEMAND",
         "hold_bars": 7,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 126
       },
       {
         "side": "SHORT",
@@ -25261,7 +25292,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 4,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 21
       },
       {
         "side": "LONG",
@@ -25289,7 +25321,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 3,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 59
       },
       {
         "side": "SHORT",
@@ -25317,7 +25350,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 1,
-        "exit_reason": "HIT STOP LOSS"
+        "exit_reason": "HIT STOP LOSS",
+        "kdj_exit_window": 137
       },
       {
         "side": "LONG",
@@ -25345,7 +25379,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 3,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 112
       },
       {
         "side": "SHORT",
@@ -25373,7 +25408,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 12,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 49
       },
       {
         "side": "LONG",
@@ -25401,7 +25437,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 13,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 14
       },
       {
         "side": "SHORT",
@@ -25429,7 +25466,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 5,
-        "exit_reason": "HIT STOP LOSS"
+        "exit_reason": "HIT STOP LOSS",
+        "kdj_exit_window": 439
       },
       {
         "side": "LONG",
@@ -25457,7 +25495,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 7,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 149
       },
       {
         "side": "SHORT",
@@ -25485,7 +25524,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 16,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 136
       },
       {
         "side": "LONG",
@@ -25513,7 +25553,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 5,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 57
       },
       {
         "side": "LONG",
@@ -25541,7 +25582,8 @@
         "tp_ob_level": "swing",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 14,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 91
       },
       {
         "side": "SHORT",
@@ -25569,7 +25611,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 3,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 106
       },
       {
         "side": "LONG",
@@ -25597,7 +25640,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 4,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 49
       },
       {
         "side": "SHORT",
@@ -25625,7 +25669,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 26
       },
       {
         "side": "LONG",
@@ -25653,7 +25698,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 8,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 65
       },
       {
         "side": "LONG",
@@ -25681,7 +25727,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 74
       },
       {
         "side": "LONG",
@@ -25709,7 +25756,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 45
       },
       {
         "side": "LONG",
@@ -25737,7 +25785,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 13,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 104
       },
       {
         "side": "LONG",
@@ -25765,7 +25814,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 4,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 153
       },
       {
         "side": "LONG",
@@ -25793,7 +25843,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 94
       },
       {
         "side": "SHORT",
@@ -25821,7 +25872,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 12,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 90
       }
     ],
     "stats": {
@@ -38037,7 +38089,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 9,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 28
       },
       {
         "side": "SHORT",
@@ -38065,7 +38118,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 13,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 115
       },
       {
         "side": "LONG",
@@ -38093,7 +38147,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 30
       },
       {
         "side": "SHORT",
@@ -38121,7 +38176,8 @@
         "tp_ob_level": "swing",
         "tp_ob_type": "DEMAND",
         "hold_bars": 7,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 126
       },
       {
         "side": "SHORT",
@@ -38149,7 +38205,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 4,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 21
       },
       {
         "side": "LONG",
@@ -38177,7 +38234,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 3,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 75
       },
       {
         "side": "SHORT",
@@ -38205,7 +38263,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 1,
-        "exit_reason": "HIT STOP LOSS"
+        "exit_reason": "HIT STOP LOSS",
+        "kdj_exit_window": 137
       },
       {
         "side": "LONG",
@@ -38233,7 +38292,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 3,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 112
       },
       {
         "side": "SHORT",
@@ -38261,7 +38321,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 12,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 49
       },
       {
         "side": "LONG",
@@ -38289,7 +38350,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 13,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 14
       },
       {
         "side": "SHORT",
@@ -38317,7 +38379,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 5,
-        "exit_reason": "HIT STOP LOSS"
+        "exit_reason": "HIT STOP LOSS",
+        "kdj_exit_window": 439
       },
       {
         "side": "LONG",
@@ -38345,7 +38408,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 7,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 149
       },
       {
         "side": "SHORT",
@@ -38373,7 +38437,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 16,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 136
       },
       {
         "side": "LONG",
@@ -38401,7 +38466,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 5,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 57
       },
       {
         "side": "SHORT",
@@ -38429,7 +38495,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 3,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 106
       },
       {
         "side": "LONG",
@@ -38457,7 +38524,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 4,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 49
       },
       {
         "side": "SHORT",
@@ -38485,7 +38553,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 26
       },
       {
         "side": "LONG",
@@ -38513,7 +38582,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 8,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 65
       },
       {
         "side": "LONG",
@@ -38541,7 +38611,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 74
       },
       {
         "side": "LONG",
@@ -38569,7 +38640,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 45
       },
       {
         "side": "LONG",
@@ -38597,7 +38669,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 13,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 104
       },
       {
         "side": "LONG",
@@ -38625,7 +38698,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 4,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 153
       },
       {
         "side": "LONG",
@@ -38653,7 +38727,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 94
       }
     ],
     "stats": {
@@ -50869,7 +50944,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 13,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 115
       },
       {
         "side": "LONG",
@@ -50897,7 +50973,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 30
       },
       {
         "side": "SHORT",
@@ -50925,7 +51002,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 4,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 21
       },
       {
         "side": "LONG",
@@ -50953,7 +51031,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 3,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 75
       },
       {
         "side": "SHORT",
@@ -50981,7 +51060,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 1,
-        "exit_reason": "HIT STOP LOSS"
+        "exit_reason": "HIT STOP LOSS",
+        "kdj_exit_window": 137
       },
       {
         "side": "LONG",
@@ -51009,7 +51089,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 3,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 112
       },
       {
         "side": "SHORT",
@@ -51037,7 +51118,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 5,
-        "exit_reason": "HIT STOP LOSS"
+        "exit_reason": "HIT STOP LOSS",
+        "kdj_exit_window": 439
       },
       {
         "side": "LONG",
@@ -51065,7 +51147,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 7,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 149
       },
       {
         "side": "LONG",
@@ -51093,7 +51176,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 5,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 57
       },
       {
         "side": "SHORT",
@@ -51121,7 +51205,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 3,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 106
       },
       {
         "side": "SHORT",
@@ -51149,7 +51234,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "DEMAND",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 26
       },
       {
         "side": "LONG",
@@ -51177,7 +51263,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 8,
-        "exit_reason": "TRAILING EXIT (50% RETRACE)"
+        "exit_reason": "TRAILING EXIT (50% RETRACE)",
+        "kdj_exit_window": 65
       },
       {
         "side": "LONG",
@@ -51205,7 +51292,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 10,
-        "exit_reason": "ATR MOVE EXIT"
+        "exit_reason": "ATR MOVE EXIT",
+        "kdj_exit_window": 74
       },
       {
         "side": "LONG",
@@ -51233,7 +51321,8 @@
         "tp_ob_level": "internal",
         "tp_ob_type": "SUPPLY",
         "hold_bars": 4,
-        "exit_reason": "KDJ RESET EXIT"
+        "exit_reason": "KDJ RESET EXIT",
+        "kdj_exit_window": 153
       }
     ],
     "stats": {

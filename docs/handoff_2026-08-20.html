@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Handoff — 2026-08-24</title>
+<style>
+  :root{
+    --bg:#fbfbf9; --panel:#ffffff; --ink:#16181d; --ink-soft:#4a5058; --ink-faint:#6d747d;
+    --rule:#dfe1e4; --rule-soft:#ececee; --accent:#1c4f8b; --accent-soft:#eaf1fa;
+    --ok:#1a6b3c; --ok-bg:#e9f5ee; --warn:#8a5a00; --warn-bg:#fdf4e3;
+    --bad:#9b2226; --bad-bg:#fbeceb; --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#14161a; --panel:#1a1d22; --ink:#e6e8ea; --ink-soft:#b3b9c0; --ink-faint:#8d949c;
+      --rule:#2c3037; --rule-soft:#23262b; --accent:#79aee6; --accent-soft:#1b2937;
+      --ok:#63c58c; --ok-bg:#15291e; --warn:#e0b25c; --warn-bg:#2a2314;
+      --bad:#f08a86; --bad-bg:#2c1b1b;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.62 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  .wrap{max-width:62rem; margin:0 auto; padding:3rem 1.5rem 6rem}
+  header.doc{border-bottom:2px solid var(--ink); padding-bottom:1.5rem; margin-bottom:2.5rem}
+  header.doc h1{font-size:1.95rem; line-height:1.2; margin:0 0 .5rem; letter-spacing:-.02em}
+  header.doc .sub{color:var(--ink-soft); font-size:1.02rem; margin:0 0 1.1rem}
+  .meta{display:grid; grid-template-columns:repeat(auto-fit,minmax(11rem,1fr)); gap:.75rem 1.5rem; margin-top:1.1rem}
+  .meta div{font-size:.83rem}
+  .meta dt{color:var(--ink-faint); text-transform:uppercase; letter-spacing:.07em; font-size:.71rem; margin-bottom:.15rem}
+  .meta dd{margin:0; font-family:var(--mono); font-size:.85rem}
+  h2{font-size:1.35rem; letter-spacing:-.01em; margin:3.2rem 0 .35rem; padding-bottom:.4rem; border-bottom:1px solid var(--rule)}
+  h2 .num{color:var(--ink-faint); font-weight:600; margin-right:.5rem}
+  h3{font-size:1.06rem; margin:2rem 0 .6rem; letter-spacing:-.005em}
+  h4{font-size:.95rem; margin:1.4rem 0 .4rem; color:var(--ink-soft)}
+  p{margin:.7rem 0}
+  code{font-family:var(--mono); font-size:.855em; background:var(--rule-soft); padding:.12em .38em; border-radius:3px}
+  a{color:var(--accent)}
+  .lede{font-size:1.04rem; color:var(--ink-soft)}
+  .tablewrap{overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:6px; background:var(--panel)}
+  table{border-collapse:collapse; width:100%; font-size:.86rem; min-width:34rem}
+  th,td{text-align:left; padding:.5rem .7rem; border-bottom:1px solid var(--rule-soft); vertical-align:top}
+  thead th{background:var(--rule-soft); font-size:.74rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); border-bottom:1px solid var(--rule); white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td.num,th.num{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+  .callout{border:1px solid var(--rule); border-left-width:4px; border-radius:5px; padding:.85rem 1.05rem; margin:1.1rem 0; background:var(--panel)}
+  .callout > :first-child{margin-top:0} .callout > :last-child{margin-bottom:0}
+  .callout .lbl{font-size:.71rem; text-transform:uppercase; letter-spacing:.08em; font-weight:700; display:block; margin-bottom:.35rem}
+  .c-ok{border-left-color:var(--ok); background:var(--ok-bg)} .c-ok .lbl{color:var(--ok)}
+  .c-warn{border-left-color:var(--warn); background:var(--warn-bg)} .c-warn .lbl{color:var(--warn)}
+  .c-bad{border-left-color:var(--bad); background:var(--bad-bg)} .c-bad .lbl{color:var(--bad)}
+  .c-info{border-left-color:var(--accent); background:var(--accent-soft)} .c-info .lbl{color:var(--accent)}
+  .pill{display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+        padding:.14em .5em; border-radius:3px; white-space:nowrap; border:1px solid transparent}
+  .p-ok{background:var(--ok-bg); color:var(--ok); border-color:var(--ok)}
+  .p-warn{background:var(--warn-bg); color:var(--warn); border-color:var(--warn)}
+  .p-bad{background:var(--bad-bg); color:var(--bad); border-color:var(--bad)}
+  .p-info{background:var(--accent-soft); color:var(--accent); border-color:var(--accent)}
+  .p-flat{background:var(--rule-soft); color:var(--ink-soft); border-color:var(--rule)}
+  .flag{border:1px solid var(--rule); border-radius:6px; margin:1rem 0; background:var(--panel); overflow:hidden}
+  .flag > .hd{display:flex; gap:.6rem; align-items:baseline; flex-wrap:wrap; padding:.6rem .9rem; background:var(--rule-soft); border-bottom:1px solid var(--rule)}
+  .flag > .hd .id{font-family:var(--mono); font-weight:700; font-size:.82rem; color:var(--accent)}
+  .flag > .hd .ttl{font-weight:600; font-size:.94rem}
+  .flag > .bd{padding:.8rem .9rem}
+  .flag > .bd > :first-child{margin-top:0} .flag > .bd > :last-child{margin-bottom:0}
+  .flag dl{margin:.55rem 0 0; display:grid; grid-template-columns:auto 1fr; gap:.3rem .8rem; font-size:.87rem}
+  .flag dt{color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em; font-size:.69rem; padding-top:.22em; white-space:nowrap}
+  .flag dd{margin:0}
+  ul,ol{margin:.6rem 0; padding-left:1.35rem} li{margin:.3rem 0}
+  .toc{background:var(--panel); border:1px solid var(--rule); border-radius:6px; padding:1rem 1.2rem; margin:1.5rem 0 0}
+  .toc h2{border:none; margin:0 0 .5rem; font-size:.75rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); padding:0}
+  .toc ol{margin:0; padding-left:1.2rem; font-size:.9rem; columns:2; column-gap:2rem}
+  @media (max-width:36rem){ .toc ol{columns:1} }
+  .fnote{font-size:.82rem; color:var(--ink-faint); margin-top:.5rem}
+  footer.doc{margin-top:4rem; padding-top:1.2rem; border-top:1px solid var(--rule); font-size:.82rem; color:var(--ink-faint)}
+  @media print{
+    body{background:#fff; color:#000; font-size:10.5pt}
+    .wrap{max-width:none; padding:0}
+    h2{page-break-after:avoid} .flag,.callout,.tablewrap{page-break-inside:avoid}
+    .toc{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <h1>Project Handoff &mdash; Paper, Codebase &amp; Research State</h1>
+  <p class="sub">Binance Backtest Bot (compliance ver) &mdash; ISEF research artifact, paper
+     working-titled <em>&ldquo;HEDGE: Hedging Erratic-market Dynamics: A Dynamic-KDJ, MACD,
+     and SMC Order Block Strategy Backtested Against DCA on Bitcoin.&rdquo;</em>
+     Complete standalone snapshot as of 2026-08-24; no prior context required.</p>
+  <dl class="meta">
+    <div><dt>Branch</dt><dd>development</dd></div>
+    <div><dt>HEAD commit</dt><dd>7154d43</dd></div>
+    <div><dt>Working tree</dt><dd>dirty &mdash; uncommitted, unchanged since 2026-08-20</dd></div>
+    <div><dt>Regression harness</dt><dd>PASS</dd></div>
+    <div><dt>Snapshot date</dt><dd>2026-08-24</dd></div>
+  </dl>
+</header>
+
+<nav class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#s1">Paper status</a></li>
+    <li><a href="#s2">Core findings</a></li>
+    <li><a href="#s3">Methodology summary</a></li>
+    <li><a href="#s4">Known issues fixed &amp; audit trail</a></li>
+    <li><a href="#s5">Open items &amp; uncommitted work</a></li>
+    <li><a href="#s6">Defense prep &mdash; the 5 custom statistics functions</a></li>
+    <li><a href="#s7">File / repo map</a></li>
+  </ol>
+</nav>
+
+<div class="callout c-bad" style="margin-top:2rem">
+  <span class="lbl">Bottom line</span>
+  <p><strong>The title change to &ldquo;HEDGE&rdquo; has not been propagated anywhere in the
+  repository.</strong> Every paper draft, reference doc, and the study guide still read
+  <em>&ldquo;Harnessing Bitcoin Volatility.&rdquo;</em> See &sect;1.2. Everything else is
+  unchanged from the 2026-08-20 pass: no new commits landed on <code>development</code>
+  since then (still <code>7154d43</code>), the working tree carries the identical
+  uncommitted diff, and this document folds in five docs written after 2026-08-20
+  (<code>MATH_CORRECTNESS_AND_COMPREHENSION.md</code>, <code>PROVENANCE_VERDICT.md</code>,
+  <code>license_verification.md</code>, the study-guide pair, <code>PLAN.md</code>) that the
+  prior handoff did not cover. Regression harness still <strong>PASS</strong>.</p>
+</div>
+
+<!-- ============================== 1 ============================== -->
+<h2 id="s1"><span class="num">1</span>Paper status</h2>
+
+<h3>1.1 &nbsp;Draft state</h3>
+
+<p>Two paper-facing documents exist, at different stages, and neither is the paper file
+itself (no <code>.docx</code>/<code>.tex</code> paper file lives in this repository &mdash;
+both are hand-off drafts meant to be pasted into an external document):</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>File</th><th class="num">Lines</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>docs/paper_full_update_2026-08-08.md</code></td><td class="num">790</td><td>Working Methodology/Results/Discussion/Conclusion draft. Its own header states <strong>&ldquo;draft for paper integration, not yet inserted into the paper.&rdquo;</strong> Carries the Welch&nbsp;df extension and 9 open wording/framing flags (&sect;5 below). This is the most current and most audited surface &mdash; every figure in it was independently re-verified as of 2026-08-20 with zero numeric mismatches found.</td></tr>
+<tr><td><code>docs/paper_FINAL_for_docx_handoff.md</code></td><td class="num">357</td><td>Self-contained consolidated draft (Abstract + Introduction + Methodology onward), dated 2026-08-08, explicitly written to not assume repo access. <strong>Predates</strong> the Welch&nbsp;df extension and the Stats-tab fix; does not yet reflect either.</td></tr>
+</tbody>
+</table></div>
+
+<p>No defense date or timeline is recorded anywhere in the repository (checked
+<code>docs/</code>, <code>CLAUDE.md</code>, <code>STUDY_REFERENCE.md</code>, and the git log
+for date/deadline language). If one exists, it lives outside this codebase.</p>
+
+<h3>1.2 &nbsp;Title change &mdash; NOT yet propagated</h3>
+
+<div class="callout c-bad">
+  <span class="lbl">Confirmed: old title still in effect everywhere</span>
+  <p>A repo-wide search for <code>HEDGE</code> / <code>Hedging Erratic-market</code> returns
+  zero matches. Every file that carries a paper title still says <em>&ldquo;Harnessing
+  Bitcoin Volatility&rdquo;</em>:</p>
+</div>
+
+<div class="tablewrap"><table>
+<thead><tr><th>File</th><th>Title text found</th></tr></thead>
+<tbody>
+<tr><td><code>docs/paper_FINAL_for_docx_handoff.md:10</code></td><td>H1: &ldquo;Harnessing Bitcoin Volatility: An Audited Backtest of an Integrated KDJ, MACD, and Smart Money Concepts Strategy&rdquo;</td></tr>
+<tr><td><code>docs/paper_full_update_2026-08-08.md:21</code></td><td>&ldquo;Working title: Harnessing Bitcoin Volatility: Backtesting an Integrated Algorithmic Strategy Combining KDJ, MACD, and Smart Money Concepts.&rdquo;</td></tr>
+<tr><td><code>STUDY_REFERENCE.md:20</code></td><td>&ldquo;Working title (per repository docs): Harnessing Bitcoin Volatility: &hellip;&rdquo;</td></tr>
+<tr><td><code>docs/research_statistics_reference.md:12</code></td><td>&ldquo;Paper Title: Harnessing Bitcoin Volatility: &hellip;&rdquo;</td></tr>
+<tr><td><code>docs/orthogonal_criteria_reference.md:5</code></td><td>&ldquo;Paper Title: Harnessing Bitcoin Volatility: &hellip;&rdquo;</td></tr>
+<tr><td><code>docs/study_guide.html:6,453,477</code></td><td>Page <code>&lt;title&gt;</code>, brand header, and H1 all read &ldquo;Harnessing Bitcoin Volatility&rdquo;</td></tr>
+<tr><td><code>research_analysis.py:6</code></td><td>Module docstring: &ldquo;ISEF paper &lsquo;Harnessing Bitcoin Volatility&rsquo;: a rule-based BTC/USDT strategy &hellip;&rdquo;</td></tr>
+</tbody>
+</table></div>
+
+<p><code>README.md</code> and <code>CLAUDE.md</code> do not name the paper title at all
+(they describe the repo, not the paper), so neither is stale &mdash; there is nothing to
+fix there. No filename in the repo encodes the paper title, so no renames are implicated.</p>
+
+<p><strong>Not fixed in this pass.</strong> Propagating the new title across 7 files
+(2 paper drafts, 3 reference docs, the study guide, and the <code>research_analysis.py</code>
+docstring) is a distinct, larger editorial task from regenerating this handoff doc, and one
+of the two paper drafts (<code>paper_FINAL_for_docx_handoff.md</code>) also carries the title
+inside prose that would need rewording, not just a header swap. Flagged as the top open item
+in &sect;5 rather than silently applied.</p>
+
+<!-- ============================== 2 ============================== -->
+<h2 id="s2"><span class="num">2</span>Core findings</h2>
+
+<h3>2.1 &nbsp;The Order Block structural-gate result (headline finding)</h3>
+
+<div class="tablewrap"><table>
+<thead><tr><th>Configuration</th><th class="num">Trades</th><th class="num">Win rate</th><th class="num">Total net return</th></tr></thead>
+<tbody>
+<tr><td><strong>Baseline &mdash; OB-gated</strong> (MACD + KDJ + SMC Order Block gate)</td><td class="num">27</td><td class="num">70.37%</td><td class="num">+30.31%</td></tr>
+<tr><td>Ablation A &mdash; indicators-only, entry-ATR stop</td><td class="num">140</td><td class="num">60.00%</td><td class="num">&minus;14.63%</td></tr>
+<tr><td>Ablation B &mdash; indicators-only, swing-pivot stop</td><td class="num">138</td><td class="num">55.07%</td><td class="num">&minus;25.50%</td></tr>
+</tbody>
+</table></div>
+
+<p>Removing the SMC Order Block structural gate and trading the same MACD/KDJ momentum
+signals directly turns a positive, statistically departing result (one-sided exact binomial
+<em>p</em>&nbsp;=&nbsp;0.026 for the baseline) into a <em>losing</em> strategy under both
+tested stop-placement conventions. A between-arms bootstrap (arm 3 vs. baseline, resampled
+at <em>n</em>=27) gives an empirical <em>p</em>&nbsp;=&nbsp;0.0020 for the baseline's
+avg-return advantage &mdash; the strongest single piece of evidence that the <strong>OB
+structural gate itself</strong>, not risk-management mechanics (stop placement), drives the
+strategy's outperformance. This is disclosed as the paper's central methodological
+contribution, not just a side result (see <code>paper_FINAL_for_docx_handoff.md</code>'s
+abstract).</p>
+
+<h3>2.2 &nbsp;Return concentration &mdash; 3 of 27 trades = 51.7% of total net return</h3>
+
+<p>The three most-concentrated winning trades (<code>entry_idx</code> 359, 6366, 8280)
+together account for <strong>51.7% of the strategy's total net return</strong>, out of only
+27 trades total. They are <strong>not</strong> clustered inside a single market regime under
+either regime-classification method used (BEAR/BULL/BULL under the calendar method;
+CHOP/BULL/BULL under the drawdown method) &mdash; a modest robustness point &mdash; but the
+concentration itself means the headline return figure is materially sensitive to a handful
+of outcomes, a caveat the paper states explicitly rather than lets the 70.37% win rate
+obscure.</p>
+
+<h3>2.3 &nbsp;Other headline results, stated precisely</h3>
+
+<ul>
+<li><strong>Binomial significance:</strong> baseline (q&ge;0) one-sided <em>p</em> = 0.026 (two-sided 0.052); q&ge;1 flips from 0.038 (n=26, pre-fix) to <strong>0.054 (n=25, post-fix)</strong> &mdash; a significance-conclusion flip caused by the no-lookahead correction (Known bugs #3, &sect;4).</li>
+<li><strong>Regime dependence:</strong> 85.71% win rate in the strongest regime under both classification methods; 83.3% of total return share comes from the 2024&ndash;25 bull phase under the calendar method &mdash; the edge is concentrated in bull-trending conditions, not uniform across the window.</li>
+<li><strong>Fee fragility:</strong> the headline win-rate significance claim flips to non-significant (<em>p</em> = 0.124) under a conservative 0.20% round-trip fee-and-slippage assumption, even though the underlying return-magnitude comparisons are mathematically unaffected by that same cost.</li>
+<li><strong>Benchmark vs. passive (never state without the caveat):</strong> over 2022&ndash;2026, both weekly DCA (+123.13% &rarr; $22,312.94) and lump-sum buy-and-hold (+90.07% &rarr; $19,007.32) beat the strategy (+30.31% &rarr; $13,417.77) in raw terminal value. The strategy's advantage is risk-adjusted shape (Sharpe 1.114 vs. 0.556/0.564) achieved while holding a position only <strong>2.63%</strong> of the time vs. 100% continuous exposure. No surface may state or imply the strategy &ldquo;beats DCA/BTC&rdquo; without this exposure-time caveat attached.</li>
+<li><strong>OB quality criteria:</strong> none of the 5 orthogonal criteria (Displacement, LargeBar, FVG, LiqSweep, VolExpansion) cross <em>p</em>=0.05 under Fisher exact or Welch t; every observed subgroup gap is 3&ndash;10&times; smaller than its minimum-detectable-effect (MDE) at 80% power &mdash; correctly read as &ldquo;underpowered to detect an effect this size,&rdquo; not &ldquo;no effect exists.&rdquo;</li>
+</ul>
+
+<!-- ============================== 3 ============================== -->
+<h2 id="s3"><span class="num">3</span>Methodology summary</h2>
+
+<h3>3.1 &nbsp;Backtest design</h3>
+
+<p><strong>Data.</strong> Binance <code>BTCUSDT</code> 4-hour klines, 2022-01-01 08:00:00
+through 2026-01-01 08:00:00 (UTC+8, per Binance's raw millisecond timestamp shifted +8h),
+<strong>8,767 bars</strong> (1,461 days &times; 6 bars/day + 1 boundary-inclusive endpoint
+bar &mdash; not 8,760, a corrected arithmetic slip). No parameter was fit, swept, or
+optimized against the outcome being measured; all 8 strategy parameters are pre-registered
+and fixed.</p>
+
+<p><strong>Strategy &mdash; Dynamic-KDJ, MACD, and SMC Order Block gate.</strong> Entry
+gating reads a <em>static</em> full-history KDJ(9,3,3) plus MACD momentum conditions, both
+required to fire inside an SMC Order Block structural zone (761 detected OBs across the
+window). The post-entry <strong>exit</strong> uses a separate, deliberately distinct
+&ldquo;Dynamic-KDJ&rdquo; state machine (<code>kdj_reset_init/update/exit</code>) seeded from
+the static KDJ value <em>at the entry bar</em> and recursed forward with a period <em>w</em>
+= entry_idx &minus; triggering_OB_bar, frozen for that trade's life (observed range across
+the 27 baseline trades: 14&ndash;439, median 74). <em>w</em> has zero effect on entry &mdash;
+this two-system split is a disclosed, deliberate design choice, not a bug, and the two KDJ
+systems must not be unified.</p>
+
+<p><strong>vs. DCA baseline.</strong> <code>run_benchmark_vs_passive()</code> compares the
+OB-gated strategy against weekly dollar-cost-averaging into BTC and a lump-sum buy-and-hold,
+gross and fee-adjusted, over both the 2022&ndash;2026 primary window and the 2018&ndash;2022
+formulation-period window (explicitly <strong>not</strong> out-of-sample &mdash; it's the
+window the rules were originally shaped against).</p>
+
+<h3>3.2 &nbsp;Ablation study structure</h3>
+
+<p>A three-arm design: the OB-gated baseline vs. two indicators-only configurations (MACD +
+KDJ momentum signals, no SMC Order Block gate) differing only in stop-loss placement &mdash;
+Ablation A uses an entry-anchored ATR stop, Ablation B uses a swing-pivot stop. This isolates
+whether the OB gate itself (vs. risk-management mechanics) drives the outperformance (&sect;2.1).</p>
+
+<p><strong>Binary-flag scoring replaced the old ordinal composite (Known bug #1, &sect;4).</strong>
+Order Block quality was originally a single 0&ndash;5 composite score used as an ordinal
+&ldquo;higher is better&rdquo; threshold; because higher-scored OB sets were nested subsets
+of lower-scored ones (non-orthogonal), this was replaced with <strong>5 independent
+per-criterion binary flags</strong> (Displacement, LargeBar, FVG, LiqSweep, VolExpansion),
+each tested separately via Fisher's exact test (true/false vs. win/loss) and Welch's t-test
+(true vs. false group mean return). The 0&ndash;5 score field is still computed and still
+exists in the data, but is no longer used as an analysis threshold anywhere.</p>
+
+<h3>3.3 &nbsp;Statistical tests, with corrected parameters</h3>
+
+<div class="tablewrap"><table>
+<thead><tr><th>Test</th><th>Used for</th><th>Corrected parameter / current state</th></tr></thead>
+<tbody>
+<tr><td>Exact binomial (<code>scipy.stats.binomtest</code>)</td><td>Baseline win rate vs. 50% null</td><td>One- and two-sided, both reported</td></tr>
+<tr><td>Fisher's exact test</td><td>Per-criterion true/false vs. win/loss</td><td>Unchanged; 2&times;2 contingency table per criterion</td></tr>
+<tr><td>Welch's t-test (<code>equal_var=False</code>)</td><td>Per-criterion true/false group mean return</td><td><strong>Now also reports the Satterthwaite df</strong> alongside t and p &mdash; previously discarded via tuple-unpacking (<code>t, p = ttest_ind(...)</code>); df is read directly off scipy's <code>TtestResult.df</code>, never recomputed separately from p</td></tr>
+<tr><td>Pearson / Spearman correlation</td><td>hold_bars vs. pnl_pct, 27 baseline trades</td><td><strong>Corrected</strong>: was overclaimed as &ldquo;p&lt;0.001&rdquo; in two docs; actual recomputed values are Pearson <em>p</em>&asymp;0.0094 (r=+0.4907), Spearman <em>p</em>&asymp;0.0113 (&rho;=+0.4797) &mdash; still significant at &alpha;=0.05, wrong significance bucket at &alpha;=0.001</td></tr>
+<tr><td>Percentile bootstrap (Efron)</td><td>95% CI on total return</td><td>Two independently-correct values now both disclosed: Python canonical B=10,000/seed=42 &rarr; [+5.99%, +54.99%]; JS dashboard cross-check B=2,000/seed=42 (mulberry32 PRNG) &rarr; [+7.48%, +54.46%]. Root cause (B alone, not a logic bug) proven by porting mulberry32 to Python</td></tr>
+<tr><td>MDE / power analysis</td><td>Per-criterion minimum detectable effect at 80% power</td><td>Normal-approximation formula, &alpha;=0.05, power=0.80; reframes non-significant criterion results as underpowered rather than null</td></tr>
+<tr><td>Sharpe / Sortino ratios</td><td>Strategy vs. DCA vs. B&amp;H risk-adjusted comparison</td><td>Full-N Sortino denominator (textbook-correct, not losers-only); implicit R<sub>f</sub>=MAR=0 (see &sect;6)</td></tr>
+</tbody>
+</table></div>
+
+<!-- ============================== 4 ============================== -->
+<h2 id="s4"><span class="num">4</span>Known issues fixed &amp; audit trail</h2>
+
+<h3>4.1 &nbsp;Corrections made &mdash; one line each</h3>
+
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>What was wrong &rarr; what it is now</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td>Composite 0&ndash;5 OB quality score was non-orthogonal (nested subsets, invalid as an ordinal &ldquo;higher is better&rdquo; ranking) &rarr; replaced with 5 independent per-criterion binary flags, each tested separately; the 0&ndash;5 field still exists but is no longer used as a threshold.</td></tr>
+<tr><td class="num">2</td><td>FVG criterion used an adjacent-candle test (<code>lows[j+1] &gt; highs[j]</code>) instead of the true 3-candle Fair Value Gap definition &rarr; corrected to <code>lows[j+2] &gt; highs[j]</code>.</td></tr>
+<tr><td class="num">3</td><td>FVG and displacement quality criteria could read 1&ndash;2 bars past an Order Block's own confirmation bar (a lookahead leak &mdash; the forward-search loop was bounded by dataset length, not the confirmation bar) &rarr; search window frozen at the confirmation bar; FVG-true dropped 362&rarr;253 OBs (47.6%&rarr;33.2%), and q&ge;1 significance flipped 0.038&rarr;0.054 (n 26&rarr;25). Does not change the 27-trade q&ge;0 baseline.</td></tr>
+<tr><td class="num">4</td><td>Pearson/Spearman correlation (hold_bars vs. pnl_pct) p-values were reported as &ldquo;p&nbsp;&lt;&nbsp;0.001&rdquo; in two docs &rarr; corrected to the actual recomputed values, p&asymp;0.0094 (Pearson) and p&asymp;0.0113 (Spearman) &mdash; still significant at &alpha;=0.05, but the wrong significance bucket was originally claimed.</td></tr>
+<tr><td class="num">5</td><td>Bootstrap CI on total return had two different, individually-correct values (Python B=10,000 vs. JS dashboard B=2,000) without either being disclosed as distinct &rarr; both values now shown side by side; root cause (resample count alone, not a logic bug) proven by porting the JS mulberry32 PRNG to Python and reproducing the JS interval exactly. Not unified by design &mdash; the JS dashboard is an intentionally independent cross-check.</td></tr>
+<tr><td class="num">6</td><td>Welch's t-test surfaced only <em>t</em> and <em>p</em>, silently discarding the Satterthwaite degrees-of-freedom value scipy already computes &rarr; df now read directly off the same <code>TtestResult</code> object (never recomputed separately) and reported alongside <em>t</em>/<em>p</em> in the paper, the dashboard, and every JSON artifact; independently cross-confirmed via a from-scratch numpy recompute and the dashboard's own from-scratch TypeScript implementation.</td></tr>
+<tr><td class="num">7</td><td>Dashboard Stats tab threw a <code>TypeError</code> on load and unmounted the entire React app &mdash; the TypeScript interface declared un-suffixed locked-block field names (<code>win_rate</code>, <code>total_return</code>) but <code>ablation_reconstruction.json</code> actually writes <code>_pct</code>-suffixed names, so <code>.toFixed()</code> ran on <code>undefined</code> &rarr; interface and both read-sites corrected to the <code>_pct</code> names; verified via typecheck, a successful build, regression PASS, and a headless Playwright click-through showing zero console/page errors and both locked rows rendering the correct 140/60.00%/&minus;14.63% and 138/55.07%/&minus;25.50% figures. <strong>Still uncommitted &mdash; see &sect;5.</strong></td></tr>
+</tbody>
+</table></div>
+
+<h3>4.2 &nbsp;Disclosed, non-bug divergences (investigated, not &ldquo;fixed,&rdquo; and not going to be)</h3>
+
+<p>Two items are known, deliberate, and already disclosed in the paper. Neither is a bug;
+neither should be silently resolved.</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>Item</th><th>Nature</th></tr></thead>
+<tbody>
+<tr><td><strong>Ablation A/B reconstruction gap.</strong> No committed script reproduces the published 140/138-trade figures from scratch (the originating script was never committed). The in-repo reconstruction matches trade <strong>counts</strong> exactly (140=140, 138=138) but not per-trade outcomes (e.g. Arm A: locked 60.00%/&minus;14.63% vs. reconstructed 47.14%/&minus;13.72%). 20 TP/exit-stack combinations were tested and ruled out as the cause; two candidate explanations remain untested (intrabar high/low SL/TP checking vs. close-only; different trailing/KDJ-reset parameters in a no-OB context). Locked figures remain canonical.</td><td><span class="pill p-warn">disclosed, unresolved</span></td></tr>
+<tr><td><strong>Bootstrap B mismatch.</strong> Python (B=10,000, canonical) vs. JS dashboard (B=2,000, independent cross-check) give individually-correct but different 95% CIs. Root cause proven to be the resample count alone (&sect;4.1 item 5). Deliberately not unified &mdash; the JS side must stay independent of the Python side per project rules.</td><td><span class="pill p-warn">disclosed, by design</span></td></tr>
+</tbody>
+</table></div>
+
+<h3>4.3 &nbsp;Full codebase audit (2026-08-20, still current)</h3>
+
+<p>A complete audit (<code>docs/AUDIT_REPORT_2026-08-20.md</code>) traced every number the
+dashboard displays back to source, blind-recomputed all 20 locked headline figures directly
+from <code>artifacts/candles.csv</code> before reading any doc that stated the expected
+answer, and verified regression-harness PASS. <strong>No new correctness bug was found</strong>
+in the backend or statistics pipeline &mdash; CLAUDE.md's &ldquo;third bug&rdquo; stop-and-report
+rule was not triggered. One real, unfixed issue surfaced outside the strategy/stats code:</p>
+
+<div class="callout c-bad">
+  <span class="lbl">Still open &mdash; A1-F3, HTTP directory listing</span>
+  <p><code>DashboardRequestHandler.translate_path</code> falls through to
+  <code>SimpleHTTPRequestHandler</code> for anything outside <code>/dashboard/</code> and
+  <code>/api/*</code>, which serves the process CWD (repo root) with directory listings on
+  &mdash; <code>GET /</code> browses <code>.git/</code>, <code>.env.example</code>, and the
+  <code>SERVICE KEY/</code> service-account key directory. The native default bind
+  (<code>127.0.0.1</code>) mitigates this; the shipped <code>Dockerfile</code>'s
+  <code>DASHBOARD_HOST=0.0.0.0</code> does not &mdash; a containerized run exposes the same
+  listing on every published interface.</p>
+</div>
+
+<!-- ============================== 5 ============================== -->
+<h2 id="s5"><span class="num">5</span>Open items &amp; uncommitted work</h2>
+
+<div class="callout c-warn">
+  <span class="lbl">Nothing is committed</span>
+  <p>Branch <code>development</code>, HEAD <code>7154d43</code>, unchanged since 2026-08-14.
+  The working tree carries the <strong>same uncommitted diff</strong> as the 2026-08-20
+  handoff &mdash; no commits have landed in between.</p>
+</div>
+
+<div class="tablewrap"><table>
+<thead><tr><th>State</th><th>Files</th></tr></thead>
+<tbody>
+<tr><td>Modified (uncommitted)</td><td><code>research_analysis.py</code> (Welch df extension + a ruled-out-TP-mechanics investigation comment), <code>dashboard-v2/src/types/artifacts.ts</code> + <code>dashboard-v2/src/components/tabs/StatsTab.tsx</code> (the Stats-tab crash fix, &sect;4.1 item 7), <code>docs/paper_full_update_2026-08-08.md</code> (Welch df additions), <code>backtest_results.db</code>, and 6 files under <code>artifacts/</code> (regenerated outputs)</td></tr>
+<tr><td>Untracked, added since 2026-08-20</td><td><code>PLAN.md</code> (the 2026-08-20 audit's own orchestration script &mdash; historical reference only), <code>docs/MATH_CORRECTNESS_AND_COMPREHENSION.md</code>, <code>docs/PROVENANCE_VERDICT.md</code>, <code>docs/license_verification.md</code>, <code>docs/study_guide.html</code> + <code>docs/study_guide_content_handoff.md</code>, <code>docs/backtest_revision_ledger_2026-08-18.xlsx</code></td></tr>
+<tr><td>Untracked, this file</td><td><code>docs/handoff_2026-08-20.html</code> (regenerated in place by this pass; filename unchanged)</td></tr>
+</tbody>
+</table></div>
+
+<h3>5.1 &nbsp;Paper wording/framing decisions still open (unchanged since 2026-08-20)</h3>
+
+<p>Nine items, none of which change a reported figure &mdash; each needs an authorial or
+methodological judgment call a mechanical edit can't make correctly. Full detail in the
+2026-08-20 audit; condensed here:</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>ID</th><th>Issue</th><th>Kind</th></tr></thead>
+<tbody>
+<tr><td>F1</td><td>Welch p-range reads &ldquo;0.38&ndash;0.78&rdquo; across all 5 criteria or &ldquo;0.39&ndash;0.78&rdquo; across the 4 formally-tested ones (Displacement excluded, thin n=4) &mdash; both correct, only one framing can be used consistently</td><td><span class="pill p-warn">decision needed</span></td></tr>
+<tr><td>F2</td><td>&sect;2.9's ablation bootstrap figures cite the original (unreproducible) script's output, not the in-repo reconstruction's differing numbers &mdash; correct provenance, but two numbers exist for the same quantity</td><td><span class="pill p-warn">do not auto-swap</span></td></tr>
+<tr><td>F3</td><td>The ablation reconstruction gap (&sect;4.2) is described three different ways across the paper draft, the artifact, and a code comment &mdash; not contradictory, but sets different reader expectations</td><td><span class="pill p-warn">consistency</span></td></tr>
+<tr><td>F4</td><td>&sect;2.5 omits the mulberry32 root-cause proof for the bootstrap B mismatch that CLAUDE.md carries</td><td><span class="pill p-warn">consistency</span></td></tr>
+<tr><td>F5</td><td>Two citations point at retired script paths (<code>analysis/bootstrap_power_analysis.py</code>, <code>analysis/benchmark_vs_passive.py</code>) moved to <code>legacy_pre_consolidation/</code> by the single-file consolidation</td><td><span class="pill p-bad">stale reference</span></td></tr>
+<tr><td>F6</td><td>&sect;2.4's MDE-ratio exemplars name FVG as &ldquo;~3&times;&rdquo; when its actual ratio is 5.2&times; (Displacement/VolExpansion are the ones near 3&times;); the stated overall range 3&ndash;10&times; is correct</td><td><span class="pill p-warn">wording</span></td></tr>
+<tr><td>F7</td><td>&sect;1.4 cross-reference points at &sect;1.6 (KDJ systems) instead of &sect;1.8 (bug list)</td><td><span class="pill p-flat">cosmetic</span></td></tr>
+<tr><td>F8</td><td>&sect;1.3 cites a renamed constant (<code>MAX_OB_AGE</code> &rarr; <code>MAX_ORDER_BLOCK_AGE_BARS</code>); the value 500 is correct</td><td><span class="pill p-flat">cosmetic</span></td></tr>
+<tr><td>F9</td><td>&sect;2.3 overstates <code>paper_sync_report.md</code>'s precision (claims full precision; it's 4dp) &mdash; introduced by the Welch&nbsp;df pass itself</td><td><span class="pill p-warn">self-introduced</span></td></tr>
+</tbody>
+</table></div>
+
+<h3>5.2 &nbsp;Everything else still open</h3>
+
+<ul>
+<li><strong>Title propagation</strong> (&sect;1.2) &mdash; 7 files still read the old title; not fixed this pass.</li>
+<li><strong>Commit the Stats-tab fix + Welch df work</strong> &mdash; both verified correct, both sitting uncommitted (&sect;4.1 item 7, &sect;4.1 item 6).</li>
+<li><strong>A1-F3</strong> (&sect;4.3) &mdash; HTTP directory listing / <code>SERVICE KEY/</code> exposure under Docker's <code>0.0.0.0</code> bind. Reported, not fixed.</li>
+<li><strong>The &ldquo;190 qualifying indicator signals&rdquo; denominator</strong> (paper &sect;3, &sect;5.4) is derived from Ablation A's stop rule, not the OB-gated strategy's own risk rules &mdash; an unresolved open question per CLAUDE.md. Do not cite 190 as settled.</li>
+<li>53 stale comment references to files retired by the 2026-08-13/14 consolidation (A1-F2, cosmetic, open).</li>
+<li><code>manifest.json</code>'s start/end fields are requested args, not realized bounds (B6-2, cosmetic, open).</li>
+</ul>
+
+<!-- ============================== 6 ============================== -->
+<h2 id="s6"><span class="num">6</span>Defense prep &mdash; the 5 custom statistics functions</h2>
+
+<p class="lede">Every hypothesis test in this codebase (binomial, Fisher exact, Welch t,
+Pearson, Spearman) is a direct, unmodified <code>scipy.stats</code> call &mdash; no defense
+needed beyond &ldquo;we called the library function.&rdquo; These 5 are different: each
+contains genuine hand-written arithmetic or a hand-rolled resampling loop that a panelist
+can reasonably ask you to justify by name. Full line-by-line verification, worked examples,
+and edge cases live in <code>docs/MATH_CORRECTNESS_AND_COMPREHENSION.md</code>; provenance
+(is this copied from somewhere?) lives in <code>docs/PROVENANCE_VERDICT.md</code>. Verdict
+from both: <strong>no incorrect math, no copied code</strong> &mdash; every function
+independently implements a standard, textbook formula. Three assumptions are worth naming
+unprompted (flagged below).</p>
+
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Function</th><th>What it does</th><th>Why designed that way</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td><code>bootstrap_resample()</code> / <code>run_bootstrap_ci()</code><br><span class="fnote">:2866, :3155</span></td><td>Efron (1979/81) percentile bootstrap: draw B=10,000 resamples of size 27 <em>with replacement</em> from the 27 real trade returns, take the 2.5th/97.5th percentiles of the resulting totals as the 95% CI</td><td>27 trades is too few and too skewed (a few big winners) to assume a normal-theory CI is valid; the bootstrap makes no distributional assumption &mdash; it uses the data's own actual shape</td></tr>
+<tr><td class="num">2</td><td><code>bootstrap_ablation_arm_vs_baseline()</code><br><span class="fnote">:2621</span></td><td>Between-arm empirical bootstrap p-value: resample an ablation arm's pool <strong>at the baseline's size (27), not the arm's own size (140/138)</strong>; report the fraction of resamples whose win rate/avg return meets or beats the baseline's actual result</td><td>Resampling at 27 answers &ldquo;would a baseline-sized draw from the weaker population look this good&rdquo;; resampling at 140 would instead measure uncertainty in the arm's own mean &mdash; a different question. This is the mechanism behind the arm-3 empirical p=0.0020 cited in &sect;2.1</td></tr>
+<tr><td class="num">3</td><td><code>mde_power_analysis()</code><br><span class="fnote">:2978</span></td><td>Standard two-sample normal-approximation MDE: <code>MDE = (z_&alpha;/2 + z_&beta;) &times; SE</code>, using <code>scipy.stats.norm.ppf</code> only for the two z-quantiles; the combination formula itself is hand-written</td><td>Reframes a &ldquo;not significant&rdquo; per-criterion result as &ldquo;this sample size (n=4..23) is underpowered to detect an effect of the size actually observed&rdquo; &mdash; a different, more honest claim than &ldquo;no effect exists&rdquo; (&sect;2.3)</td></tr>
+<tr><td class="num">4</td><td><code>max_drawdown_pct()</code><br><span class="fnote">:3033</span></td><td>Standard 3-line quant-finance formula: running peak (<code>.cummax()</code>), percent decline from that peak at every point, take the single worst (most negative) value</td><td>Percentage (not dollar) drawdown lets the strategy, DCA, and lump-sum B&amp;H arms be compared directly despite very different equity-curve shapes from the same $10,000 start; tracking the running max (not just final-vs-peak) catches a mid-history dip that later recovers &mdash; e.g. the strategy's &minus;6.46% MaxDD vs. DCA's &minus;27.85% and B&amp;H's &minus;67.21%</td></tr>
+<tr><td class="num">5</td><td><code>sharpe_sortino_ratios()</code><br><span class="fnote">:3057</span></td><td>Sharpe (1966/94) and Sortino &amp; van der Meer (1991), both annualized via <code>&times;sqrt(periods_per_year)</code>; Sortino's downside deviation is <code>sqrt(mean(min(R,0)&sup2;))</code> over <strong>all</strong> N periods, not just the losing ones</td><td>The full-N Sortino denominator is the textbook-correct convention (verified against the original 1991 paper) &mdash; deliberately checked against a popular public tutorial that instead divides by the count of losers only, confirming this codebase does <em>not</em> match that non-standard version</td></tr>
+</tbody>
+</table></div>
+
+<h3>6.1 &nbsp;Flags to know by name, unprompted</h3>
+
+<div class="flag">
+  <div class="hd"><span class="id">F1</span><span class="ttl">Sharpe/Sortino implicitly assume risk-free rate (and MAR) = 0</span></div>
+  <div class="bd"><p>The code uses raw per-bar returns directly &mdash; mathematically equivalent to
+  <code>R_f = 0</code> in Sharpe's <code>SR = E[R_a &minus; R_f]/&sigma;</code> and
+  <code>T (MAR) = 0</code> in Sortino's downside-deviation target. Defensible for a crypto
+  strategy with no explicit funding-rate or benchmark leg modeled, but it's a real, nameable
+  deviation from the general textbook formula and is <strong>not stated in the docstring</strong>.
+  If asked &ldquo;where's the risk-free rate,&rdquo; the honest answer is &ldquo;assumed
+  zero, not subtracted, not documented in code &mdash; but mathematically implied.&rdquo;</p></div>
+</div>
+
+<div class="flag">
+  <div class="hd"><span class="id">F2</span><span class="ttl"><code>mde_power_analysis()</code>'s <code>detectable</code> flag reads False, not &ldquo;undefined,&rdquo; on NaN input</span></div>
+  <div class="bd"><p>A subgroup with &lt;2 trades makes <code>np.std(ddof=1)</code> divide by zero &rarr;
+  NaN &rarr; <code>detectable = abs(diff) >= NaN</code> silently evaluates <code>False</code>
+  in Python (any comparison against NaN is False) rather than raising or flagging itself as
+  unusable. <strong>Does not occur on real data</strong> &mdash; the 5 OB-quality criteria
+  actually used have subgroup sizes n=4..23, never &lt;2. Worth naming if asked &ldquo;what
+  happens with a 1-trade subgroup&rdquo; rather than letting it sound like an unknown gap.</p></div>
+</div>
+
+<div class="flag">
+  <div class="hd"><span class="id">F3</span><span class="ttl">Bootstrap CI is plain percentile, not bias-corrected (BCa)</span></div>
+  <div class="bd"><p>Uses Efron's original 1981/82 percentile method (raw 2.5th/97.5th percentiles of the
+  resample distribution), not the later bias-corrected-and-accelerated (BCa) refinement that
+  corrects for skew. For a 27-trade sample with a right-skewed return distribution, the plain
+  percentile CI can be mildly liberal/conservative relative to BCa. Standard, disclosed-as-standard
+  simplification (the docstring already says so) &mdash; named here so &ldquo;BCa&rdquo; is
+  ready as the specific term if a panelist asks &ldquo;why not a corrected bootstrap.&rdquo;</p></div>
+</div>
+
+<div class="callout c-info">
+  <span class="lbl">AI-assistance disclosure &mdash; say this unprompted</span>
+  <p>Per <code>PROVENANCE_VERDICT.md</code>: none of these 5 functions (nor the 5 direct
+  <code>scipy.stats</code> wrappers) were copied from a specific paper's or repository's
+  implementation &mdash; each independently implements its formula from public documentation
+  and standard references. But every commit that introduced or materially edited them carries
+  a <code>Co-Authored-By: Claude Sonnet 5</code> trailer. The accurate answer to &ldquo;did you
+  personally write this&rdquo; is: <em>directed the design (which test, which populations,
+  which parameters), drafted with AI assistance rather than typed unaided, then verified
+  against known-good regression fixtures</em> &mdash; distinct from both &ldquo;wrote it
+  alone&rdquo; and &ldquo;copied a paper's code,&rdquo; and should be stated in those terms
+  rather than left for the panel to assume either extreme.</p>
+</div>
+
+<!-- ============================== 7 ============================== -->
+<h2 id="s7"><span class="num">7</span>File / repo map</h2>
+
+<div class="tablewrap"><table>
+<thead><tr><th>Path</th><th>Carries</th></tr></thead>
+<tbody>
+<tr><td><code>research_analysis.py</code> (repo root)</td><td>Canonical single-file entrypoint (2026-08-13/14 consolidation): backtest engine (<code>compute_indicators</code>, <code>compute_smc</code>, <code>simulate_trades</code>, the <code>kdj_reset_*</code> exit state machine), the full statistics pipeline (Sections 5/5B &mdash; binomial/Fisher/Welch/Pearson/Spearman, the 5 custom functions from &sect;6, benchmark-vs-passive), the SQLite database manager, and the dashboard's live HTTP server (<code>--serve</code>, port 8765). <code>python research_analysis.py</code> alone runs the offline stats pipeline.</td></tr>
+<tr><td><code>dashboard-v2/</code></td><td>React/TypeScript frontend. <code>src/components/tabs/{ChartTab,StatsTab,SolutionsTab,SandboxTab}.tsx</code>; <code>src/types/artifacts.ts</code> (typed artifact schemas &mdash; source of the &sect;4.1-item-7 crash bug); <code>statsCompute.ts</code> (independent from-scratch JS re-derivation of every statistic &mdash; must never import from the Python side, an intentional cross-check).</td></tr>
+<tr><td><code>CLAUDE.md</code></td><td>Locked results block, disclosed-bug list, hard rules (no strategy/threshold changes, regression discipline, branching rules), session-memory convention. Canonical source of truth for what must never silently drift.</td></tr>
+<tr><td><code>docs/</code></td><td>Paper drafts (&sect;1.1) + defense/audit dossiers (<code>AUDIT_REPORT_2026-08-20.md</code>, <code>MATH_CORRECTNESS_AND_COMPREHENSION.md</code>, <code>PROVENANCE_VERDICT.md</code>, <code>license_verification.md</code>) + supporting reference docs (<code>research_statistics_reference.md</code>, <code>orthogonal_criteria_reference.md</code>, <code>order_block_criteria_per_trade_reference.md</code>, <code>ablation_study_indicators_only.md</code>, <code>ablation_unconfounding_analysis.md</code>, <code>backtest_methodology_defense_walkthrough.md</code>, <code>limitations_section_draft.md</code>, <code>results_section_addition_draft.md</code>, <code>change_log_2026-08-08.md</code>) + <code>study_guide.html</code>/<code>study_guide_content_handoff.md</code> (separate plain-language artifact, not the paper itself) + this handoff file.</td></tr>
+<tr><td><code>artifacts/</code></td><td>Generated outputs, regenerable via <code>research_analysis.py --serve</code>: <code>candles.csv</code>, <code>trades_default_view.csv</code>, <code>paper_sync_report.md</code>, <code>fee_slippage_analysis.json</code>, <code>bootstrap_power_analysis.json</code>, <code>ablation_reconstruction.json</code>, <code>benchmark_vs_passive.json</code>, <code>benchmark_dca_analysis.json</code>, <code>regime_breakdown_analysis.json</code>, <code>oos_validation_analysis.json</code>, <code>verification_report.json</code>, <code>manifest.json</code>, <code>runs_by_threshold.json</code>.</td></tr>
+<tr><td><code>scratch/</code></td><td><code>regression.py</code> &mdash; the golden-master harness, run after every change, <code>--generate</code> only on explicit request &mdash; plus fixtures and one-off audit scripts, all dynamically loading <code>research_analysis.py</code> (not the retired <code>src/</code> file).</td></tr>
+<tr><td><code>legacy_pre_consolidation/</code></td><td>Gitignored, disk-only backup of pre-consolidation files (old <code>src/Binance backtest bot.py</code>, <code>db_manager.py</code>, <code>export_gui_data.py</code>, all 12 retired <code>analysis/*.py</code> scripts). Not part of the running system, not tracked in git.</td></tr>
+<tr><td><code>STUDY_REFERENCE.md</code>, <code>PLAN.md</code> (repo root)</td><td>Root-level standalone reference doc (still carries the old paper title, &sect;1.2) and the 2026-08-20 audit's own orchestration plan (historical reference only, untracked).</td></tr>
+</tbody>
+</table></div>
+
+<div class="callout c-info">
+  <span class="lbl">Standing rules that constrain any future session</span>
+  <ul style="margin-bottom:0">
+    <li>No strategy logic, threshold, or formula changes &mdash; refactoring only. Parameters are pre-registered; never sweep, tune, or optimise.</li>
+    <li>Run <code>scratch/regression.py</code> after every change. Any diff means revert. Never run <code>--generate</code> without asking.</li>
+    <li>The JS dashboard's recalculation must stay independent of Python. Never make it import from the Python side.</li>
+    <li>If a <strong>third</strong> backtest-engine bug is found: STOP and report. Do not fix silently.</li>
+    <li>Report null and unfavourable results as they come. Do not soften them.</li>
+    <li>Never commit directly to <code>main</code>; do not merge into <code>development</code> or <code>main</code> without an explicit request.</li>
+  </ul>
+</div>
+
+<footer class="doc">
+  <p>Generated 2026-08-24 &middot; <code>docs/handoff_2026-08-20.html</code> (filename
+  unchanged across regenerations by design) &middot; self-contained, no external
+  dependencies, works offline.<br>
+  Sources: <code>docs/paper_full_update_2026-08-08.md</code>,
+  <code>docs/paper_FINAL_for_docx_handoff.md</code>,
+  <code>docs/AUDIT_REPORT_2026-08-20.md</code>,
+  <code>docs/MATH_CORRECTNESS_AND_COMPREHENSION.md</code>,
+  <code>docs/PROVENANCE_VERDICT.md</code>, <code>CLAUDE.md</code>,
+  <code>artifacts/*.json</code>, <code>artifacts/paper_sync_report.md</code>, live git-state
+  inspection, and a repo-wide title-reference grep.</p>
+</footer>
+
+</div>
+</body>
+</html>
