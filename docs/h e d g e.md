@@ -18,15 +18,7 @@ Galang, Blessie M.
 Aleah G. Sabado, MAEd \- Physical Science, LPT  
 Research II Teacher
 
-# **Abstract**
-
-Bitcoin trades continuously, without circuit breakers, and with volatility structurally larger than that of traditional assets, which makes short-term forecasting difficult for ordinary participants. This study developed and backtested a rule-based algorithmic strategy combining MACD histogram momentum, a fixed KDJ oscillator gate, a dual Average True Range risk framework, and Smart Money Concepts Order Block detection on 4-hour BTC/USDT candlestick data. Rules were fixed by visual inspection of January 2018 to January 2022 charts and then applied, without adjustment, to January 2022 through January 2026. The simulation produced 27 trades with a 70.37 percent win rate and a 30.31 percent total net return, departing from a 50 percent zero-edge null model at p equals 0.0261 on a one-sided exact binomial test. A 10,000-resample percentile bootstrap gave a 95 percent confidence interval on total return of 5.99 to 54.99 percent, excluding zero. The win-rate result did not survive realistic costs: at a 0.20 percent round-trip charge the p-value rose to 0.1239. Against passive alternatives from an identical 10,000 dollar start, weekly dollar-cost averaging returned 123.13 percent and lump-sum buy-and-hold 90.07 percent, both far above the strategy, while the strategy produced a higher Sharpe ratio, 1.114 against 0.556, and a shallower maximum drawdown, negative 6.46 against negative 27.85 percent, holding a position only 2.63 percent of the time. Blending a strategy allocation into a dollar-cost-averaging plan improved Sharpe, Sortino, and drawdown steadily from a 0 to a 30 percent allocation. A forward test on data postdating the source code produced four trades and a negative 3.45 percent return.
-
-*Keywords:* Bitcoin, algorithmic trading, backtesting, dollar-cost averaging, Smart Money Concepts, technical analysis
-
-# **Introduction**
-
-## **Rationale**
+# **Rationale**
 
 Over the past thirty years, money has moved online. Faster internet, cheaper smartphones, and digital payment systems have removed much of the distance that once stood between ordinary people and formal financial services. The World Bank’s Global Findex Database 2021 surveyed 123 economies and found that 76 percent of adults worldwide held a formal financial account by 2021, up from 51 percent in 2011\. Much of that growth came from mobile money and electronic wallet platforms in developing countries (Demirgüç-Kunt et al., 2022). For many people, digital tools are no longer an addition to traditional banking. They are the main way, and sometimes the only way, that financial services are reached at all.
 
@@ -48,49 +40,45 @@ This study contains two separate KDJ calculations, and telling them apart matter
 
 The third tool measures how hard price is moving rather than which way. The Average True Range, introduced by Wilder (1978) and usually shortened to ATR, fills that gap. True range is the largest of three quantities: the current high minus the current low, the distance between the current high and the previous close, or the distance between the current low and the previous close. ATR then averages that value over a window of candles. ATR carries no bullish or bearish opinion. It only measures movement. In this study a 14-period ATR sets the stop-loss distance, meaning how far price may move against a trade before the trade is closed automatically, along with the trailing exit and one of the profit-taking exits. A 200-period ATR provides a longer-run volatility baseline used to filter market conditions and to judge Order Blocks. Using two ATR windows means the risk settings scale with current market conditions rather than sitting at fixed levels, which matches Wilder’s original purpose for the tool.
 
-None of these three tools accounts directly for the influence of very large participants on short-term price. Smart Money Concepts addresses this by reading raw price structure for institutional footprints instead of relying on statistical averages. Its premise, drawn from market microstructure theory, is that large entities engineer price moves in order to reach pools of resting orders and fill large positions before reversing (Bessembinder et al., 2009). In this study Order Blocks are detected at two structural levels, one using a 50-candle lookback for larger swings and one using a 5-candle lookback for smaller internal structure. Each detected Order Block is then judged against five quality criteria: displacement, a large origin candle, the presence of a Fair Value Gap, a liquidity sweep, and volume expansion. Each of these five terms is defined in Section D of the Framework.
+None of these three tools accounts directly for the influence of very large participants on short-term price. Smart Money Concepts addresses this by reading raw price structure for institutional footprints instead of relying on statistical averages. Its premise, drawn from market microstructure theory, is that large entities engineer price moves in order to reach pools of resting orders and fill large positions before reversing (Bessembinder et al., 2009). In this study Order Blocks are detected at two structural levels, one using a 50-candle lookback for larger swings and one using a 5-candle lookback for smaller internal structure. Each detected Order Block is then judged against five quality criteria: displacement, a large origin candle, the presence of a Fair Value Gap, a liquidity sweep, and volume expansion. Each of these five terms is defined in the Methodology.
 
 The five criteria are evaluated independently of one another as true-or-false flags rather than combined into a single ranked score. Because the composite score is a simple sum of five true-or-false criteria, an Order Block that passes a stricter cutoff automatically passes every looser cutoff as well, so a group of Order Blocks selected at one cutoff is always nested inside the group selected at a looser one.
 
-Prior research has examined MACD, KDJ, and technical trading rules in isolation or in partial combinations (Chong & Ng, 2008; Corbet et al., 2019; Tao et al., 2017). No known published study has combined MACD histogram momentum confirmation, an adaptive KDJ exit mechanism, a dual-ATR risk framework, and Order Block detection inside a single backtest applied to cryptocurrency, while also isolating the contribution of each component through controlled comparison. This study addresses that gap by testing the combined rule set as a whole, and by retaining a controlled internal comparison against configurations that keep the indicators but remove the Order Block requirement, so that the source of any measured performance can be examined rather than assumed.
+Prior research has examined MACD, KDJ, and technical trading rules in isolation or in partial combinations (Chong & Ng, 2008; Corbet et al., 2019; Tao et al., 2017). No known published study has combined MACD histogram momentum confirmation, an adaptive KDJ exit mechanism, a dual-ATR risk framework, and Order Block detection inside a single backtest applied to cryptocurrency, while also isolating the contribution of each component through controlled comparison. This study addresses that gap by comparing the full strategy directly against configurations that keep the indicators but remove the Order Block requirement entirely, in order to see whether the Order Block gate itself contributes measurable performance value beyond the underlying indicator layer.
 
-A trading strategy is only interesting relative to what a person would otherwise do. For most retail participants in a market like Bitcoin, the realistic alternative is not another algorithm. It is dollar-cost averaging, meaning buying a fixed amount on a fixed schedule regardless of price, or a single lump-sum purchase held without further action. Dollar-cost averaging is the default behaviour built into the recurring-buy features of most exchanges and savings applications, and it has been studied for decades. Constantinides (1979) showed formally that it is suboptimal under standard expected-utility assumptions, because delaying investment forgoes expected return, while Statman (1995) argued that it nonetheless persists because it answers behavioural needs, including regret aversion and a desire for self-control, that a theoretically optimal policy does not. That combination, theoretically weak yet behaviourally dominant, is what makes it the correct benchmark for a study aimed at ordinary participants. This paper therefore does not evaluate the strategy in isolation. It places the strategy head-to-head against weekly dollar-cost averaging and against lump-sum buy-and-hold over the identical window and from identical starting capital, and it then asks the question closer to how a real participant would actually use such a rule set: not whether the strategy replaces a dollar-cost-averaging plan, but whether directing part of that plan’s contributions into the strategy improves the plan.
-
-The design of this study separates the period used to form the rules from the period used to test them. Every rule, parameter, and threshold in the strategy was settled by visual inspection of BTC/USDT charts over January 2018 through January 2022, drawing on prior trading experience. That formulation period was examined by eye. It was never fed into a search, a sweep, or an optimizer, and no parameter was ever adjusted to improve a measured outcome on it. The results reported as this study’s primary findings come from January 2022 through January 2026, a stretch of price history the rules were not formed against. Both windows are reported side by side in the Findings so that the difference between them is visible rather than asserted. The Limitations section states precisely what this separation does and does not establish.
+The design of this study separates the period used to form the rules from the period used to test them. Every rule, parameter, and threshold in the strategy was settled by visual inspection of BTC/USDT charts over January 2018 through January 2022, drawing on prior trading experience. That formulation period was examined by eye. It was never fed into a search, a sweep, or an optimizer, and no parameter was ever adjusted to improve a measured outcome on it. The results reported as this study’s primary findings come from January 2022 through January 2026, a stretch of price history the rules were not formed against. Both windows are reported side by side in the Results so that the difference between them is visible rather than asserted. The Limitations section states precisely what this separation does and does not establish.
 
 One further contribution matters as much as the strategy itself. A backtest, meaning a simulation of how a set of trading rules would have performed on historical data, can be internally consistent, precise to many decimal places, and still wrong. The error can live in the boundary between what a rule is allowed to see and when it is allowed to see it, or in how a correct result is later summarized. Both kinds of error are silent by default. A backtest that accidentally reads one candle into the future looks exactly as credible as a correct one until someone goes looking. This study therefore treats verification as part of the research rather than as private housekeeping done beforehand. Every implementation error found during checking is reported here, together with what the result looked like before and after the fix. Every surviving result is then stress-tested against realistic trading costs, against simple passive alternatives, and against a stretch of data that came after the code was finished. Several of those tests are unfavourable, and they are reported as they came out. The intended contribution is a worked example of how to audit a strategy of this kind, not a claim about how much money the strategy makes.
 
 Beyond its academic contribution, this study carries direct relevance to communities standing at the intersection of globalization and emerging digital finance. For Magalang, Pampanga, and comparable communities across the Philippines, cryptocurrency markets and decentralized exchanges represent an accessible entry point into global financial participation (Schär, 2021). As digital payment infrastructure continues to reach communities historically underserved by formal banking, access to rigorous and reproducible research on algorithmic trading supports evidence-based participation rather than purely speculative engagement. This study aligns with United Nations Sustainable Development Goal 8, which calls for sustained, inclusive, and sustainable economic growth, by turning market participation into transparent and repeatable decision rules (United Nations, 2015). It also addresses Goal 11, which promotes inclusive and resilient communities, by contributing to the digital financial infrastructure through which residents may engage with local and global markets (United Nations, 2015). The framework developed here is built entirely on publicly available data and open-source tools, which makes it replicable at any scale of economic development.
 
-## **Statement of the Problem**
+# 
 
-Bitcoin presents compounding forecasting challenges for short-term traders. Its continuous 24-hour trading cycle, its pronounced volatility, and its sensitivity to large institutional order flow create conditions in which traditional analysis often fails to identify directional signals before they materialize. Individual technical indicators such as MACD and KDJ have demonstrated predictive value on their own (Chong & Ng, 2008; Dai et al., 2020; Wu & Diao, 2015). What has not been examined systematically is what happens when those momentum tools are combined with volatility-adaptive risk management and with Smart Money Concepts Order Block detection, and, just as importantly, how the resulting rule set stands up against the passive alternatives an ordinary participant would otherwise use. This research addresses that gap by developing and backtesting a rule-based algorithmic strategy integrating MACD, KDJ, ATR, and a scored Order Block detection system on 4-hour BTC/USDT candlestick data, and by benchmarking it directly against weekly dollar-cost averaging and lump-sum buy-and-hold. The strategy’s rules were formed by visual inspection of the January 2018 through January 2022 period and are reported here against the separate January 1, 2022 through January 1, 2026 window, which the rules were not formed against.
+# **Statement of the Problem**
 
-The study also subjects each of its own findings to further checks, including realistic trading costs and a stretch of data that came after the code was finalized. Those checks are reported whether or not they favour the strategy.
+Bitcoin presents compounding forecasting challenges for short-term traders. Its continuous 24-hour trading cycle, its pronounced volatility, and its sensitivity to large institutional order flow create conditions in which traditional analysis often fails to identify directional signals before they materialize. Individual technical indicators such as MACD and KDJ have demonstrated predictive value on their own (Chong & Ng, 2008; Dai et al., 2020; Wu & Diao, 2015). What has not been examined systematically is what happens when those momentum tools are combined with volatility-adaptive risk management and with Smart Money Concepts Order Block detection. This research addresses that gap by developing and backtesting a rule-based algorithmic strategy integrating MACD, KDJ, ATR, and a scored Order Block detection system on 4-hour BTC/USDT candlestick data. The strategy’s rules were formed by visual inspection of the January 2018 through January 2022 period and are reported here against the separate January 1, 2022 through January 1, 2026 window, which the rules were not formed against.
+
+The study also subjects each of its own findings to further checks, including realistic trading costs, a comparison against simply buying and holding Bitcoin, and a stretch of data that came after the code was finalized. Those checks are reported whether or not they favour the strategy.
 
 This study seeks to answer:
 
 1. How effectively does the combined MACD, KDJ, ATR, and Smart Money Concepts strategy predict short-term Bitcoin price movements, as measured by win rate, total net return, and average return per trade?
 
-2. How does the strategy compare against the two passive alternatives an ordinary participant would realistically use, namely weekly dollar-cost averaging into Bitcoin and a single lump-sum purchase held to the end of the window, when all three are started from identical capital and measured on total return, Sharpe ratio, Sortino ratio, maximum drawdown, and time in market?
+2. Does the Order Block structural gate, meaning the requirement that price be at a valid institutional zone before entry, contribute measurable performance value independent of the underlying indicator layer?
 
-3. Does directing a share of new weekly contributions into the strategy improve the risk-adjusted profile of an otherwise ordinary Bitcoin dollar-cost-averaging plan, and if so, how does that improvement behave as the allocated share rises?
+## 
 
-### **Hypotheses**
+## **Hypothesis**
 
 **H₀₁:** The combined strategy does not produce a statistically significant win rate above 50% on BTC/USDT 4-hour data across all market conditions over a broad temporal scope.
 
 **H₁₁:** The combined strategy produces a statistically significant win rate above 50% on BTC/USDT 4-hour data across all market conditions over a broad temporal scope.
 
-In plain terms, this pair asks whether the strategy wins more often than a coin flip by a margin too large to explain away as luck. It is tested with a one-sided exact binomial test, specified in Section E.
+In plain terms, this pair asks whether the strategy wins more often than a coin flip by a margin too large to explain away as luck.
 
-**H₀₂:** Blending a strategy allocation into a Bitcoin dollar-cost-averaging plan does not improve that plan’s risk-adjusted profile, as measured by the Sharpe ratio, the Sortino ratio, and maximum drawdown, relative to a plan held entirely in dollar-cost-averaged Bitcoin.
+# 
 
-**H₁₂:** Blending a strategy allocation into a Bitcoin dollar-cost-averaging plan improves that plan’s risk-adjusted profile on all three of those measures relative to a plan held entirely in dollar-cost-averaged Bitcoin.
-
-This second pair is stated formally so that the direction of the claim is fixed before the numbers are seen rather than chosen afterwards. How it is evaluated is stated here rather than left to be discovered. The Sharpe ratio, the Sortino ratio, and maximum drawdown are each computed from a single realized price path, so each is one observation rather than a sample, and there is no sampling distribution behind it against which a p-value could legitimately be formed. Two-sample tests that would require one, including Welch’s t-test and Fisher’s exact test, were considered for this comparison and rejected on that basis; Section E records that decision and its reasoning. This pair is therefore resolved descriptively, by whether all three measures move in the predicted direction consistently as the allocated share rises, which is a weaker standard than a significance test and is treated as such throughout. It is evidence about one historical window, not an inferential claim about future ones.
-
-# **Framework**
+# **Methodology**
 
 ## **A. Research Design**
 
@@ -120,7 +108,7 @@ Two limits on this separation are stated here rather than left to be inferred. F
 
 The dataset spans 2022-01-01 08:00:00 through 2026-01-01 08:00:00. That interval covers exactly 1,461 calendar days, being 365 plus 365 plus 366 plus 365, where the 366 accounts for the 2024 leap day. At six four-hour candles per day, 1,461 days give 1,461 multiplied by 6, or 8,766 candle intervals. Because the final candle is itself stored as a row rather than used only as an exclusive upper boundary, the stored row count is 8,766 plus 1, or **8,767** rows. An earlier draft of this paper reported 8,760, which was a plain arithmetic slip; it was corrected in both the code and the text. A gap check confirmed that the set of unique time differences between consecutive candles across all 8,767 rows contains the single value four hours, with no duplicate timestamps, so no candle is missing. This was re-verified directly against the exported candle series during final preparation of this paper, independently of the backtesting code that produced it.
 
-The 2018 to 2022 formulation window, used only for rule formation and for the comparison rows reported later, is not complete in the same way. It holds 8,750 rows against the 8,767 expected under the same counting convention applied above, a shortfall of seventeen candles across eight separate outages on the exchange’s side, the largest a gap of seven consecutive candles. Those gaps are disclosed here rather than left unstated. They do not affect any figure reported from the primary window, which is verified complete.
+The 2018 to 2022 formulation window, used only for rule formation and for the comparison rows reported later, is not complete in the same way. It holds 8,750 candles against 8,766 expected, with sixteen candles missing across eight separate outages on the exchange’s side, the largest a gap of seven consecutive candles. Those gaps are disclosed here rather than left unstated. They do not affect any figure reported from the primary window, which is verified complete.
 
 **Python 3 environment.** Backtesting logic was implemented using pandas, numpy, python-binance, and gspread with oauth2client.
 
@@ -128,21 +116,19 @@ The 2018 to 2022 formulation window, used only for rule formation and for the co
 
 **Google Sheets and SQL database.** Simulation results were exported to Google Sheets and to a local SQL database, including per-trade records with individual Order Block quality flags, and the outputs of the indicators-only configurations.
 
-**LuxAlgo Smart Money Concepts indicator (LuxAlgo, 2022).** Order Block detection is a Python translation of the LuxAlgo Smart Money Concepts indicator for TradingView, using a 50-candle swing pivot lookback and a 5-candle internal pivot lookback.
+**LuxAlgo Smart Money Concepts indicator (LuxAlgo, n.d.).** Order Block detection is a Python translation of the LuxAlgo Smart Money Concepts indicator for TradingView, using a 50-candle swing pivot lookback and a 5-candle internal pivot lookback.
 
 **Average True Range (Wilder, 1978).** True range follows Wilder’s definition. Both ATR windows are computed as a simple rolling mean rather than Wilder’s original exponential smoothing, despite an inherited code comment suggesting otherwise. The executed computation is a plain rolling mean, and that is what is reported here.
 
-**Web-based verification dashboard.** A separately written JavaScript dashboard recomputes the indicator and entry-condition layer in the browser from trade data, as a cross-check against a second, independent codebase. Its scope is deliberately limited. It does not independently detect Order Blocks, Fair Value Gaps, or liquidity sweeps, and it never imports any value from the Python analysis. That independence is what makes the cross-check meaningful, and it is also the reason the two bootstrap intervals in the Findings are reported separately rather than reconciled into one number.
+**Web-based verification dashboard.** A separately written JavaScript dashboard recomputes the indicator and entry-condition layer in the browser from trade data, as a cross-check against a second, independent codebase. Its scope is deliberately limited. It does not independently detect Order Blocks, Fair Value Gaps, or liquidity sweeps, and it never imports any value from the Python analysis. That independence is what makes the cross-check meaningful, and it is also the reason the two bootstrap intervals in the Results are reported separately rather than reconciled into one number.
 
 ## **C. Variables**
 
-**Independent variable.** The capital-allocation approach applied to one identical stretch of price history. It takes six levels: the Order-Block-gated strategy traded on its own; weekly dollar-cost averaging into Bitcoin; a single lump-sum purchase held to the end of the window; and three blended portfolios directing 10%, 20%, and 30% of new weekly contributions into the strategy with the remainder dollar-cost averaged. The 0% blend is the same arm as pure weekly dollar-cost averaging and is reported as the blended model’s baseline row.
+**Independent variable.** The presence or absence of the Order Block structural gate, meaning the full strategy compared against the indicators-only configurations.
 
-For the supporting internal analysis reported at the end of the Findings, a second independent variable is used within the strategy arm alone: the presence or absence of the Order Block structural gate, meaning the full strategy compared against configurations that keep the indicator layer and drop the gate.
+**Dependent variables.** Win rate, meaning the percentage of closed trades with a positive net return; total net return; average return per trade; and return concentration, meaning the share of total return attributable to a small subgroup of trades.
 
-**Dependent variables.** For the strategy’s own trade record: win rate, meaning the percentage of closed trades with a positive net return; total net return; average return per trade; and return concentration, meaning the share of total return attributable to a small subgroup of trades. For the comparison against passive alternatives: total return and final capital from a fixed starting amount, the annualized Sharpe ratio, the annualized Sortino ratio, maximum drawdown, and time in market, meaning the share of candles on which the arm held an open position.
-
-**Controlled variables.** Trading pair, candlestick interval, and backtest window, identical for every arm; the MACD, KDJ, and ATR parameters, the exit rules, and the minimum reward-to-risk requirement, identical wherever the strategy appears; the starting capital of $10,000, identical for every arm in the head-to-head comparison; the contribution schedule of 210 equal weekly contributions, identical for the dollar-cost-averaging arm and for every blended portfolio; and the transaction-cost assumption, applied at the same rate to every arm within a given comparison. All strategy parameters were fixed before backtesting, on the basis of the formulation-period inspection described in Section A, and none was tuned against the reported dataset.
+**Controlled variables.** Trading pair, candlestick interval, backtest period, MACD, KDJ and ATR parameters, exit rules, and the minimum reward-to-risk requirement. All were fixed before backtesting, on the basis of the formulation-period inspection described in Section A, and none was tuned against the reported dataset.
 
 ## **D. Strategy Formulas**
 
@@ -209,7 +195,7 @@ In each pass a candle $pb=i-size$ is confirmed as a pivot high only by strict ri
 
 5. **Volume Expansion:** ${V}_{i}\geq 1.25\times mean\left({V}\right)$ over the prior twenty candles, or the candle body exceeds 60% of the candle’s own high-to-low range.
 
-Both the Displacement and the Fair Value Gap search windows stated here reflect the corrected bound at the Order Block’s own confirmation candle. Section F gives a full account of that correction and its effect on the results.
+The Fair Value Gap condition stated here reflects the corrected three-candle definition, and both the Displacement and Fair Value Gap search windows reflect the corrected bound at the Order Block’s own confirmation candle. Section F gives a full account of both corrections and their effect on the results.
 
 **Fixed parameters.** All values below were fixed before, and independently of, the analysis reported here.
 
@@ -275,11 +261,9 @@ Three of the seven quantities reported in this paper are direct, unmodified call
 
 **One-sided exact binomial test.** This tests the first hypothesis pair by asking whether the observed number of winning trades sits far enough above what a coin flip would give that chance is an unlikely explanation. With $n$ closed trades and $w$ winners, under a null win probability of 0.5:
 
-$${p}_{one-sided}=\sum\limits_{k=w}^{n}\binom{n}{k}{\left({0.5}\right)}^{k}{\left({0.5}\right)}^{n-k}=\sum\limits_{k=w}^{n}\binom{n}{k}{\left({0.5}\right)}^{n}$$
+$${p}_{one-sided}=\sum\limits_{k=w}^{n}\left({\frac{n}{k}}\right){\left({0.5}\right)}^{k}{\left({0.5}\right)}^{n-k}=\sum\limits_{k=w}^{n}\left({\frac{n}{k}}\right){\left({0.5}\right)}^{n}$$
 
 A p-value is the probability of seeing a result at least this strong if the strategy actually had no edge at all. A small p-value means chance is a poor explanation for what was observed. The one-sided form was chosen because the hypothesis is directional: it predicts a win rate above 50%, not merely one different from 50% in either direction. Two-sided values are also reported for reference. An earlier draft of this paper printed this formula with the binomial coefficient shown as a fraction and the summation omitted; the formula above is the one the code actually evaluates.
-
-**Tests considered and deliberately not used.** Two-sample tests for a difference in means or in proportions, including Welch’s t-test and Fisher’s exact test, were considered for the comparison against the passive alternatives and were not used. The reason is a property of the design rather than of the result. The dollar-cost-averaging arm and the lump-sum arm each produce one realized equity curve on one price path, not a sample of independent outcomes, so a Sharpe ratio, a Sortino ratio, or a maximum drawdown computed from them is a single observation with no sampling distribution behind it. Applying a two-sample test in that setting would manufacture a p-value out of an arbitrary decision about what counts as an observation, and exploratory runs confirmed that the resulting values moved with that decision rather than with anything in the data. Those tests appear nowhere in this paper, and the comparison against passive alternatives is reported descriptively, as stated under the second hypothesis pair.
 
 **Correlation.** Pearson’s $r$ and Spearman’s $\rho $ were computed between how long a trade was held, measured in candles, and its percentage return. Both measure whether two quantities move together, with Pearson assuming a straight-line relationship and Spearman assuming only a consistent direction.
 
@@ -331,8 +315,6 @@ and this study sets ${R}_{f}=0$. This is defensible for a cryptocurrency strateg
 
 **Transaction-cost sensitivity, benchmark comparison, and forward testing.** The headline result was recomputed under realistic trading costs across six cost scenarios, compared against two passive alternatives under both gross and fee-adjusted assumptions, and re-run on a later stretch of data that postdates the source code. The binomial test is re-run in full on each fee-adjusted trade set rather than adjusted analytically.
 
-**Software authorship.** Appendix C states which of the statistical routines described above are library calls and which were written for this study, and discloses the extent of AI coding assistance used in writing the custom routines.
-
 **Honest reporting (ISEF standard).** All results are reported as observed, including non-significant findings, unfavourable findings, and the implementation errors identified during verification, consistent with ISEF expectations of honest and complete scientific reporting.
 
 ## **F. Corrections Found During Verification, and Comparison Design**
@@ -343,7 +325,7 @@ One code-level correction was made over the course of this project. It is disclo
 
 **Two further corrections were found later, in the reporting rather than in the code.** A separate audit pass checked every headline number in this paper against a live companion website and against the committed analysis scripts, rather than against the backtesting engine. It found two problems.
 
-The first concerned the bootstrap confidence interval. The website’s interactive version uses 2,000 resamples while this paper’s canonical figure uses 10,000, producing two individually correct but visibly different intervals with no stated explanation for the difference. Both are now reported side by side in the Findings. The cause was traced conclusively rather than assumed: the website’s random number generator, an algorithm called mulberry32, was reimplemented in Python and run at 2,000 resamples, which reproduced the website’s interval of \[+7.48%, \+54.46%\] exactly. This proves that the difference comes from the resample count alone, and not from a different method, a different random seed, or a different underlying set of trades. The two figures are deliberately not merged into one, because the website’s independence from the Python analysis is what makes it a useful cross-check.
+The first concerned the bootstrap confidence interval. The website’s interactive version uses 2,000 resamples while this paper’s canonical figure uses 10,000, producing two individually correct but visibly different intervals with no stated explanation for the difference. Both are now reported side by side in the Results. The cause was traced conclusively rather than assumed: the website’s random number generator, an algorithm called mulberry32, was reimplemented in Python and run at 2,000 resamples, which reproduced the website’s interval of \[+7.48%, \+54.46%\] exactly. This proves that the difference comes from the resample count alone, and not from a different method, a different random seed, or a different underlying set of trades. The two figures are deliberately not merged into one, because the website’s independence from the Python analysis is what makes it a useful cross-check.
 
 The second concerned the correlation p-values, which had been reported as $p<0.001$ when the correct values are approximately 0.0094 for Pearson and 0.0113 for Spearman. Those values remain significant at conventional thresholds, but the original claim overstated them by roughly a factor of ten. Both are corrected in this document. A project whose own closing audit catches its own reporting errors is demonstrating the same discipline its code-level correction demonstrates, not undermining it.
 
@@ -358,9 +340,9 @@ The second concerned the correlation p-values, which had been reported as $p<0.0
 **Figure 6**  
 *Design of the Three-Arm Controlled Comparison*
 
-# **Findings**
+# 
 
-This section is organized against the three research questions. Five subsections, covering overall performance, the bootstrap interval, the regime breakdown, transaction-cost sensitivity, and the out-of-sample and extended-history validation, address the first question. The subsection comparing the strategy against dollar-cost averaging and lump-sum buy-and-hold addresses the second and third questions. The final subsection is a supporting internal-validity analysis rather than a research question, and is labelled as such where it appears.
+# **Results**
 
 Every number in this section carries, in Appendix A, a reference to the exact function that produced it and the exact data that function was given. Where the input is not obvious from the surrounding sentence, it is stated inline as well.
 
@@ -384,15 +366,15 @@ Every number in this section carries, in Appendix A, a reference to the exact fu
 
 With 27 trades and 19 wins, the one-sided exact binomial test gives
 
-$$P\left({K\geq 19∣n=27, p=0.5}\right)=\sum\limits_{k=19}^{27}\binom{27}{k}{\left({0.5}\right)}^{27}=0.0261$$
+$$P\left({K\geq 19∣n=27, p=0.5}\right)=\sum\limits_{k=19}^{27}\left({\frac{27}{k}}\right){\left({0.5}\right)}^{27}=0.0261$$
 
-which falls below the conventional 5% threshold. Gross of costs, this supports rejecting H₀₁ in favour of H₁₁. In plain terms, if the strategy truly had no edge, a run this good would happen about 26 times in every 1,000 attempts. That is unlikely enough to take seriously, but it is not overwhelming, and it rests on only 27 trades. As shown further below, this particular significance claim does not survive realistic trading costs.
+which falls below the conventional 5% threshold and supports rejecting the zero-edge null hypothesis in the predicted direction. In plain terms, if the strategy truly had no edge, a run this good would happen about 26 times in every 1,000 attempts. That is unlikely enough to take seriously, but it is not overwhelming, and it rests on only 27 trades. As shown further below, this particular significance claim does not survive realistic trading costs.
 
-The 27 trades are identified throughout this paper by the candle index at which each was entered. In ascending order those indices are 335, 359, 673, 902, 1050, 1158, 1913, 2624, 2859, 3100, 3196, 3859, 3947, 4455, 5800, 5825, 6040, 6109, 6366, 6537, 6991, 7109, 7938, 7964, 8188, 8280, and 8596\. Every statistic in this section that refers to “the 27 baseline trades” refers to exactly this set. The complete per-trade record for all 27, including entry and exit times, holding period, exit reason, and the five Order Block quality flags, is given in Appendix D, Table D1. Listing them makes each later claim checkable against a specific, named group of trades rather than against an unstated selection.
+The 27 trades are identified throughout this paper by the candle index at which each was entered. In ascending order those indices are 335, 359, 673, 902, 1050, 1158, 1913, 2624, 2859, 3100, 3196, 3859, 3947, 4455, 5800, 5825, 6040, 6109, 6366, 6537, 6991, 7109, 7938, 7964, 8188, 8280, and 8596\. Every statistic in this section that refers to “the 27 baseline trades” refers to exactly this set. Listing them makes each later claim checkable against a specific, named group of trades rather than against an unstated selection.
 
 ## **Bootstrap Confidence Interval**
 
-A bootstrap with 10,000 resamples of the 27-trade return distribution, drawn at the original sample size of 27 with a fixed random seed of 42, gives a point estimate of \+30.3065% total net return, which differs from the observed sum of the 27 trade returns, \+30.3064% as tabulated in Appendix D, only in the fourth decimal place, with a 95% confidence interval of \[+5.9866%, \+54.9866%\]. The interval is wide but excludes zero, and 99.25% of resampled totals were positive, meaning 0.75% of the 10,000 resamples came out at or below zero. In plain terms, when the recorded trades are reshuffled thousands of times, almost every version of the result still makes money, though the amount varies a great deal. The corresponding confidence interval for average return per trade is \[+0.2217%, \+2.0365%\]. All of these figures come from bootstrap\_resample() driven by run\_bootstrap\_ci(), applied to the percentage returns of the same 27 baseline trades listed above.
+A bootstrap with 10,000 resamples of the 27-trade return distribution, drawn at the original sample size of 27 with a fixed random seed of 42, gives a point estimate of \+30.3065% total net return with a 95% confidence interval of \[+5.9866%, \+54.9866%\]. The interval is wide but excludes zero, and 99.25% of resampled totals were positive, meaning 0.75% of the 10,000 resamples came out at or below zero. In plain terms, when the recorded trades are reshuffled thousands of times, almost every version of the result still makes money, though the amount varies a great deal. The corresponding confidence interval for average return per trade is \[+0.2217%, \+2.0365%\]. All of these figures come from bootstrap\_resample() driven by run\_bootstrap\_ci(), applied to the percentage returns of the same 27 baseline trades listed above.
 
 This 10,000-resample figure is the canonical result, computed offline for maximum precision. The companion interactive website recomputes the same bootstrap live in the browser using a lighter 2,000 resamples for responsiveness, and lands on a similar but not identical interval, \[+7.48%, \+54.46%\]. That computation is a separate TypeScript implementation which never imports any value from the Python analysis, using its own random number generator, an algorithm called mulberry32. As reported in Section F, the difference between the two intervals was traced conclusively to the resample count alone, by reimplementing mulberry32 in Python and reproducing the website’s interval exactly at 2,000 resamples. The two are deliberately reported separately rather than merged, because the website’s independence is what gives the cross-check its value.
 
@@ -428,13 +410,9 @@ The two methods agree on only 13 of the 27 trade assignments, because they measu
 
 Across the same 27 trades, pearson\_correlation() gives Pearson’s r \= \+0.4907 with t \= 2.82 and p ≈ 0.0094, and spearman\_correlation() gives Spearman’s ρ \= \+0.4797 with p ≈ 0.0113, both computed between holding time in candles and percentage return. In plain terms, trades held open longer tended to end up larger, and the pattern is strong enough that chance is an unlikely explanation, holding up at both the 5% and the 1% threshold. As disclosed in Section F, an earlier draft reported both p-values as less than 0.001; the values given here are the corrected ones.
 
-## **Strategy Versus Dollar-Cost Averaging and Lump-Sum Buy-and-Hold**
+## **Benchmark Comparison: Strategy Versus Passive Alternatives**
 
-This subsection addresses the second and third research questions, and provides the evidence on which the second hypothesis pair is resolved. Two complementary comparisons were run, and they answer different questions, so both are reported. They appear below in the order they were run: the blended-sleeve model first, which answers the third research question, and then the head-to-head comparison, which answers the second. That order is deliberate, because the head-to-head figures are easy to misread on their own and the blended model is the framing they should be read against.
-
-### ***The Blended-Sleeve Model***
-
-The first comparison treats the strategy as a small addition to an ordinary savings plan rather than as a replacement for one. Under a weekly-contribution model, using 210 equal weekly contributions across the study window split between a Bitcoin dollar-cost-averaging sleeve and a strategy sleeve, three risk-adjusted measures all improve steadily as the strategy’s share of new weekly money rises from 0% to 30%. Dollar-cost-averaging, usually shortened to DCA, means buying a fixed amount on a fixed schedule regardless of price. The Sharpe ratio measures return earned per unit of overall price variability, so higher means a smoother ride for the same return. The Sortino ratio is similar but counts only downward movement as risk. Maximum drawdown is the largest peak-to-trough fall along the way. All three are defined in Formulas 3 and 4\.
+Two complementary comparisons were run. The first treats the strategy as a small addition to an ordinary savings plan rather than as a replacement for one. Under a weekly-contribution model, using 210 equal weekly contributions across the study window split between a Bitcoin dollar-cost-averaging sleeve and a strategy sleeve, three risk-adjusted measures all improve steadily as the strategy’s share of new weekly money rises from 0% to 30%. Dollar-cost-averaging, usually shortened to DCA, means buying a fixed amount on a fixed schedule regardless of price. The Sharpe ratio measures return earned per unit of overall price variability, so higher means a smoother ride for the same return. The Sortino ratio is similar but counts only downward movement as risk. Maximum drawdown is the largest peak-to-trough fall along the way. All three are defined in Formulas 3 and 4\.
 
 **Table 6**  
 *Risk-Adjusted Profile of a Blended DCA Portfolio at Increasing Strategy Allocations*
@@ -448,10 +426,6 @@ The first comparison treats the strategy as a small addition to an ordinary savi
 
 *Note.* Computed by sharpe\_sortino\_ratios() and max\_drawdown\_pct() on the blended equity curve of 210 weekly contributions across the 2022 to 2026 window. Both ratios assume a risk-free rate of zero, as disclosed under Formula 4\.
 
-Every one of the three measures moves in the direction predicted by H₁₂, and each moves consistently across all four allocation levels rather than reversing at any point. The Sharpe ratio rises from 0.556 to 0.637, the Sortino ratio from 0.886 to 1.032, and maximum drawdown shallows from −27.85% to −23.18%. Under the descriptive standard set out with the hypothesis, this is the pattern that would lead to rejecting H₀₂ in favour of H₁₂. That conclusion is bounded exactly as stated there: it rests on one realized price path, it carries no p-value, and it establishes what a blend would have done over this window rather than what it will do over another.
-
-### ***Head-to-Head at Equal Starting Capital***
-
 The second comparison makes the exposure caveat concrete rather than merely qualitative. Three fully capitalized arms were run head-to-head over the identical 2022-01-01 to 2026-01-01 window, each starting from $10,000: the Order-Block-gated strategy, compounding only at each of its 27 trade exits and otherwise sitting in cash; a weekly dollar-cost-average purchase of Bitcoin across 210 equal weekly buys; and a single lump-sum purchase at the window’s first candle, held unchanged to the last.
 
 **Table 7**  
@@ -463,7 +437,7 @@ The second comparison makes the exposure caveat concrete rather than merely qual
 | Weekly DCA into BTC | \+123.13% | $22,312.94 | 0.5559 | 0.8857 | −27.85% | 100.00% |
 | Lump-sum buy-and-hold | \+90.07% | $19,007.32 | 0.5642 | 0.8034 | −67.21% | 100.00% |
 
-*Note.* Computed by run\_benchmark\_vs\_passive(), calling sharpe\_sortino\_ratios() and max\_drawdown\_pct() on each arm’s own equity curve, with the annualization factor matched to that arm’s own reporting frequency. Time in market for the strategy is 2.6349% of candles. One reconciliation is stated explicitly so that it is not mistaken for an arithmetic error. For the strategy arm the Total return column is the arithmetic sum of the 27 individual trade returns, which is the convention used for the \+30.31% headline figure throughout this paper, while the Final capital column compounds those same 27 returns in sequence from the $10,000 start. Compounded, the strategy’s return over this window is \+34.18%, which is what produces $13,417.77. The two passive arms hold one position throughout, so for them the two columns are the same quantity expressed two ways and no such gap arises. Every comparison in this paper uses the summed figure for the strategy, and the compounded figure is given here only to reconcile the table.
+*Note.* Computed by run\_benchmark\_vs\_passive(), calling sharpe\_sortino\_ratios() and max\_drawdown\_pct() on each arm’s own equity curve, with the annualization factor matched to that arm’s own reporting frequency. Time in market for the strategy is 2.6349% of candles.
 
 The same three arms, recomputed with realistic costs charged, are shown in Table 8\. The strategy is charged a round-trip cost per trade; the two passive arms are charged a one-sided purchase markup, since they buy and hold rather than round-tripping.
 
@@ -476,7 +450,7 @@ The same three arms, recomputed with realistic costs charged, are shown in Table
 | Weekly DCA into BTC | \+122.91% | $22,290.65 | 0.5529 | 0.8806 | −27.85% | 100.00% |
 | Lump-sum buy-and-hold | \+89.88% | $18,988.34 | 0.5642 | 0.8034 | −67.21% | 100.00% |
 
-*Note.* Same functions and same window as Table 7, with costs applied. The same summed-versus-compounded reconciliation described under Table 7 applies here: the strategy’s \+24.91% is the sum of its 27 net trade returns, while $12,719.01 is those returns compounded, equivalent to \+27.19%. Charging costs reduces the strategy’s Sharpe from 1.1142 to 0.9442 and its Sortino from 2.7273 to 2.0830, and deepens its maximum drawdown from −6.46% to −7.78%. Both passive arms are almost unaffected, because a single purchase markup is charged once rather than 27 times.
+*Note.* Same functions and same window as Table 7, with costs applied. Charging costs reduces the strategy’s Sharpe from 1.1142 to 0.9442 and its Sortino from 2.7273 to 2.0830, and deepens its maximum drawdown from −6.46% to −7.78%. Both passive arms are almost unaffected, because a single purchase markup is charged once rather than 27 times.
 
 On its own, the strategy’s gross Sharpe ratio of 1.114 and Sortino ratio of 2.727 exceed those of simply buying and holding Bitcoin over the same window, which give 0.564 and 0.803. However, the strategy holds a market position only 2.63% of the time. This is therefore not a like-for-like comparison and must not be read as the strategy outperforming Bitcoin’s risk-adjusted profile outright. The defensible framing is that blending a small strategy allocation into an existing DCA plan improves that plan’s risk-adjusted shape.
 
@@ -493,13 +467,13 @@ The same three-arm comparison, repeated over the 2018 to 2022 formulation window
 | Weekly DCA into BTC | \+439.88% | $53,987.55 | 0.824 | 1.234 | −46.16% | 100.00% |
 | Lump-sum buy-and-hold | \+236.96% | $33,696.49 | 0.789 | 1.119 | −81.42% | 100.00% |
 
-*Note.* Same functions as Table 7, applied to the 2018-01-01 to 2022-01-01 window. The strategy’s \+21.82% is again the summed figure; $12,282.53 is the compounded equivalent of \+22.83%.
+*Note.* Same functions as Table 7, applied to the 2018-01-01 to 2022-01-01 window.
 
 Bitcoin’s 2018 to 2022 window contained a much larger fall-and-recovery cycle than 2022 to 2026, which mechanically favours dollar-cost-averaging by lowering its average purchase price. That is a property of how the passive benchmarks behave on that particular price path, not a statement about the strategy’s edge in either direction. It is worth noting that the strategy’s own performance is *worse* on its formulation window than on the reported window, which is the opposite of what fitting the rules to that period would have produced.
 
 ## **Transaction-Cost Sensitivity**
 
-The confirmed Binance USDT-M Futures standard-tier taker rate is 0.05% per side, or 5.00 basis points per side, giving 0.10% for a full round trip. Slippage, meaning the gap between the expected and the actual fill price, was modelled separately as a conservative 0.05% per side, or 0.10% round trip. Six cost scenarios were run in total: a gross case with no costs charged, a fee-only case, and four scenarios spanning a sensitivity band from 0.14% to 0.40% round trip.
+The confirmed Binance USDT-M Futures standard-tier taker rate is 0.05% per side, or 5.00 basis points per side, giving 0.10% for a full round trip. Slippage, meaning the gap between the expected and the actual fill price, was modelled separately as a conservative 0.05% per side, or 0.10% round trip. Six cost scenarios were run in total, spanning a sensitivity band from 0.14% to 0.40% round trip in addition to the gross and fee-only cases.
 
 **Table 10**  
 *Win Rate and Significance Across Six Transaction-Cost Scenarios*
@@ -515,7 +489,7 @@ The confirmed Binance USDT-M Futures standard-tier taker rate is 0.05% per side,
 
 *Note.* Each row re-runs binomial\_test() in full on that scenario’s fee-adjusted trade set rather than adjusting the gross p-value analytically. The flipped-trade column gives the candle indices of the trades that cross from winners into losers under that scenario. “bps” means basis points, where one basis point is one hundredth of one percent.
 
-This is a reversal of a significance conclusion, and it is reported as such rather than softened. The first hypothesis pair is therefore resolved differently depending on which cost assumption is used, and both resolutions are stated here rather than one being chosen. Gross of costs, and under the exchange fee alone, H₀₁ is rejected at p \= 0.0261. Under the primary cost assumption of a 0.20% round trip, and under every stricter scenario tested, H₀₁ is not rejected. Since the primary cost assumption is the realistic one, the honest overall answer to the first hypothesis pair is that H₀₁ is not rejected once costs a real trader would pay are charged. A realistic 0.20% round-trip cost moves the win-rate test from p \= 0.0261, which is significant, to p \= 0.1239, which is not. In plain terms, once realistic fees and slippage are charged, the strategy’s above-50% win rate can no longer be distinguished from luck. The flip is driven by exactly two trades, those entered at candle indices 7938 and 8188, originally worth \+0.12% and \+0.13% before costs, crossing from winners into losers under that drag. Under the most pessimistic scenario tested, two further trades, at indices 2859 and 5825, also flip, and the win rate falls to 55.56%.
+This is a reversal of a significance conclusion, and it is reported as such rather than softened. A realistic 0.20% round-trip cost moves the win-rate test from p \= 0.0261, which is significant, to p \= 0.1239, which is not. In plain terms, once realistic fees and slippage are charged, the strategy’s above-50% win rate can no longer be distinguished from luck. The flip is driven by exactly two trades, those entered at candle indices 7938 and 8188, originally worth \+0.12% and \+0.13% before costs, crossing from winners into losers under that drag. Under the most pessimistic scenario tested, two further trades, at indices 2859 and 5825, also flip, and the win rate falls to 55.56%.
 
 ## **Out-of-Sample and Extended-History Validation**
 
@@ -551,9 +525,7 @@ A separate eight-year backfill check ran the identical frozen pipeline against d
 
 The combined row should never be cited on its own. Roughly half of it comes from the period the strategy’s rules were formulated against, so its p \= 0.0407 partly reflects performance on data the rules were formed by looking at. In plain terms, that row is not a clean test and should not be treated as one. Notably, the strategy performs worse on its own formulation-period data, at a 60.00% win rate and p \= 0.2122, than on the primary reported window, at 70.37% and p \= 0.0261. This is the opposite of what fitting the rules to the formulation period would predict, and it is the clearest single piece of evidence in this paper that the rules were not tuned to that window.
 
-## **Supporting Analysis: Order Block Gate Versus Indicators Alone**
-
-The analysis in this subsection is not one of the three research questions. It is a supporting internal-validity check, retained because it addresses the obvious follow-up to the first research question: if the rule set has an edge over this window, which part of it produces that edge. It is reported here in full, including the reproducibility gap disclosed at the end of the subsection, rather than removed, because dropping an internal check a reader could reasonably ask for would itself be a form of selective reporting.
+## **Comparison Study: Order Block Gate Versus Indicators Alone**
 
 **Table 13**  
 *Three-Arm Comparison of Entry Selection and Stop Placement*
@@ -576,39 +548,39 @@ This is stated plainly so that no reader is left to infer it: the bootstrap figu
 
 The swing-anchored-stop result described above is comparatively the stronger and more defensible evidence that the Order Block gate matters, because it isolates entry selection from stop placement using logic and data internal to this analysis, independent of the reproducibility gap affecting the original two arms.
 
-# **Conclusions**
+# 
 
-## **Discussion of Findings**
+# **Discussion**
 
-### **Predictive Effectiveness and the Source of the Strategy’s Edge**
+## **Predictive Effectiveness and the Source of the Strategy’s Edge**
 
 The full-sample return finding is directionally robust. The bootstrap 95% confidence interval on total return, \[+5.99%, \+54.99%\], excludes zero even though it is wide, and 99.25% of the 10,000 resamples were positive. The win-rate significance claim, by contrast, is fragile. It survives the exchange fee alone, at p \= 0.0261, but not the addition of conservative slippage, at p \= 0.1239. Both facts are part of the same answer to the first research question, and reporting only the first would misrepresent the second.
 
 Return is also concentrated. Three trades account for 51.7% of the total. In plain terms, profitability at this sample size rests on a handful of large outcomes rather than on a steady, repeatable edge in every trade, and a different four-year window could plausibly produce a different result. The positive correlation between holding time and return, at r \= \+0.4907 and ρ \= \+0.4797, is consistent with that picture: the large outcomes are the ones the exit rules allowed to run.
 
-### **The Order Block Gate, Not Its Score, Drives Performance**
+## **The Order Block Gate, Not Its Score, Drives Performance**
 
 The three-arm comparison clarifies where Smart Money Concepts actually contributes. Removing the Order Block requirement while leaving the indicator logic unchanged moved total return from \+30.31% to between −14.63% and −25.50%, and this happened under both stop-loss schemes, which rules out risk management as the explanation. What appears to matter is the binary presence of a qualifying zone at entry, not merely the underlying indicator signal on its own.
 
-Two claims discussed elsewhere in this project should not be treated as settled. The figure of 190 total qualifying indicator signals, sometimes cited as the denominator behind a claimed overlap rate between gated trades and independent indicator signals, was derived under the indicators-only configuration’s own risk rules rather than the gated strategy’s, and requires re-derivation before any overlap claim built on it can stand. The published trade-level figures for the two ungated arms carry the reproducibility gap described in the Findings.
+Two claims discussed elsewhere in this project should not be treated as settled. The figure of 190 total qualifying indicator signals, sometimes cited as the denominator behind a claimed overlap rate between gated trades and independent indicator signals, was derived under the indicators-only configuration’s own risk rules rather than the gated strategy’s, and requires re-derivation before any overlap claim built on it can stand. The published trade-level figures for the two ungated arms carry the reproducibility gap described in the Results.
 
-### **What the Correction History Shows**
+## **What the Correction History Shows**
 
 The self-correction history in Section F is presented as a feature of this project’s methodology, not a defect in its result. One code-level correction was made, a genuine data-leakage defect in the Order Block quality-criteria computation, and a later, separate audit caught two further reporting errors in this paper itself. Each is reported at the point where the affected number appears rather than collected out of sight. A backtest that has never been audited is not thereby correct; it is only unexamined.
 
-### **The Separation Between Formulation and Reported Windows**
+## **The Separation Between Formulation and Reported Windows**
 
 The strategy’s rules were formed by eye on 2018 to 2022 data and reported on 2022 to 2026 data. Table 12 gives the most direct evidence that this separation is real rather than nominal: the strategy performs *worse* on the window its rules were formed against, at a 60.00% win rate and p \= 0.2122, than on the window it is reported on, at 70.37% and p \= 0.0261. A strategy fitted to its formulation period would be expected to show the opposite pattern.
 
 That evidence should not be overstated. Visual inspection is a weaker form of separation than a formal held-out split, because it leaves no record of what was tried and discarded. And the reported window is out-of-sample only with respect to rule formulation. It is not out-of-sample with respect to code auditing, since the implementation error in Section F was found while examining that same window. The four-trade January to July 2026 test is the only result in this paper that is out-of-sample in both senses, and it is unfavourable.
 
-### **Regime Dependence and the Relationship to Passive Investing**
+## **Regime Dependence and the Relationship to Passive Investing**
 
 The strategy’s edge is concentrated in bull-trending conditions, at an 85.71% win rate under both regime-classification methods, and is weaker or negative in sideways or bearish conditions under at least one of the two. This tempers any claim of reliability across market conditions. The reported win rate is a whole-window average across regimes that behaved very differently, and it should be read as such.
 
-On the second and third research questions, the two results point in opposite directions and both are reported. Head-to-head from equal capital, dollar-cost averaging beat the strategy decisively on final value, and no framing changes that. On risk-adjusted shape, the strategy was the stronger of the two, but it achieved that while invested 2.63% of the time against 100%, which is not a like-for-like comparison and is not presented as one. The blended-sleeve framing is the defensible one: Sharpe, Sortino, and drawdown all improve steadily as the strategy’s allocation rises from 0% to 30% inside a DCA portfolio, achieved while the strategy sleeve is invested only 2.63% of the time. That is the pattern predicted by H₁₂, and it holds without reversal across every allocation step tested, which is the descriptive standard set out when the hypothesis was stated. The head-to-head comparison shows dollar-cost averaging producing roughly 1.66 times the final capital of the strategy gross of costs in Table 7, and roughly 1.75 times net of costs in Table 8. Both results are true simultaneously, and citing either without the other would misrepresent the finding. The practical reading is that this rule set is a candidate supplement to a dollar-cost-averaging plan over this window, not a replacement for one.
+On passive alternatives, the blended-sleeve framing is the defensible one: Sharpe, Sortino, and drawdown all improve steadily as the strategy’s allocation rises from 0% to 30% inside a DCA portfolio, achieved while the strategy sleeve is invested only 2.63% of the time. The head-to-head comparison in Tables 7 and 8 shows dollar-cost-averaging producing roughly 1.75 times the final capital of the strategy over the same window. Both results are true simultaneously, and citing either without the other would misrepresent the finding.
 
-## **Limitations**
+# **Limitations**
 
 This study does not model leveraged or margined positions, and reports unlevered, notional returns throughout. This is a deliberate scope decision rather than an oversight. The backtesting engine evaluates every exit condition, including the hard stop-loss, the take-profit, the trailing exit, and the ATR-move exit, on candle closes rather than on intra-candle price paths, so a leverage model layered on top of it would inherit that resolution limit and would report liquidation outcomes it cannot actually establish.
 
@@ -620,27 +592,23 @@ Two items discussed in this paper remain explicitly open rather than resolved. F
 
 Second, the comparison study’s original 140- and 138-trade indicators-only arms, and the bootstrap statistics computed on top of them, cannot currently be reproduced end-to-end from a committed script. This is disclosed as a standing reproducibility gap in the project’s own toolchain rather than as a claim about the correctness of the published figures. It is not expected to be closed by a future correction, because the original script no longer exists to be recovered; closing it would require re-deriving the arms from scratch, which would produce a different result rather than a reproduction.
 
-The comparison against passive alternatives, which carries the second and third research questions and the second hypothesis pair, is descriptive rather than inferential. Sharpe, Sortino, and maximum drawdown are each computed once on a single realized price path, so no confidence interval or p-value attaches to the difference between arms, and none is claimed. A second four-year window with a different shape could plausibly reverse the ordering, as the 2018 to 2022 comparison in Table 9 already illustrates in one direction. The blended-sleeve result should therefore be read as what a blend would have done here, not as an estimate of what a blend will do elsewhere.
-
 The two stop-loss configurations tested do not exhaust the possible structural alternatives, and other definitions remain future work.
 
 Two implementation choices are disclosed as assumptions rather than defended as the only correct option. The Sharpe and Sortino ratios assume a risk-free rate and a minimum acceptable return of zero, using raw returns directly rather than subtracting a benchmark rate. The bootstrap is the plain percentile form rather than the bias-corrected and accelerated variant. Each is set out in full under its formula in Section E.
 
 Finally, the reported window’s trade frequency is low, at roughly 0.56 trades per month, which limits how quickly genuinely forward-looking evidence can accumulate. The four-trade out-of-sample test reported above is too small on its own to confirm or refute the strategy’s edge, and further prospective evidence will accrue slowly at this rate.
 
-## **Summary and Conclusion**
+# **Conclusion**
 
 Over BTC/USDT 4-hour candles from January 2022 through January 2026, a rule-based strategy gating MACD and KDJ momentum signals through Smart Money Concepts Order Block zones produced 27 trades, a 70.37% win rate, and a \+30.31% total net return, departing from a 50% zero-edge null model at p \= 0.0261 on a one-sided exact binomial test. Those rules were formed by visual inspection of the separate January 2018 to January 2022 period and were fixed before the reported window was measured.
 
-That headline result is directionally robust under a bootstrap of its own trade distribution, whose 95% confidence interval of \[+5.99%, \+54.99%\] excludes zero. It is not robust to realistic transaction costs for the win-rate significance claim specifically, which moves from p \= 0.0261 to p \= 0.1239 under a conservative 0.20% round-trip cost, driven by two marginal trades crossing from winners into losers. Stated against the first hypothesis pair directly: H₀₁ is rejected gross of costs and is not rejected once realistic costs are charged, and the second of those is the answer that should be carried forward.
+That headline result is directionally robust under a bootstrap of its own trade distribution, whose 95% confidence interval of \[+5.99%, \+54.99%\] excludes zero. It is not robust to realistic transaction costs for the win-rate significance claim specifically, which moves from p \= 0.0261 to p \= 0.1239 under a conservative 0.20% round-trip cost, driven by two marginal trades crossing from winners into losers.
 
-On the internal question of where that performance comes from, a supporting three-arm comparison shows the Order Block structural gate materially improves outcomes over ungated indicator signals, and that improvement survives a controlled test separating entry selection from stop placement. The originally published trade-level figures for the two ungated arms, and the bootstrap statistics built on them, cannot currently be regenerated from committed code, which is disclosed in full rather than worked around.
+A three-arm comparison shows the Order Block structural gate materially improves outcomes over ungated indicator signals, and that improvement survives a controlled test separating entry selection from stop placement. The originally published trade-level figures for the two ungated arms, and the bootstrap statistics built on them, cannot currently be regenerated from committed code, which is disclosed in full rather than worked around.
 
 One genuine data-leakage defect in the Order Block quality-criteria computation was identified and corrected, and a later audit of this paper’s own reporting caught two further errors. A genuinely forward-looking test on data postdating the source code produced four trades, one win, and a −3.45% return, which is unfavourable and is reported as such.
 
-On the second research question, against fully capitalized passive alternatives over the same window and from an identical $10,000 start, weekly dollar-cost averaging into Bitcoin produced a substantially higher final value, $22,312.94 against the strategy’s $13,417.77 gross and $22,290.65 against $12,719.01 after costs, while lump-sum buy-and-hold produced $19,007.32. On raw final value the strategy lost to both, and that is the answer to the question as asked. On risk-adjusted shape the ordering reverses, with the strategy at a Sharpe of 1.114 and a maximum drawdown of −6.46% against dollar-cost averaging’s 0.556 and −27.85%, obtained while holding a position only 2.63% of the time against 100% continuous exposure. The two are not like-for-like, and neither figure should be cited without the other.
-
-On the third research question, directing a rising share of weekly contributions into the strategy improved a dollar-cost-averaging plan’s Sharpe ratio from 0.556 to 0.637, its Sortino ratio from 0.886 to 1.032, and its maximum drawdown from −27.85% to −23.18%, moving consistently in the predicted direction at every allocation level tested from 0% to 30%. Under the descriptive standard stated with the hypothesis, this supports rejecting H₀₂ in favour of H₁₂ for this window. Because all three measures come from a single realized price path, that conclusion carries no p-value and is not offered as one.
+Against fully capitalized passive alternatives over the same window, dollar-cost-averaging into Bitcoin produced a substantially higher final value, $22,312.94 against $13,417.77 from a $10,000 start, while the strategy produced a materially better risk-adjusted profile while holding a position only 2.63% of the time. Neither figure should be cited without the other.
 
 This study establishes a historically observed, directionally robust return edge for this specific rule set on this specific window, with its win-rate significance shown to be cost-sensitive and its regime concentration made explicit, obtained through a process with a disclosed and audited self-correction history. It does not establish that the strategy will remain profitable in future market conditions, and the only evidence available on that question so far is unfavourable.
 
@@ -656,8 +624,7 @@ Biais, B., Glosten, L., & Spatt, C. (2005). Market microstructure: A survey of m
 Bibi, S. (2023). Money in the time of crypto. *Research in International Business and Finance, 65*, Article 101964\. https://doi.org/10.1016/j.ribaf.2023.101964  
 Brolley, M., & Cimon, D. A. (2020). Order-flow segmentation, liquidity, and price discovery: The role of latency delays. *Journal of Financial and Quantitative Analysis, 55*(8), 2555–2587. https://doi.org/10.1017/S002210901900067X  
 Chong, T. T.-L., & Ng, W.-K. (2008). Technical analysis and the London stock exchange: Testing the MACD and RSI rules using the FT30. *Applied Economics Letters, 15*(14), 1111–1114. https://doi.org/10.1080/13504850600993598  
-Constantinides, G. M. (1979). A note on the suboptimality of dollar-cost averaging as an investment policy. *Journal of Financial and Quantitative Analysis, 14*(2), 443–450. https://doi.org/10.2307/2330513  
-Corbet, S., Eraslan, V., Lucey, B., & Şensoy, A. (2019). The effectiveness of technical trading rules in cryptocurrency markets. *Finance Research Letters, 31*, 32–37. https://doi.org/10.1016/j.frl.2019.04.027  
+Corbet, S., Eraslan, V., Lucey, B., & Sensoy, A. (2019). The effectiveness of technical trading rules in cryptocurrency markets. *Finance Research Letters, 31*, 32–37. https://doi.org/10.1016/j.frl.2019.04.027  
 Dai, Z., Dong, X., Kang, J., & Hong, L. (2020). Forecasting stock market returns: New technical indicators and two-step economic constraint method. *The North American Journal of Economics and Finance, 53*, Article 101216\. https://doi.org/10.1016/j.najef.2020.101216  
 Demirgüç-Kunt, A., Klapper, L., Singer, D., & Ansar, S. (2022). *The Global Findex Database 2021: Financial inclusion, digital payments, and resilience in the age of COVID-19*. World Bank. https://doi.org/10.1596/978-1-4648-1897-4  
 Díaz, A., & Escribano, A. (2020). Measuring the multi-faceted dimension of liquidity in financial markets: A literature review. *Research in International Business and Finance, 51*, Article 101079\. https://doi.org/10.1016/j.ribaf.2019.101079  
@@ -665,13 +632,12 @@ Efron, B., & Tibshirani, R. J. (1993). *An introduction to the bootstrap*. Chapm
 Eom, C., Kaizoji, T., Kang, S. H., & Pichl, L. (2019). Bitcoin and investor sentiment: Statistical characteristics and predictability. *Physica A: Statistical Mechanics and Its Applications, 514*, 511–521. https://doi.org/10.1016/j.physa.2018.09.063  
 Fang, J., Jacobsen, B., & Qin, Y. (2014). Predictability of the simple technical trading rules: An out-of-sample test. *Review of Financial Economics, 23*(1), 30–45. https://doi.org/10.1016/j.rfe.2013.05.004  
 Katsiampa, P. (2017). Volatility estimation for Bitcoin: A comparison of GARCH models. *Economics Letters, 158*, 3–6. https://doi.org/10.1016/j.econlet.2017.06.023  
-LuxAlgo. (2022, October 11). *Smart money concepts (SMC) \[LuxAlgo\]* \[Pine Script indicator\]. TradingView. https://www.tradingview.com/script/CnB3fSph-Smart-Money-Concepts-SMC-LuxAlgo/  
+LuxAlgo. (n.d.). *Smart Money Concepts (SMC)* \[Pine Script indicator\]. TradingView. https://www.tradingview.com/script/CnB3fSph-Smart-Money-Concepts-SMC-LuxAlgo/  
 Nakamoto, S. (2008). *Bitcoin: A peer-to-peer electronic cash system*. https://bitcoin.org/bitcoin.pdf  
 Navarro, M. M., & Navarro, B. B. (2023). Assessing the long-term performance of MACD strategy in the Philippine stock market: A 12-year review. In *Proceedings of the 6th European Conference on Industrial Engineering and Operations Management* (pp. 1280–1286). IEOM Society International. https://ieomsociety.org/proceedings/2023lisbon/327.pdf  
 Schär, F. (2021). Decentralized finance: On blockchain- and smart contract-based financial markets. *Federal Reserve Bank of St. Louis Review, 103*(2), 153–174. https://doi.org/10.20955/r.103.153-74  
 Sharpe, W. F. (1994). The Sharpe ratio. *The Journal of Portfolio Management, 21*(1), 49–58. https://doi.org/10.3905/jpm.1994.409501  
 Sortino, F. A., & van der Meer, R. (1991). Downside risk. *The Journal of Portfolio Management, 17*(4), 27–31. https://doi.org/10.3905/jpm.1991.409343  
-Statman, M. (1995). A behavioral framework for dollar-cost averaging. *The Journal of Portfolio Management, 22*(1), 70–78. https://doi.org/10.3905/jpm.1995.409537  
 Svogun, D., & Bazán-Palomino, W. (2022). Technical analysis in cryptocurrency markets: Do transaction costs and bubbles matter? *Journal of International Financial Markets, Institutions and Money, 79*, Article 101601\. https://doi.org/10.1016/j.intfin.2022.101601  
 Tao, L., Hao, Y., Yijie, H., & Chunfeng, S. (2017). K-line patterns’ predictive power analysis using the methods of similarity match and clustering. *Mathematical Problems in Engineering, 2017*, Article 3096917\. https://doi.org/10.1155/2017/3096917  
 Tukey, J. W. (1977). *Exploratory data analysis*. Addison-Wesley.  
@@ -685,7 +651,7 @@ Wu, M., & Diao, X. (2015). Technical analysis of three stock oscillators testing
 
 ## **Statistical Provenance of Every Reported Number**
 
-This appendix covers every statistic reported in a numbered table or stated as a headline figure in the Findings. A small number of secondary figures quoted inline in the Findings, including the win-rate empirical p-value range of 0.07 to 0.17, the figure of 190 qualifying indicator signals, and the count of 13 agreeing regime assignments, are not listed below; the first two are among the open items disclosed in the Limitations and the third is a direct comparison of Tables 4 and 5. Subject to that, this appendix exists so that any number in this paper can be traced to the exact function that produced it and the exact data that function was given. All function names refer to research\_analysis.py unless another file is named. “Baseline 27” means the 27 trades whose entry candle indices are listed in the Findings.
+This appendix exists so that any number in this paper can be traced to the exact function that produced it and the exact data that function was given. All function names refer to research\_analysis.py unless another file is named. “Baseline 27” means the 27 trades whose entry candle indices are listed in the Results.
 
 **Table A1**  
 *Provenance of Every Reported Statistic*
@@ -718,7 +684,7 @@ This appendix covers every statistic reported in a numbered table or stated as a
 | Reconstruction values 47.14% / −13.72%; 43.48% / −23.85% | Comparison subsection | In-repo reconstruction script | Custom | Re-simulated 140- and 138-trade universes from current code |
 | Live ablation bootstrap: median −0.18%, \[−1.26%, \+0.89%\], p \= 0.009 | Comparison subsection | bootstrap\_ablation\_arm\_vs\_baseline() :2621 | Custom (Formula 2\) | The reconstruction’s own per-trade pool, which diverges from the original |
 
-*Note.* The two rows marked “not currently reproducible” are the disclosed reproducibility gap described in the Findings and Limitations. They are retained as published rather than replaced by the reconstruction’s values. Every other row in this table was recomputed from the exported trade log during final preparation and agreed with the reported figure to the precision printed in the paper.
+*Note.* The two rows marked “not currently reproducible” are the disclosed reproducibility gap described in the Results and Limitations. They are retained as published rather than replaced by the reconstruction’s values. Every other row in this table was recomputed from the exported trade log during final preparation and agreed with the reported figure to the precision printed in the paper.
 
 # **Appendix B**
 
@@ -773,7 +739,7 @@ Every commit that introduced or materially edited those four functions was made 
 
 ## **Complete Trade Log for the Primary Window**
 
-Every statistic in the Findings that refers to “the 27 baseline trades” is computed from the table below. It is reproduced in full so that a reader can recompute the win rate, the total and average return, the holding-time correlation, and every per-criterion subgroup split without access to the source data. Entry and exit times follow the UTC+8 convention described in Section B. The five criterion columns are the same quality-criteria flags described in Section D, and q is their sum.
+Every statistic in the Results that refers to “the 27 baseline trades” is computed from the table below. It is reproduced in full so that a reader can recompute the win rate, the total and average return, the holding-time correlation, and every per-criterion subgroup split without access to the source data. Entry and exit times follow the UTC+8 convention described in Section B. The five criterion columns are the same quality-criteria flags described in Section D, and q is their sum.
 
 **Table D1**  
 *All 27 Trades, 2022 to 2026 Window*
@@ -810,7 +776,7 @@ Every statistic in the Findings that refers to “the 27 baseline trades” is c
 
 *Note.* Return % is the trade’s net percentage return. Dsp \= displacement, Lrg \= large origin candle, FVG \= Fair Value Gap, Swp \= liquidity sweep, Vol \= volume expansion. Idx is the entry candle index. Bars is the holding time in 4-hour candles, so each exit time equals its entry time plus four hours times the Bars value. Exit reason is the first exit condition satisfied under the priority order in Figure 5\.
 
-**Checks a reader can run on this table.** The Return column contains 19 positive values out of 27, giving the 70.37% win rate in Table 3\. Those 27 values sum to \+30.3064%, with a mean of \+1.1225% and a standard deviation of 2.4101%. The three largest returns, \+6.6888%, \+4.6233%, and \+4.3634%, sum to \+15.6755%, which is 51.7% of the total and is the concentration figure cited in the Conclusions. The Bars column, paired with Return, is the input to both correlation statistics.
+**Checks a reader can run on this table.** The Return column contains 19 positive values out of 27, giving the 70.37% win rate in Table 3\. Those 27 values sum to \+30.3065%, with a mean of \+1.1225% and a standard deviation of 2.4101%. The three largest returns, \+6.6888%, \+4.6233%, and \+4.3634%, sum to \+15.6755%, which is 51.7% of the total and is the concentration figure cited in the Discussion. The Bars column, paired with Return, is the input to both correlation statistics.
 
 **Exit-reason distribution.** Of the 27 trades, 9 closed on the ATR-move exit, 8 on the trailing exit, 8 on the KDJ-reset exit, and 2 on the hard stop-loss. No trade in this window closed on the hard take-profit, and none was still open at the window’s end. The two trades that flip from winners to losers under realistic costs in Table 10, at indices 7938 and 8188, are visible here as the two smallest positive returns, \+0.1196% and \+0.1264%.
 

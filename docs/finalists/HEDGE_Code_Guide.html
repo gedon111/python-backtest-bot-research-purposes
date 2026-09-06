@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HEDGE — Code Guide</title>
+<meta name="description" content="Line-0-to-4847 walkthrough of research_analysis.py with a hand-computable verification for every module.">
+<style>
+:root{
+  --paper:#f6f5f2; --surface:#ffffff; --surface-2:#fbfaf8; --code-bg:#f3f2ee;
+  --ink:#14171c; --ink-2:#4c535c; --ink-3:#767d86;
+  --rule:#e0dcd4; --rule-2:#cfc9be;
+  --accent:#26456f; --accent-2:#3d6699; --accent-soft:#e9eef6;
+  --warn:#8a5610; --warn-soft:#f9eedb;
+  --mono:ui-monospace,"SFMono-Regular","Cascadia Mono","Segoe UI Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --maxw:52rem; --figw:74rem;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:1.2rem;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:16.5px;line-height:1.65;font-feature-settings:"kern" 1}
+h1,h2,h3,h4{line-height:1.25;letter-spacing:-.014em;margin:0}
+p{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
+a:hover{color:var(--accent-2)}
+strong{font-weight:660}
+hr{border:0;border-top:1px solid var(--rule);margin:2.8rem 0}
+::selection{background:#d9e4f3}
+
+/* ---------- layout ---------- */
+.layout{display:grid;grid-template-columns:19rem minmax(0,1fr);min-height:100vh}
+#sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--surface);
+  border-right:1px solid var(--rule);padding:1.5rem 1.05rem 3rem}
+main{min-width:0;padding:2.4rem 2.4rem 6rem;max-width:calc(var(--figw) + 4.8rem);margin:0 auto}
+main > p, main > ul, main > ol, main > blockquote, main > h3, main > h4{max-width:var(--maxw)}
+
+/* ---------- sidebar ---------- */
+.brand{font-family:var(--mono);font-size:.64rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:.3rem}
+.brand-title{font-size:1rem;font-weight:660;letter-spacing:-.01em;line-height:1.3;margin-bottom:.3rem}
+.brand-sub{font-family:var(--mono);font-size:.72rem;color:var(--ink-3);line-height:1.5;margin-bottom:1.2rem}
+#nav{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+#nav li{list-style:none}
+#nav .np{border-bottom:1px solid var(--rule);padding:.5rem 0}
+#nav .np > a{display:block;font-weight:640;font-size:.86rem;color:var(--ink);text-decoration:none;
+  padding:.15rem .35rem;border-radius:3px}
+#nav .np > a:hover{background:var(--accent-soft);color:var(--accent)}
+#nav .sub{list-style:none;margin:.2rem 0 0;padding:0}
+#nav .sub a{display:block;font-family:var(--mono);font-size:.735rem;line-height:1.45;
+  color:var(--ink-2);text-decoration:none;padding:.16rem .35rem .16rem .8rem;border-radius:3px}
+#nav .sub a:hover{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- headings ---------- */
+main h1{font-size:1.72rem;margin:3.2rem 0 1.1rem;padding-bottom:.55rem;border-bottom:2px solid var(--ink)}
+main > h1:first-child{margin-top:0}
+main h2{font-size:1.24rem;margin:2.5rem 0 .85rem;padding-bottom:.35rem;border-bottom:1px solid var(--rule-2)}
+main h3{font-size:1.02rem;margin:1.9rem 0 .6rem;color:var(--accent)}
+main h4{font-size:.94rem;margin:1.4rem 0 .5rem;color:var(--ink-2)}
+
+/* ---------- code ---------- */
+code{font-family:var(--mono);font-size:.855em;background:var(--code-bg);
+  border:1px solid var(--rule);border-radius:3px;padding:.06em .32em;
+  overflow-wrap:break-word}
+pre{background:var(--surface);border:1px solid var(--rule-2);border-left:3px solid var(--accent);
+  border-radius:4px;padding:.95rem 1.05rem;margin:0 0 1.15em;overflow-x:auto;max-width:var(--figw)}
+pre code{font-family:var(--mono);font-size:14px;line-height:1.62;background:none;border:0;
+  padding:0;white-space:pre;color:var(--ink);display:block}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:0 0 1.3em;max-width:var(--figw)}
+table{border-collapse:collapse;font-size:.875rem;line-height:1.5;min-width:100%}
+th,td{border:1px solid var(--rule);padding:.42rem .62rem;text-align:left;vertical-align:top}
+th{background:var(--surface-2);font-weight:660;white-space:nowrap}
+tbody tr:nth-child(even){background:var(--surface-2)}
+td code,th code{font-size:.86em;background:var(--code-bg)}
+
+/* ---------- blockquote ---------- */
+blockquote{margin:0 0 1.25em;padding:.85rem 1.1rem;background:var(--warn-soft);
+  border:1px solid #e6d5b4;border-left:3px solid var(--warn);border-radius:4px;
+  max-width:var(--maxw)}
+blockquote p{margin:0 0 .7em}
+blockquote p:last-child{margin:0}
+
+ul,ol{margin:0 0 1.1em;padding-left:1.35rem}
+li{margin:.28em 0}
+li > p{margin:.45em 0 0}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  #sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--rule)}
+  main{padding:1.6rem 1.1rem 4rem}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside id="sidebar">
+  <div class="brand">HEDGE / ISEF</div>
+  <div class="brand-title">Code Guide</div>
+  <div class="brand-sub">research_analysis.py<br>L1 – L4847</div>
+  <ul id="nav"><li class="np"><a href="#hedge-code-guide">HEDGE — Code Guide</a><ul class="sub"></ul></li><li class="np"><a href="#part-0-how-to-read-this-guide">Part 0 — How to read this guide</a><ul class="sub"><li><a href="#0-1-the-four-beats">0.1 The four beats</a></li><li><a href="#0-2-the-loader-paste-this-first-once-per-session">0.2 The loader — paste this first, once per session</a></li><li><a href="#0-3-the-line-map">0.3 The line map</a></li><li><a href="#0-4-what-protected-core-means">0.4 What &quot;protected core&quot; means</a></li><li><a href="#0-5-how-to-do-a-hand-check-honestly">0.5 How to do a hand check honestly</a></li></ul></li><li class="np"><a href="#part-1-imports-constants-shared-utilities-l89281">Part 1 — Imports, constants, shared utilities (L89–281)</a><ul class="sub"><li><a href="#1-1-the-module-docstring-l187">1.1 The module docstring (L1–87)</a></li><li><a href="#1-2-imports-l89122">1.2 Imports (L89–122)</a></li><li><a href="#1-3-the-pre-registered-parameters-l129170-full-depth">1.3 The pre-registered parameters (L129–170) — full depth</a></li><li><a href="#1-4-jsonsafe-l171204-and-writejsonresults-l207222">1.4 <code>json_safe()</code> (L171–204) and <code>write_json_results()</code> (L207–222)</a></li><li><a href="#1-5-reportstat-l225279">1.5 <code>report_stat()</code> (L225–279)</a></li></ul></li><li class="np"><a href="#part-1b-database-manager-l282460">Part 1B — Database manager (L282–460)</a><ul class="sub"></ul></li><li class="np"><a href="#part-2-data-loading-l461519">Part 2 — Data loading (L461–519)</a><ul class="sub"><li><a href="#2-1-loadcandles-l465486">2.1 <code>load_candles()</code> (L465–486)</a></li><li><a href="#2-2-loadextendedcandleswindow-l489517-dead-code">2.2 <code>load_extended_candles_window()</code> (L489–517) — <strong>dead code</strong></a></li></ul></li><li class="np"><a href="#part-3-the-strategy-backtest-engine-l5201637">Part 3 — The strategy / backtest engine (L520–1637)</a><ul class="sub"><li><a href="#3-1-computeindicators-l538612-protected-core">3.1 <code>compute_indicators()</code> — L538–612 · PROTECTED CORE</a></li><li><a href="#3-2-computesmc-l615769-protected-core">3.2 <code>compute_smc()</code> — L615–769 · PROTECTED CORE</a></li><li><a href="#3-3-buildorderblockfromcrossover-l770895-protected-core">3.3 <code>_build_order_block_from_crossover()</code> — L770–895 · PROTECTED CORE</a></li><li><a href="#3-4-getstructuraltp-l896926-protected-core">3.4 <code>get_structural_tp()</code> — L896–926 · PROTECTED CORE</a></li><li><a href="#3-5-the-dual-kdj-architecture-kdjresetinitupdateexit-l9271063-protecte">3.5 The dual-KDJ architecture — <code>kdj_reset_init/update/exit</code>, L927–1063 · PROTECTED CORE</a></li><li><a href="#3-6-resolvestructuraltpob-l10641080">3.6 <code>_resolve_structural_tp_ob()</code> — L1064–1080</a></li><li><a href="#3-7-the-entry-gates-tryenterlong-l10811160-tryentershort-l11611234-pro">3.7 The entry gates — <code>_try_enter_long</code> L1081–1160, <code>_try_enter_short</code> L1161–1234 · PROTECTED CORE</a></li><li><a href="#3-8-the-exit-ladder-checklongexitconditions-l12351291-checkshort-l1292">3.8 The exit ladder — <code>_check_long_exit_conditions</code> L1235–1291, <code>_check_short_...</code> L1292–1336 · PROTECTED CORE</a></li><li><a href="#3-9-recordclosedtrade-l13371380">3.9 <code>_record_closed_trade()</code> — L1337–1380</a></li><li><a href="#3-10-simulatetrades-l13811637-protected-core">3.10 <code>simulate_trades()</code> — L1381–1637 · PROTECTED CORE</a></li></ul></li><li class="np"><a href="#part-3b-live-data-pull-google-sheets-export-l16382076">Part 3B — Live data pull + Google Sheets export (L1638–2076)</a><ul class="sub"><li><a href="#3b-1-two-disclosed-relocation-adjustments-l16551667">3B.1 Two disclosed relocation adjustments (L1655–1667)</a></li><li><a href="#3b-2-resolvegoogleservicekeypath-l16781706">3B.2 <code>resolve_google_service_key_path()</code> (L1678–1706)</a></li><li><a href="#3b-3-getcandles-l17191777">3B.3 <code>get_candles()</code> (L1719–1777)</a></li><li><a href="#3b-4-the-sheets-writers-l17802076">3B.4 The Sheets writers (L1780–2076)</a></li></ul></li><li class="np"><a href="#part-4-the-ablation-study-l20772502">Part 4 — The ablation study (L2077–2502)</a><ul class="sub"><li><a href="#4-1-what-the-paper-claims-here">4.1 WHAT THE PAPER CLAIMS HERE</a></li><li><a href="#4-2-the-disclosed-limitation-read-this-before-quoting-any-ablation-num">4.2 THE DISCLOSED LIMITATION — read this before quoting any ablation number</a></li><li><a href="#4-3-ablationentrylongok-l2120-ablationentryshortok-l2146">4.3 <code>ablation_entry_long_ok</code> (L2120) / <code>ablation_entry_short_ok</code> (L2146)</a></li><li><a href="#4-4-runablationarm-l21762337">4.4 <code>run_ablation_arm()</code> (L2176–2337)</a></li><li><a href="#4-5-summarizetradepool-l23382368">4.5 <code>summarize_trade_pool()</code> (L2338–2368)</a></li><li><a href="#4-6-bootstrapablationarmvsbaseline-l23692429">4.6 <code>bootstrap_ablation_arm_vs_baseline()</code> (L2369–2429)</a></li><li><a href="#4-7-runablationstudy-l24302502">4.7 <code>run_ablation_study()</code> (L2430–2502)</a></li></ul></li><li class="np"><a href="#part-5-statistical-primitives-l25032721">Part 5 — Statistical primitives (L2503–2721)</a><ul class="sub"><li><a href="#5-1-binomialtest-l25212550">5.1 <code>binomial_test()</code> — L2521–2550</a></li><li><a href="#5-2-bootstrapresample-l25532601">5.2 <code>bootstrap_resample()</code> — L2553–2601</a></li><li><a href="#5-3-pearsoncorrelation-l26042627-spearmancorrelation-l26302662">5.3 <code>pearson_correlation()</code> — L2604–2627 · <code>spearman_correlation()</code> — L2630–2662</a></li><li><a href="#5-4-maxdrawdownpct-l26652686">5.4 <code>max_drawdown_pct()</code> — L2665–2686</a></li><li><a href="#5-5-sharpesortinoratios-l26892718">5.5 <code>sharpe_sortino_ratios()</code> — L2689–2718</a></li></ul></li><li class="np"><a href="#part-5b-applied-analyses-l27223841">Part 5B — Applied analyses (L2722–3841)</a><ul class="sub"><li><a href="#5b-1-runbootstrapci-l27372775">5B.1 <code>run_bootstrap_ci()</code> — L2737–2775</a></li><li><a href="#5b-2-runbenchmarkvsbuyandhold-l27782857">5B.2 <code>run_benchmark_vs_buy_and_hold()</code> — L2778–2857</a></li><li><a href="#5b-3-isoweekfirstbars-l28602872-rundcablendanalysis-l28752993">5B.3 <code>_iso_week_first_bars()</code> — L2860–2872 · <code>run_dca_blend_analysis()</code> — L2875–2993</a></li><li><a href="#5b-4-runfeeslippagesensitivity-l29963073">5B.4 <code>run_fee_slippage_sensitivity()</code> — L2996–3073</a></li><li><a href="#5b-5-runregimebreakdown-l30763170">5B.5 <code>run_regime_breakdown()</code> — L3076–3170</a></li><li><a href="#5b-6-runforwardoosvalidation-l31733258-the-one-network-call">5B.6 <code>run_forward_oos_validation()</code> — L3173–3258 · <strong>the one network call</strong></a></li><li><a href="#5b-7-paper-sync-machinery-l32613525">5B.7 Paper-sync machinery — L3261–3525</a></li><li><a href="#5b-8-the-formulation-window-l35263606">5B.8 The formulation window — L3526–3606</a></li><li><a href="#5b-9-the-three-dollar-arms-l36083714">5B.9 The three dollar arms — L3608–3714</a></li><li><a href="#5b-10-runbenchmarkvspassive-l37163782">5B.10 <code>run_benchmark_vs_passive()</code> — L3716–3782</a></li><li><a href="#5b-11-buildtradesandresultstable-l37853838">5B.11 <code>build_trades_and_results_table()</code> — L3785–3838</a></li></ul></li><li class="np"><a href="#part-6-artifact-export-database-persistence-l38424293">Part 6 — Artifact export + database persistence (L3842–4293)</a><ul class="sub"><li><a href="#6-1-what-it-writes">6.1 What it writes</a></li><li><a href="#6-2-the-verification-report-l39203968">6.2 The verification report (L3920–3968)</a></li><li><a href="#6-3-tonative-l3867-and-normalizerecords-l3890">6.3 <code>to_native()</code> (L3867) and <code>normalize_records()</code> (L3890)</a></li><li><a href="#6-4-pushallgsheetexports-l4203">6.4 <code>push_all_gsheet_exports()</code> (L4203)</a></li></ul></li><li class="np"><a href="#part-7-http-server-l42944563">Part 7 — HTTP server (L4294–4563)</a><ul class="sub"><li><a href="#the-independence-rule-the-most-important-paragraph-in-part-7">THE INDEPENDENCE RULE — the most important paragraph in Part 7</a></li></ul></li><li class="np"><a href="#part-8-cli-and-main-l45644847">Part 8 — CLI and main (L4564–4847)</a><ul class="sub"><li><a href="#8-1-runfullanalysispipeline-l45684750">8.1 <code>run_full_analysis_pipeline()</code> — L4568–4750</a></li><li><a href="#8-2-runservemode-l47524800">8.2 <code>run_serve_mode()</code> — L4752–4800</a></li><li><a href="#8-3-the-flags-l48064832">8.3 The flags — L4806–4832</a></li><li><a href="#8-4-the-dispatch-l48394847">8.4 The dispatch — L4839–4847</a></li></ul></li><li class="np"><a href="#appendix-a-every-hand-check-in-one-table">Appendix A — Every hand check, in one table</a><ul class="sub"></ul></li><li class="np"><a href="#appendix-b-known-imperfections-all-disclosed">Appendix B — Known imperfections, all disclosed</a><ul class="sub"></ul></li></ul>
+</aside>
+<main>
+<h1 id="hedge-code-guide">HEDGE — Code Guide</h1>
+<p><strong>A line-0-to-line-4847 walkthrough of <code>research_analysis.py</code>, with a hand-computable verification for every module.</strong></p>
+<p>Companion to <code>docs/finalists/HEDGE_Research_Paper.md</code>. Read this with the source file open beside it; the guide moves strictly top-to-bottom through the file, so the two scroll together.</p>
+<ul><li><strong>Subject:</strong> <code>research_analysis.py</code> (repo root), 4,847 lines, the single canonical entrypoint for the whole project.</li><li><strong>Results source of truth:</strong> <code>docs/SCRATCH_RESULTS_METHODS.md</code>. Every headline number quoted in this guide is traceable there.</li><li><strong>Paper↔code bridge:</strong> <code>docs/finalists/HEDGE_Paper_Code_Handoff.md</code>.</li></ul>
+<hr>
+<h1 id="part-0-how-to-read-this-guide">Part 0 — How to read this guide</h1>
+<h2 id="0-1-the-four-beats">0.1 The four beats</h2>
+<p>Each module that carries a scientific claim gets the same four beats, in the same order, every time:</p>
+<div class="tw"><table><thead><tr><th>Beat</th><th>What it gives you</th></tr></thead><tbody><tr><td><strong>WHAT THE PAPER CLAIMS HERE</strong></td><td>The sentence in the manuscript this code is responsible for.</td></tr><tr><td><strong>WHAT THE CODE DOES</strong></td><td>Plain English first, then the code itself.</td></tr><tr><td><strong>HAND CHECK</strong></td><td>A 4-to-12-value input, the arithmetic written out with intermediates, and the answer. Doable on a calculator.</td></tr><tr><td><strong>CONFIRM AGAINST THE CODE</strong></td><td>A short REPL block that runs the <em>real</em> function on the <em>same</em> input, so you can see the hand answer come back out of the actual engine.</td></tr></tbody></table></div>
+<p>Plumbing modules — database schema, HTTP routes, Google Sheets formatting — get a shorter treatment: what it does, and <em>why it cannot move a published number.</em> Every line of the file is still accounted for.</p>
+<h2 id="0-2-the-loader-paste-this-first-once-per-session">0.2 The loader — paste this first, once per session</h2>
+<p>Every <code>CONFIRM AGAINST THE CODE</code> block in this guide assumes these lines have already been run, from the repository root, in a Python REPL:</p>
+<pre class="lang-python"><code>import importlib.util, pandas as pd, numpy as np
+spec = importlib.util.spec_from_file_location(&quot;bot&quot;, &quot;research_analysis.py&quot;)
+bot = importlib.util.module_from_spec(spec); spec.loader.exec_module(bot)</code></pre>
+<p><code>bot</code> is now the live module. <code>bot.compute_indicators</code>, <code>bot.compute_smc</code>, <code>bot.binomial_test</code> and everything else are the real functions the paper&#x27;s numbers came from — not copies, not re-implementations. <strong>No verification in this guide adds a new <code>.py</code> file to the repository.</strong> That is deliberate: a check that runs a separate script proves the script works, not that the engine works.</p>
+<p>Importing this way, rather than with a plain <code>import</code>, is the same mechanism <code>scratch/regression.py</code> uses.</p>
+<p><strong>One presentation convention.</strong> Where a snippet prints a dict of results, this guide shows the values with NumPy&#x27;s scalar wrappers elided — <code>0.1875</code> rather than <code>np.float64(0.1875)</code> — and long dicts are wrapped across lines. The digits are verbatim; only the <code>np.float64(...)</code> noise and the line breaks are cosmetic. Where a block is more heavily reformatted, the caption says so.</p>
+<h2 id="0-3-the-line-map">0.3 The line map</h2>
+<div class="tw"><table><thead><tr><th>Section</th><th>Lines</th><th>Weight</th><th>What lives there</th></tr></thead><tbody><tr><td>Module docstring</td><td>1–87</td><td>—</td><td>What the file is, what it is not, the section map</td></tr><tr><td>1 — Imports, constants, utilities</td><td>89–281</td><td><strong>Full</strong></td><td>Every pre-registered parameter; the locked baseline figures</td></tr><tr><td>1B — Database manager</td><td>282–460</td><td>Light</td><td>4 SQLAlchemy tables + session lifecycle</td></tr><tr><td>2 — Data loading</td><td>461–519</td><td>Light + check</td><td><code>load_candles</code>, the (dead) extended-window loader</td></tr><tr><td>3 — Strategy / backtest engine</td><td>520–1637</td><td><strong>Full</strong></td><td><strong>The protected core.</strong> Indicators, SMC, KDJ state machine, entry gates, exit ladder, driver loop</td></tr><tr><td>3B — Live pull + Google Sheets</td><td>1638–2076</td><td>Light</td><td><code>get_candles</code>, sheet writers, cell formatting</td></tr><tr><td>4 — Ablation study</td><td>2077–2502</td><td><strong>Full</strong></td><td>The three-arm design and its disclosed non-reproduction</td></tr><tr><td>5 — Statistical primitives</td><td>2503–2721</td><td><strong>Full</strong></td><td>7 functions: binomial, bootstrap, Pearson, Spearman, max drawdown, Sharpe/Sortino</td></tr><tr><td>5B — Applied analyses</td><td>2722–3841</td><td><strong>Full</strong></td><td>Bootstrap CI, buy-and-hold, DCA blend, fee/slippage, regimes, OOS, the three dollar arms</td></tr><tr><td>6 — Artifact export + DB persistence</td><td>3842–4293</td><td>Light + check</td><td>The JSON/CSV files the dashboard reads; the SHA-256 manifest</td></tr><tr><td>7 — HTTP server</td><td>4294–4563</td><td>Light</td><td>The routes <code>dashboard-v2</code> talks to</td></tr><tr><td>8 — CLI / main</td><td>4564–4847</td><td>Light</td><td><code>--serve</code>, <code>--levels</code>, <code>--export-gsheet</code>, <code>--include-oos-live</code></td></tr></tbody></table></div>
+<h2 id="0-4-what-protected-core-means">0.4 What &quot;protected core&quot; means</h2>
+<p>Lines <strong>129–170</strong> (the constants) and <strong>538–1637</strong> (Section 3) are the only lines in this file that can change a published number — about 1,180 lines, 24% of the file. Everything else is plumbing that moves data around after the science is finished.</p>
+<p>Those lines are frozen three ways:</p>
+<ol><li><strong>Pre-registration.</strong> Every threshold in L129–170 was fixed before the evaluation window was scored, and was never swept or optimized.</li><li><strong>A golden-master regression harness.</strong> <code>scratch/regression.py</code> holds a snapshot of all 8,767 bars of indicator output and all 27 trades. A fresh run is compared bar-by-bar (tolerance 1e-6) and trade-by-trade (matched on <code>entry_idx</code>, tolerance 1e-5). Any diff at all is treated as a defect in the change, not an improvement.</li><li><strong>Runtime no-lookahead assertions.</strong> Every forward-searching loop in <code>compute_smc()</code> and <code>_build_order_block_from_crossover()</code> carries an inline <code>assert</code> bounding it at the Order Block&#x27;s own confirmation bar, so a regression fails on the next run rather than waiting for an audit.</li></ol>
+<p><strong>If a panelist asks &quot;how do you know you didn&#x27;t change anything?&quot;</strong> — run <code>python scratch/regression.py</code>. It prints, and must print:</p>
+<pre><code>PASS: Fresh run matches golden-master fixture EXACTLY across all bars,
+indicators, and 27 trades!</code></pre>
+<p>Never run it with <code>--generate</code>. That rewrites the fixtures, which is the one thing that would make the harness unable to catch anything.</p>
+<h2 id="0-5-how-to-do-a-hand-check-honestly">0.5 How to do a hand check honestly</h2>
+<p>Every hand check in this guide was built the same way, and you can rebuild any of them the same way:</p>
+<ol><li>Choose an input small enough to do on paper — 4 to 12 bars, round numbers. <strong>Never a slice of real BTC data</strong>, because a slice you cannot compute by hand proves nothing.</li><li>Do the arithmetic yourself, writing down the intermediates.</li><li><em>Then</em> run the real function on the identical input.</li><li>If they disagree, that is a finding. Do not adjust the hand arithmetic until it matches — work out which one is wrong.</li></ol>
+<p>Every number printed in this guide&#x27;s HAND CHECK and CONFIRM blocks was produced by step 3 on the real function before it was written down. None were estimated.</p>
+<p>Where a computation is genuinely not hand-reproducible — a 10,000-resample bootstrap, a 761-Order-Block scan over 8,767 bars — the guide says so and gives a scaled-down version that <em>is</em>, plus the one command that reproduces the full figure.</p>
+<hr>
+<h1 id="part-1-imports-constants-shared-utilities-l89281">Part 1 — Imports, constants, shared utilities (L89–281)</h1>
+<h2 id="1-1-the-module-docstring-l187">1.1 The module docstring (L1–87)</h2>
+<p>Read it. It is the file&#x27;s own statement of scope, and it makes three promises a panelist can hold you to:</p>
+<ul><li><strong><code>python research_analysis.py</code></strong> runs the offline stats pipeline; <strong><code>--serve</code></strong> exports artifacts + database rows and starts the dashboard on port 8765.</li><li>The protected core is a <em>consolidation</em>, not a rewrite: <code>compute_indicators()</code>, <code>compute_smc()</code>, <code>simulate_trades()</code>, and the <code>kdj_reset_*</code> state machine are reproduced from the pre-consolidation sources with formulas, thresholds and control flow unchanged. Only names, comments, grouping and file location moved.</li><li><strong>Offline by default.</strong> A bare <code>python research_analysis.py</code> never touches the network. The one live pull, <code>run_forward_oos_validation()</code>, is gated behind <code>--include-oos-live</code>.</li></ul>
+<p>The one genuinely new piece of analysis in the whole file is <code>spearman_correlation()</code> (L2630) — nothing in the repository computed Spearman&#x27;s rho before. It is a short <code>scipy.stats.spearmanr</code> wrapper. Say that plainly if asked; disclosing it is a strength, not an admission.</p>
+<h2 id="1-2-imports-l89122">1.2 Imports (L89–122)</h2>
+<p>Standard library for I/O, HTTP and hashing; then <code>numpy</code>/<code>pandas</code> for the maths, <code>scipy.stats</code> for every statistical test, <code>sqlalchemy</code> for the database, <code>gspread</code> + <code>oauth2client</code> for the Sheets export, and <code>binance.client</code> for the one optional live pull.</p>
+<p><strong>The point to make in a defense:</strong> every statistical test in this project is a SciPy call. There is no hand-rolled p-value machinery anywhere in the file. The functions in Section 5 are named, documented wrappers whose job is to make the call site readable, not to compute anything SciPy doesn&#x27;t.</p>
+<h2 id="1-3-the-pre-registered-parameters-l129170-full-depth">1.3 The pre-registered parameters (L129–170) — full depth</h2>
+<p>These 40 lines are the scientific contract of the project. Everything below them is a consequence.</p>
+<pre class="lang-python"><code># --- SMC Order Block detection parameters (L132-134) ---
+SWING_STRUCTURE_LOOKBACK_BARS    = 50    # LuxAlgo &quot;swingsLengthInput&quot;
+INTERNAL_STRUCTURE_LOOKBACK_BARS = 5     # LuxAlgo internal-structure pivot lookback
+MAX_ORDER_BLOCK_AGE_BARS         = 500   # discard Order Blocks older than this
+
+# --- Trade simulation parameters (L139-147) ---
+DEFAULT_MIN_OB_QUALITY        = 1
+MIN_STOP_LOSS_DISTANCE_RATIO  = 0.015   # SL must be &gt;= 1.5% away from entry
+KDJ_J_LONG_CAP                = 60.0
+KDJ_K_LONG_CAP                = 50.0
+KDJ_K_SHORT_FLOOR             = 70.0
+KDJ_J_SHORT_CAP               = 100.0
+ATR_MULT_EXIT                 = 1.8     # ATR-multiple forced-exit distance
+ATR_MULT_BREAKEVEN            = 2.0     # ATR-multiple breakeven-stop ratchet
+MIN_RISK_REWARD_RATIO         = 1.5</code></pre>
+<p><strong>Where each value comes from — the answer to &quot;did you tune these?&quot;</strong></p>
+<div class="tw"><table><thead><tr><th>Constant</th><th>Value</th><th>Provenance</th></tr></thead><tbody><tr><td><code>SWING_STRUCTURE_LOOKBACK_BARS</code></td><td>50</td><td>LuxAlgo&#x27;s published TradingView default (<code>swingsLengthInput</code>). Not chosen here.</td></tr><tr><td><code>INTERNAL_STRUCTURE_LOOKBACK_BARS</code></td><td>5</td><td>LuxAlgo&#x27;s internal-structure default. Not chosen here.</td></tr><tr><td><code>MAX_ORDER_BLOCK_AGE_BARS</code></td><td>500</td><td>Staleness bound. 500 × 4h ≈ 83 days.</td></tr><tr><td><code>MIN_STOP_LOSS_DISTANCE_RATIO</code></td><td>0.015</td><td>A stop closer than 1.5% sits inside ordinary 4h noise and is hit before the thesis can play out.</td></tr><tr><td><code>KDJ_K_LONG_CAP</code> / <code>KDJ_J_LONG_CAP</code></td><td>50 / 60</td><td>Longs only from the oversold half of the oscillator.</td></tr><tr><td><code>KDJ_K_SHORT_FLOOR</code> / <code>KDJ_J_SHORT_CAP</code></td><td>70 / 100</td><td>Shorts only from genuine overbought (K ≥ 70), but not from already-exhausted extremes (J &gt; 100).</td></tr><tr><td><code>ATR_MULT_EXIT</code></td><td>1.8</td><td>Forced exit once the move has run 1.8 × entry ATR in favour.</td></tr><tr><td><code>ATR_MULT_BREAKEVEN</code></td><td>2.0</td><td>Stop ratchets to entry once the move has run 2.0 × entry ATR.</td></tr><tr><td><code>MIN_RISK_REWARD_RATIO</code></td><td>1.5</td><td>No trade is taken unless the target is at least 1.5× the risk.</td></tr><tr><td><code>DEFAULT_MIN_OB_QUALITY</code></td><td>1</td><td>The <em>default</em>; <strong>the paper&#x27;s locked baseline uses 0</strong> — no quality filtering at all.</td></tr></tbody></table></div>
+<p><strong>The <code>DEFAULT_MIN_OB_QUALITY = 1</code> vs <code>min_ob_quality=0</code> distinction is a likely panel question.</strong> The default exists for the dashboard, which displays four quality levels (0, 1, 2, 3). The published 27-trade baseline is the <em>unfiltered</em> q≥0 run. That is exactly why the corrected FVG/displacement lookahead bug (§3.3) does not move the headline figures: the baseline never consults the quality score.</p>
+<h3 id="the-locked-figures-l153165">The locked figures (L153–165)</h3>
+<pre class="lang-python"><code>LOCKED_BASELINE_TRADE_COUNT      = 27
+LOCKED_BASELINE_WIN_RATE_PCT     = 70.37
+LOCKED_BASELINE_TOTAL_RETURN_PCT = 30.31
+LOCKED_BASELINE_AVG_RETURN_PCT   = 1.12
+LOCKED_BASELINE_RETURN_SD_PCT    = 2.41
+LOCKED_ABLATION_ARMS = {
+    &quot;flat_atr&quot;:    {&quot;n&quot;: 140, &quot;win_rate_pct&quot;: 60.00, &quot;total_return_pct&quot;: -14.63},
+    &quot;swing_pivot&quot;: {&quot;n&quot;: 138, &quot;win_rate_pct&quot;: 55.07, &quot;total_return_pct&quot;: -25.50},
+}</code></pre>
+<p>These are constants <em>to be checked against</em>, not values used in any computation. Every analysis section recomputes its own figure from the data and then prints an explicit <strong>MATCH</strong> or <strong>DIVERGE</strong> against these. Nothing is ever silently reconciled. The ablation arms in particular are carried as <em>reference</em> figures — Section 4 discloses that no committed script reproduces their exact per-trade pools, and a DIVERGE there is expected.</p>
+<p><strong>HAND CHECK — the headline numbers are internally consistent</strong></p>
+<ul><li>70.37% of 27 → <code>0.7037 × 27 = 19.0</code> wins, and <code>19 / 27 = 0.703703… = 70.37%</code> ✓</li><li><code>30.31 / 27 = 1.1226…</code> → <code>+1.12%</code> average ✓</li></ul>
+<p>If a panelist asks whether the headline numbers came from different runs, this is the answer: they are three views of one 27-row trade log, and they cross-multiply.</p>
+<p><strong>CONFIRM AGAINST THE CODE</strong></p>
+<pre class="lang-python"><code>df = bot.compute_indicators(bot.load_candles())
+t  = bot.simulate_trades(df, min_ob_quality=0).attrs[&quot;trades_df&quot;]
+print(len(t), (t.pnl_pct &gt; 0).sum(), (t.pnl_pct &gt; 0).mean()*100,
+      t.pnl_pct.sum(), t.pnl_pct.mean(), t.pnl_pct.std(ddof=1))</code></pre>
+<p>Actual output:</p>
+<pre><code>27 19 70.37037037037037 30.306456356031937 1.1224613465197013 2.4101357189345545</code></pre>
+<h2 id="1-4-jsonsafe-l171204-and-writejsonresults-l207222">1.4 <code>json_safe()</code> (L171–204) and <code>write_json_results()</code> (L207–222)</h2>
+<p>Serialization only. <code>json_safe</code> is passed as <code>json.dump(..., default=)</code>, so it is called <em>only</em> for values <code>json</code> cannot already handle: numpy scalars become Python <code>int</code>/<code>float</code>, numpy arrays become lists, pandas Timestamps become ISO strings, <code>NaN</code> becomes <code>null</code>, anything else becomes its <code>str()</code>.</p>
+<p><strong>Why this cannot move a number:</strong> it runs after every computation has finished, and it only ever widens a numpy type to its exact Python equivalent — <code>float(np.float64(x)) == x</code>.</p>
+<p>Note the deliberate contrast with <code>to_native()</code> at L3867 (Section 6): <code>json_safe</code> <em>stringifies</em> what it doesn&#x27;t recognise (safe as a last-resort serializer), while <code>to_native</code> <em>passes it through untouched</em> (correct when building a dict of records where an unexpected string should stay a string). Two functions, two different jobs — that duplication is intended.</p>
+<h2 id="1-5-reportstat-l225279">1.5 <code>report_stat()</code> (L225–279)</h2>
+<p>The single shared terminal-reporting utility. Every stats-producing function in the file calls it, and it always prints <strong>both</strong> the inputs a computation was called with and everything it produced — never just the headline number.</p>
+<p>Formatting convention: floats to 10 decimal places, integers plain, booleans and strings as-is, <code>NaN</code>/<code>None</code> printed as <code>&quot;NaN&quot;</code> rather than raising.</p>
+<p><strong>Why this matters for a defense:</strong> the terminal transcript of a pipeline run is itself an audit artifact. Every printed block shows what went into a test, so a reader can re-run the test by hand from the transcript alone.</p>
+<hr>
+<h1 id="part-1b-database-manager-l282460">Part 1B — Database manager (L282–460)</h1>
+<p><em>Light depth. This section stores results; it never computes one.</em></p>
+<p>Four SQLAlchemy ORM tables, reproduced verbatim from the retired <code>db_manager.py</code> — no column, index or table added, removed or renamed.</p>
+<div class="tw"><table><thead><tr><th>Table</th><th>Class</th><th>Line</th><th>One row is</th><th>Key columns</th></tr></thead><tbody><tr><td><code>candles</code></td><td><code>Candle</code></td><td>296</td><td>one 4h bar + its indicators</td><td>PK <code>(time, symbol, interval)</code></td></tr><tr><td><code>order_blocks</code></td><td><code>OrderBlock</code></td><td>330</td><td>one detected Order Block</td><td><code>ob_id</code>, <code>type</code>, <code>top</code>, <code>bottom</code>, <code>created_at</code>, <code>ob_bar</code>, 5 <code>quality_*</code> booleans + composite <code>quality</code></td></tr><tr><td><code>ob_touches</code></td><td><code>OBTouch</code></td><td>362</td><td>one bar where price touched an OB</td><td>FK → <code>order_blocks.ob_id</code>, plus the indicator snapshot at that bar</td></tr><tr><td><code>trades</code></td><td><code>Trade</code></td><td>388</td><td>one simulated trade</td><td>FK → entry OB and (optional) TP OB, plus the <code>min_ob_quality</code> used</td></tr></tbody></table></div>
+<p>Lifecycle helpers: <code>get_db_url()</code> (L418 — <code>DATABASE_URL</code> env var, else <code>sqlite:///backtest_results.db</code>), <code>init_db()</code> (L424), <code>get_session()</code> (L443), <code>clear_db()</code> (L449 — deletes children before parents so foreign keys stay valid).</p>
+<p><strong>Why the database exists at all.</strong> The dashboard&#x27;s <code>/api/trades</code> and <code>/api/iterations</code> routes (Section 7) query it. The JSON files in <code>artifacts/</code> are the <em>static</em> export; the database is the <em>queryable</em> one. Both are written from the same <code>simulate_trades()</code> output in the same <code>--serve</code> run, so they cannot disagree.</p>
+<p><strong>Why it cannot move a number:</strong> every row is written <em>after</em> <code>simulate_trades()</code> returns, and nothing in Sections 3–5 ever reads from it. Deleting <code>backtest_results.db</code> and re-running reproduces it exactly.</p>
+<hr>
+<h1 id="part-2-data-loading-l461519">Part 2 — Data loading (L461–519)</h1>
+<h2 id="2-1-loadcandles-l465486">2.1 <code>load_candles()</code> (L465–486)</h2>
+<p>Three lines of body: read <code>artifacts/candles.csv</code>, parse <code>open_time</code> to datetime, return. That CSV is the locked dataset every published figure is computed from.</p>
+<p><strong>HAND CHECK — the 8,767-bar count</strong></p>
+<p>The paper states 8,767 bars over 1,461 days. Both are derivable on paper:</p>
+<ul><li>2022-01-01 → 2026-01-01 is 4 calendar years = <code>365 × 4 = 1460</code> days, <strong>plus one leap day (2024-02-29)</strong> = <strong>1,461 days</strong>.</li><li>4h candles → 6 bars/day → <code>1461 × 6 = 8,766</code> bars.</li><li>The window is <strong>boundary-inclusive</strong>: the bar opening at the end timestamp is kept → <code>8,766 + 1 = 8,767</code> bars.</li></ul>
+<p>This matters because an earlier draft reported 8,760, using the plain <code>365 × 4 × 6</code> arithmetic that drops both the leap day and the endpoint bar. That was corrected; <code>docs/SCRATCH_RESULTS_METHODS.md</code> records it.</p>
+<p><strong>CONFIRM AGAINST THE CODE</strong></p>
+<pre class="lang-python"><code>df = bot.load_candles()
+print(len(df), df[&quot;open_time&quot;].iloc[0], df[&quot;open_time&quot;].iloc[-1],
+      (df[&quot;open_time&quot;].iloc[-1] - df[&quot;open_time&quot;].iloc[0]).days)</code></pre>
+<p>Actual output:</p>
+<pre><code>8767 2022-01-01 08:00:00 2026-01-01 08:00:00 1461</code></pre>
+<p>(The <code>08:00</code> offset is the UTC+8 shift applied at ingestion — see <code>get_candles()</code> at L1719. It shifts every bar identically, so no relative quantity changes.)</p>
+<h2 id="2-2-loadextendedcandleswindow-l489517-dead-code">2.2 <code>load_extended_candles_window()</code> (L489–517) — <strong>dead code</strong></h2>
+<p>Loads a date-bounded window out of <code>artifacts/candles_extended.json</code>.</p>
+<p><strong>It has zero callers.</strong> The formulation-period window is loaded by <code>load_formulation_period_window()</code> at L3526 instead, which takes a fixed prefix slice of the same file and asserts its last bar is <code>2022-01-01 04:00:00</code> — one bar before the locked window starts.</p>
+<p>Say so if asked. Dead code that is <em>identified</em> as dead is a documentation fact; dead code a panelist finds first is a credibility problem. It is left in place rather than deleted because deleting it during the paper freeze would touch the protected file for no scientific gain.</p>
+<hr>
+<h1 id="part-3-the-strategy-backtest-engine-l5201637">Part 3 — The strategy / backtest engine (L520–1637)</h1>
+<p><strong>This is the protected core.</strong> It is the only part of the file that can change a published number, and it is the part you must be able to explain line by line. Everything from here to L1637 is reproduced unchanged from the pre-consolidation sources — formulas, thresholds, and control flow — and is locked by <code>scratch/regression.py</code>.</p>
+<p>The section banner at L524–535 explains one abbreviation used relentlessly below: <strong><code>ob</code> = Order Block</strong>, an SMC price zone where institutional order flow is inferred to have originated a market-structure shift. It is used as consistently as <code>df</code> is used for DataFrame, because it appears in very dense per-bar loops.</p>
+<p>The eleven functions, in file order:</p>
+<div class="tw"><table><thead><tr><th>§</th><th>Function</th><th>Lines</th><th>Role</th></tr></thead><tbody><tr><td>3.1</td><td><code>compute_indicators</code></td><td>538–612</td><td>MACD, KDJ, ATR(14), ATR(200)</td></tr><tr><td>3.2</td><td><code>compute_smc</code></td><td>615–769</td><td>Pivot → BOS/CHoCH → Order Block scan</td></tr><tr><td>3.3</td><td><code>_build_order_block_from_crossover</code></td><td>770–895</td><td>The 5 quality criteria</td></tr><tr><td>3.4</td><td><code>get_structural_tp</code></td><td>896–926</td><td>Nearest opposing OB as take-profit</td></tr><tr><td>3.5</td><td><code>kdj_reset_init</code> / <code>_update</code> / <code>_exit</code></td><td>927–1063</td><td>The per-trade exit state machine</td></tr><tr><td>3.6</td><td><code>_resolve_structural_tp_ob</code></td><td>1064–1080</td><td>Which OB produced that TP price</td></tr><tr><td>3.7</td><td><code>_try_enter_long</code> / <code>_try_enter_short</code></td><td>1081–1234</td><td>The entry gates</td></tr><tr><td>3.8</td><td><code>_check_long_exit_conditions</code> / <code>_check_short_...</code></td><td>1235–1336</td><td>The exit ladder</td></tr><tr><td>3.9</td><td><code>_record_closed_trade</code></td><td>1337–1380</td><td>The 27-field trade record</td></tr><tr><td>3.10</td><td><code>simulate_trades</code></td><td>1381–1637</td><td>The driver loop</td></tr></tbody></table></div>
+<hr>
+<h2 id="3-1-computeindicators-l538612-protected-core">3.1 <code>compute_indicators()</code> — L538–612 · PROTECTED CORE</h2>
+<h3 id="what-the-paper-claims-here">WHAT THE PAPER CLAIMS HERE</h3>
+<p><em>Methodology, &quot;Indicators.&quot;</em> Three indicator families are computed causally — each value uses only past and present candles: MACD(12, 26, 9) for momentum confirmation, KDJ(9, 3, 3) as a stochastic oscillator with the extra J line, and two ATR windows (14 and 200) as the volatility measure that sets stop distance and the regime filter.</p>
+<h3 id="what-the-code-does">WHAT THE CODE DOES</h3>
+<p>One pass, three blocks, no loops. Every column is produced by a vectorised pandas operation over the whole series.</p>
+<p><strong>MACD (L574–579).</strong> Two exponentially weighted moving averages of close, their difference, and a third EWM of that difference as the signal line:</p>
+<pre class="lang-python"><code>ema_fast = df[&quot;close&quot;].ewm(span=12, adjust=False).mean()
+ema_slow = df[&quot;close&quot;].ewm(span=26, adjust=False).mean()
+df[&quot;MACD&quot;]        = ema_fast - ema_slow
+df[&quot;MACD_signal&quot;] = df[&quot;MACD&quot;].ewm(span=9, adjust=False).mean()
+df[&quot;MACD_hist&quot;]   = df[&quot;MACD&quot;] - df[&quot;MACD_signal&quot;]</code></pre>
+<p><code>adjust=False</code> is the important flag: it makes the EWM a <em>recursive</em> filter seeded at the first value, <code>EMA[t] = EMA[t-1] + k·(x[t] − EMA[t-1])</code> with <code>k = 2/(span+1)</code>, which is what every charting platform computes and what you can reproduce by hand. <code>adjust=True</code> would use a different (re-weighted) formula and would not match TradingView.</p>
+<p><strong>KDJ (L581–590).</strong> RSV, then two nested one-third smoothings, then J:</p>
+<pre class="lang-python"><code>period = int(kdj_period)                                   # 9
+rolling_low_min  = df[&quot;low&quot;].rolling(period, min_periods=1).min()
+rolling_high_max = df[&quot;high&quot;].rolling(period, min_periods=1).max()
+rsv_denominator  = (rolling_high_max - rolling_low_min).replace(0, np.nan)
+raw_stochastic_value = ((df[&quot;close&quot;] - rolling_low_min) / rsv_denominator * 100).fillna(50)
+kdj_smoothing_alpha = 1.0 / 3.0
+df[&quot;K&quot;] = raw_stochastic_value.ewm(alpha=kdj_smoothing_alpha, adjust=False).mean()
+df[&quot;D&quot;] = df[&quot;K&quot;].ewm(alpha=kdj_smoothing_alpha, adjust=False).mean()
+df[&quot;J&quot;] = 3 * df[&quot;K&quot;] - 2 * df[&quot;D&quot;]</code></pre>
+<p>Two defensive details worth naming: a flat bar range would divide by zero, so the denominator&#x27;s zeros are turned to <code>NaN</code> and the resulting <code>NaN</code> RSV is filled with the neutral 50; and <code>min_periods=1</code> means the first eight bars use a shorter window rather than producing <code>NaN</code>, so the series is defined from bar 0 onward.</p>
+<p><strong>ATR (L593–604).</strong> True range as the max of three distances, then a plain rolling mean at two window lengths:</p>
+<pre class="lang-python"><code>previous_close = df[&quot;close&quot;].shift(1)
+true_range = pd.concat([
+    df[&quot;high&quot;] - df[&quot;low&quot;],
+    (df[&quot;high&quot;] - previous_close).abs(),
+    (df[&quot;low&quot;]  - previous_close).abs(),
+], axis=1).max(axis=1)
+df[&quot;ATR&quot;]     = true_range.rolling(atr_period, min_periods=1).mean()   # 14
+df[&quot;ATR_200&quot;] = true_range.rolling(200,        min_periods=1).mean()</code></pre>
+<blockquote><p><strong>Disclosed discrepancy — know this one before you are asked.</strong> The comment above these lines (L593–596) says &quot;Wilder&#x27;s smoothing (RMA)&quot; and describes <code>ewm(alpha=1/n)</code>. The executed code is a <strong>plain rolling mean</strong>, not Wilder&#x27;s RMA. The paper discloses this explicitly (Methodology, <em>Average True Range</em>): &quot;Both ATR windows are computed as a simple rolling mean rather than Wilder&#x27;s original exponential smoothing, despite an inherited code comment suggesting otherwise. The executed computation is a plain rolling mean, and that is what is reported here.&quot; The comment is a stale inheritance from an earlier source file. It was <strong>not</strong> edited, because editing the protected core during the paper freeze for a comment-only fix is not worth touching the regression surface. The correct answer to a panelist is: <em>the code and the paper agree; the code comment is wrong and is documented as wrong.</em></p></blockquote>
+<p>Finally, L606–610 backfills <code>num_trades</code> and <code>taker_buy_base</code> if a cached CSV lacks them, so downstream export code never sees a missing column.</p>
+<h3 id="hand-check-a-macd-on-six-closes">HAND CHECK A — MACD on six closes</h3>
+<p>Input (open = high = low = close, so only closes matter):</p>
+<pre><code>close = [100, 102, 101, 105, 103, 107]</code></pre>
+<p>Constants: <code>k12 = 2/(12+1) = 0.15384615</code>, <code>k26 = 2/(26+1) = 0.07407407</code>, <code>k9 = 2/(9+1) = 0.2</code>.</p>
+<p>Bar 0 seeds both EMAs at the first close:</p>
+<pre><code>EMA12[0] = 100,  EMA26[0] = 100  →  MACD[0] = 0  →  signal[0] = 0  →  hist[0] = 0</code></pre>
+<p>Bar 1:</p>
+<pre><code>EMA12[1] = 100 + (102 − 100) × 0.15384615 = 100.30769231
+EMA26[1] = 100 + (102 − 100) × 0.07407407 = 100.14814815
+MACD[1]  = 100.30769231 − 100.14814815    =   0.15954416
+signal[1]= 0 + (0.15954416 − 0) × 0.2     =   0.03190883
+hist[1]  = 0.15954416 − 0.03190883        =   0.12763533</code></pre>
+<p>Expected <code>MACD_hist</code> for all six bars: <code>0, 0.127635, 0.136835, 0.390096, 0.399259, 0.636941</code>.</p>
+<h3 id="confirm-against-the-code-a">CONFIRM AGAINST THE CODE — A</h3>
+<pre class="lang-python"><code>d = pd.DataFrame({&quot;open&quot;:[100,102,101,105,103,107],&quot;high&quot;:[100,102,101,105,103,107],
+                  &quot;low&quot;:[100,102,101,105,103,107],&quot;close&quot;:[100,102,101,105,103,107],
+                  &quot;volume&quot;:[1]*6})
+print(bot.compute_indicators(d)[[&quot;close&quot;,&quot;MACD&quot;,&quot;MACD_signal&quot;,&quot;MACD_hist&quot;]].round(6).to_string())</code></pre>
+<p>Actual output:</p>
+<pre><code>   close      MACD  MACD_signal  MACD_hist
+0    100  0.000000     0.000000   0.000000
+1    102  0.159544     0.031909   0.127635
+2    101  0.202953     0.066118   0.136835
+3    105  0.553738     0.163642   0.390096
+4    103  0.662715     0.263456   0.399259
+5    107  1.059632     0.422692   0.636941</code></pre>
+<p>Bar 1 matches the hand arithmetic to all six printed digits.</p>
+<h3 id="hand-check-b-kdj-on-six-bars">HAND CHECK B — KDJ on six bars</h3>
+<p>Input:</p>
+<pre><code>high  = [110, 112, 111, 115, 113, 117]
+low   = [ 90,  92,  91,  95,  93,  97]
+close = [100, 102, 101, 105, 103, 107]</code></pre>
+<p>The KDJ window is 9 bars but <code>min_periods=1</code>, so with only 6 bars every window is &quot;everything so far.&quot;</p>
+<p>Bar 0: window = bar 0 alone. <code>RSV = (100 − 90)/(110 − 90) × 100 = 50</code>. K and D both seed at 50, so <code>J = 3(50) − 2(50) = 50</code>.</p>
+<p>Bar 1: window = bars 0–1. Lowest low = 90, highest high = 112.</p>
+<pre><code>RSV[1] = (102 − 90) / (112 − 90) × 100 = 12/22 × 100 = 54.54545455
+K[1]   = 50 + (54.54545455 − 50)/3     = 50 + 1.51515152 = 51.51515152
+D[1]   = 50 + (51.51515152 − 50)/3     = 50 + 0.50505051 = 50.50505051
+J[1]   = 3(51.51515152) − 2(50.50505051) = 154.54545455 − 101.01010101 = 53.53535354</code></pre>
+<p>Note the <em>nesting</em>: D smooths K, and K has already smoothed RSV. That is why D lags K, and why J — which amplifies the gap between them by construction — is the fastest of the three.</p>
+<h3 id="confirm-against-the-code-b">CONFIRM AGAINST THE CODE — B</h3>
+<pre class="lang-python"><code>d2 = pd.DataFrame({&quot;open&quot;:[100]*6,&quot;high&quot;:[110,112,111,115,113,117],
+                   &quot;low&quot;:[90,92,91,95,93,97],&quot;close&quot;:[100,102,101,105,103,107],
+                   &quot;volume&quot;:[1]*6})
+print(bot.compute_indicators(d2)[[&quot;high&quot;,&quot;low&quot;,&quot;close&quot;,&quot;RSV&quot;,&quot;K&quot;,&quot;D&quot;,&quot;J&quot;]].round(6).to_string())</code></pre>
+<p>Actual output:</p>
+<pre><code>   high  low  close        RSV          K          D          J
+0   110   90    100  50.000000  50.000000  50.000000  50.000000
+1   112   92    102  54.545455  51.515152  50.505051  53.535354
+2   111   91    101  50.000000  51.010101  50.673401  51.683502
+3   115   95    105  60.000000  54.006734  51.784512  58.451178
+4   113   93    103  52.000000  53.337823  52.302282  55.408904
+5   117   97    107  62.962963  56.546203  53.716922  62.204764</code></pre>
+<h3 id="hand-check-c-true-range-and-atr-on-four-bars">HAND CHECK C — True range and ATR on four bars</h3>
+<p>Input, with <code>atr_period=3</code> so the window is short enough to compute:</p>
+<pre><code>high  = [105, 108, 104, 110]
+low   = [100, 101,  99, 102]
+close = [104, 102, 103, 109]</code></pre>
+<p>True range is the largest of three distances. Bar 0 has no previous close, so only the first term is defined:</p>
+<pre><code>TR[0] = 105 − 100 = 5
+TR[1] = max(108−101, |108−104|, |101−104|) = max(7, 4, 3) = 7
+TR[2] = max(104− 99, |104−102|, | 99−102|) = max(5, 2, 3) = 5
+TR[3] = max(110−102, |110−103|, |102−103|) = max(8, 7, 1) = 8</code></pre>
+<p>ATR(3) is a plain rolling mean with <code>min_periods=1</code>:</p>
+<pre><code>ATR[0] = 5
+ATR[1] = (5+7)/2       = 6
+ATR[2] = (5+7+5)/3     = 5.666667
+ATR[3] = (7+5+8)/3     = 6.666667      # 3-bar window, bar 0 has rolled off
+ATR_200[3] = (5+7+5+8)/4 = 6.25        # 200-bar window, nothing rolls off yet</code></pre>
+<p>The divergence at bar 3 is the whole point of the two windows: ATR(14) tracks <em>current</em> volatility, ATR(200) holds a long-horizon baseline. Their ratio is the regime filter (<code>atr_r</code>, §3.7).</p>
+<h3 id="confirm-against-the-code-c">CONFIRM AGAINST THE CODE — C</h3>
+<pre class="lang-python"><code>d3 = pd.DataFrame({&quot;open&quot;:[100]*4,&quot;high&quot;:[105,108,104,110],&quot;low&quot;:[100,101,99,102],
+                   &quot;close&quot;:[104,102,103,109],&quot;volume&quot;:[1]*4})
+r3 = bot.compute_indicators(d3, atr_period=3)
+print(r3[[&quot;ATR&quot;,&quot;ATR_200&quot;]].round(6).to_string())</code></pre>
+<p>Actual output:</p>
+<pre><code>        ATR   ATR_200
+0  5.000000  5.000000
+1  6.000000  6.000000
+2  5.666667  5.666667
+3  6.666667  6.250000</code></pre>
+<hr>
+<h2 id="3-2-computesmc-l615769-protected-core">3.2 <code>compute_smc()</code> — L615–769 · PROTECTED CORE</h2>
+<h3 id="what-the-paper-claims-here-1">WHAT THE PAPER CLAIMS HERE</h3>
+<p><em>Methodology, &quot;Market structure and Order Blocks.&quot;</em> Order Blocks are located by detecting confirmed pivots, watching for a close that breaks a tracked pivot level (a Break of Structure, or a Change of Character when the trend flips), and then taking the extreme candle between the pivot and the break as the Order Block. The procedure is a faithful translation of the LuxAlgo TradingView indicator, run at two structural resolutions.</p>
+<h3 id="what-the-code-does-1">WHAT THE CODE DOES</h3>
+<p>Read it as <strong>four stages</strong>.</p>
+<p><strong>Stage 0 — volatility-parsed highs and lows (L675–677).</strong></p>
+<pre class="lang-python"><code>is_high_volatility_bar = (highs - lows) &gt;= (2 * atr_200)
+parsed_highs = np.where(is_high_volatility_bar, lows,  highs)
+parsed_lows  = np.where(is_high_volatility_bar, highs, lows)</code></pre>
+<p>On a bar whose range is at least twice the long-horizon ATR, the high and low are <strong>swapped</strong> for Order-Block-search purposes. This is LuxAlgo&#x27;s own filter: an unusually wide bar is treated as a liquidity event rather than a clean structural extreme, so its body is inverted to stop it dominating the zone. On every normal bar <code>parsed_high = high</code> and <code>parsed_low = low</code>.</p>
+<p><strong>Stage 1 — two independent passes (L681–682).</strong></p>
+<pre class="lang-python"><code>for pivot_lookback_bars in [INTERNAL_STRUCTURE_LOOKBACK_BARS,   # 5
+                            SWING_STRUCTURE_LOOKBACK_BARS]:     # 50</code></pre>
+<p>The same algorithm runs twice with two lookbacks and the results are pooled. Each pass keeps its own trend state and its own tracked pivots. &quot;Internal&quot; finds fast, local structure; &quot;swing&quot; finds slower, major structure. On the real dataset that produces <strong>659 internal + 102 swing = 761</strong> Order Blocks.</p>
+<p><strong>Stage 2 — pivot confirmation (L704–712).</strong> For each bar <code>i</code>, the candidate pivot is <code>pivot_bar_candidate = i − pivot_lookback_bars</code>:</p>
+<pre class="lang-python"><code>bars_to_the_right_high = highs[pivot_bar_candidate + 1 : i + 1]
+if len(bars_to_the_right_high) and highs[pivot_bar_candidate] &gt; bars_to_the_right_high.max():
+    tracked_swing_high_price = float(highs[pivot_bar_candidate])
+    tracked_swing_high_bar   = pivot_bar_candidate
+    swing_high_already_crossed = False</code></pre>
+<p>A pivot high is a bar whose high has not been exceeded by any of the <code>pivot_lookback_bars</code> bars after it. <strong>This is the structural reason a pivot cannot be known in real time</strong> — it takes <code>pivot_lookback_bars</code> more bars to confirm. The engine therefore evaluates it at bar <code>i</code>, never earlier, and the <code>assert</code> at L698–702 states that invariant in code.</p>
+<p><strong>Stage 3 — crossover, and the OB it produces (L720–735).</strong></p>
+<pre class="lang-python"><code>if (not np.isnan(tracked_swing_high_price) and not swing_high_already_crossed
+        and closes[i - 1] &lt;= tracked_swing_high_price &lt; closes[i]):
+    structure_tag = &quot;CHoCH&quot; if trend == -1 else &quot;BOS&quot;
+    swing_high_already_crossed = True
+    trend = 1
+    ob = _build_order_block_from_crossover(..., ob_type=&quot;DEMAND&quot;,
+            extreme_selector=np.argmin, extreme_source=parsed_lows)</code></pre>
+<p>Four things happen in that one condition, and each is worth naming:</p>
+<ol><li><code>closes[i-1] &lt;= level &lt; closes[i]</code> is a <strong>strict upward crossing of the close series</strong>, not a wick touch. Intrabar penetration does not count.</li><li><code>swing_high_already_crossed</code> makes each pivot fire <strong>at most once</strong>. A level that is crossed, retested and crossed again does not produce a second Order Block; only a <em>new</em> confirmed pivot resets the flag.</li><li><code>&quot;CHoCH&quot; if trend == -1 else &quot;BOS&quot;</code> — a bullish break is a <em>Change of Character</em> only if the tracked trend was bearish. Otherwise it is a continuation, a <em>Break of Structure</em>. With <code>trend</code> starting at 0, the first break of each pass is always tagged BOS.</li><li>A bullish break produces a <strong>DEMAND</strong> zone anchored on the <em>lowest</em> parsed low between pivot and break (<code>np.argmin</code> over <code>parsed_lows</code>) — the last down-candle before the up-move. The bearish branch (L737–751) is the exact mirror: <code>np.argmax</code> over <code>parsed_highs</code> → <strong>SUPPLY</strong>.</li></ol>
+<p><strong>Stage 4 — mitigation (L754–765).</strong> After all Order Blocks are collected, each is walked forward to find the bar where price closes back through it:</p>
+<pre class="lang-python"><code>if ob[&quot;type&quot;] == &quot;DEMAND&quot;:
+    violations = np.where(close_prices[search_start:] &lt; ob[&quot;bottom&quot;])[0]
+else:
+    violations = np.where(close_prices[search_start:] &gt; ob[&quot;top&quot;])[0]
+ob[&quot;mitigated_at&quot;] = int(search_start + violations[0]) if len(violations) else num_bars</code></pre>
+<p>A DEMAND zone dies when a close falls below its bottom; a SUPPLY zone dies when a close rises above its top. Never mitigated → <code>mitigated_at = num_bars</code>, i.e. alive to the end of the dataset. <code>simulate_trades()</code> only ever considers an Order Block on bars strictly between <code>created_at</code> and <code>mitigated_at</code> (§3.10), so this is not lookahead — it is a precomputed lifetime that the driver loop reads causally.</p>
+<h3 id="hand-check-one-order-block-from-twelve-bars">HAND CHECK — one Order Block from twelve bars</h3>
+<p>Twelve bars is enough to exercise the <strong>internal</strong> pass (lookback 5, needs 7 bars) while leaving the <strong>swing</strong> pass (lookback 50) inert. Input:</p>
+<div class="tw"><table><thead><tr><th>bar</th><th>open</th><th>high</th><th>low</th><th>close</th><th>volume</th></tr></thead><tbody><tr><td>0</td><td>100</td><td>102</td><td>99</td><td>101</td><td>100</td></tr><tr><td>1</td><td>101</td><td><strong>110</strong></td><td>100</td><td>105</td><td>100</td></tr><tr><td>2</td><td>105</td><td>106</td><td>102</td><td>103</td><td>100</td></tr><tr><td>3</td><td>103</td><td>104</td><td>100</td><td>101</td><td>100</td></tr><tr><td>4</td><td>101</td><td>103</td><td>99</td><td>100</td><td>100</td></tr><tr><td>5</td><td>100</td><td>103</td><td><strong>98</strong></td><td>102</td><td><strong>200</strong></td></tr><tr><td>6</td><td>102</td><td>105</td><td>101</td><td>104</td><td>100</td></tr><tr><td>7</td><td>104</td><td>108</td><td>103</td><td>107</td><td>100</td></tr><tr><td>8</td><td>107</td><td>112</td><td>106</td><td><strong>111</strong></td><td>100</td></tr><tr><td>9</td><td>111</td><td>113</td><td>109</td><td>112</td><td>100</td></tr><tr><td>10</td><td>112</td><td>114</td><td>110</td><td>113</td><td>100</td></tr><tr><td>11</td><td>113</td><td>115</td><td>111</td><td>114</td><td>100</td></tr></tbody></table></div>
+<p><strong>Step 1 — is any bar high-volatility?</strong> Compute TR, then the running <code>ATR_200</code> (a rolling mean with <code>min_periods=1</code>, so at these lengths it is just the running mean of TR):</p>
+<pre><code>TR   = 3, 10, 4, 4, 4, 5, 4, 5, 6, 4, 4, 4
+ATR_200 = 3.0, 6.5, 5.667, 5.25, 5.0, 5.0, 4.857, 4.875, 5.0, 4.9, 4.818, 4.75</code></pre>
+<p>Bar 1 is the widest at range 10, and <code>2 × ATR_200[1] = 13 &gt; 10</code>. No bar qualifies, so <code>parsed_high = high</code> and <code>parsed_low = low</code> everywhere. Good — the fixture is deliberately clean.</p>
+<p><strong>Step 2 — the pivot high.</strong> The loop starts at <code>i = 6</code> (<code>pivot_lookback_bars + 1</code>). At <code>i = 6</code>, the candidate is bar 1:</p>
+<pre><code>highs[2..6] = 106, 104, 103, 103, 105  → max = 106
+highs[1] = 110 &gt; 106  ✓  confirmed pivot high at bar 1, level 110</code></pre>
+<p>At <code>i = 7</code> the candidate is bar 2 (<code>highs[3..7]</code> max = 108 &gt; 106 ✗), at <code>i = 8</code> bar 3 (max 112 &gt; 104 ✗). So 110 @ bar 1 stays the tracked level.</p>
+<p><strong>Step 3 — the crossover.</strong> Closes are <code>101, 105, 103, 101, 100, 102, 104, 107, 111, 112, 113, 114</code>. The first <code>i</code> with <code>closes[i-1] ≤ 110 &lt; closes[i]</code> is <code>i = 8</code>: <code>107 ≤ 110 &lt; 111</code> ✓. Trend was 0, so the tag is <strong>BOS</strong>, the level is <strong>internal</strong>, the type is <strong>DEMAND</strong>, and <code>created_at = 8</code>.</p>
+<p><strong>Step 4 — which bar is the Order Block?</strong></p>
+<pre><code>ob_bar = pivot_bar + argmin(parsed_lows[1 .. 8])
+parsed_lows[1..8] = 100, 102, 100, 99, 98, 101, 103, 106
+                     ↑bar1                ↑bar5 = minimum
+argmin = 4  →  ob_bar = 1 + 4 = 5</code></pre>
+<p>So the zone is bar 5: <code>top = parsed_high[5] = 103</code>, <code>bottom = parsed_low[5] = 98</code>.</p>
+<p><strong>Step 5 — mitigation.</strong> DEMAND, search from bar 9. Closes 112, 113, 114 are all above 98, so it is never mitigated → <code>mitigated_at = 12</code> (= <code>num_bars</code>).</p>
+<p><strong>Expected result:</strong> exactly one Order Block — <code>DEMAND, top 103, bottom 98, created_at 8, ob_bar 5, internal, BOS, mitigated_at 12</code>. Its quality score is derived in §3.3.</p>
+<h3 id="confirm-against-the-code">CONFIRM AGAINST THE CODE</h3>
+<pre class="lang-python"><code>o=[100,101,105,103,101,100,102,104,107,111,112,113]
+h=[102,110,106,104,103,103,105,108,112,113,114,115]
+l=[ 99,100,102,100, 99, 98,101,103,106,109,110,111]
+c=[101,105,103,101,100,102,104,107,111,112,113,114]
+v=[100]*12; v[5]=200
+d4 = pd.DataFrame({&quot;open_time&quot;:pd.date_range(&quot;2022-01-01&quot;,periods=12,freq=&quot;4h&quot;),
+                   &quot;open&quot;:o,&quot;high&quot;:h,&quot;low&quot;:l,&quot;close&quot;:c,&quot;volume&quot;:v})
+r4 = bot.compute_indicators(d4)
+print([round(x,3) for x in r4[&quot;ATR_200&quot;]])
+for ob in bot.compute_smc(r4): print(ob)</code></pre>
+<p>Actual output:</p>
+<pre><code>[3.0, 6.5, 5.667, 5.25, 5.0, 5.0, 4.857, 4.875, 5.0, 4.9, 4.818, 4.75]
+{&#x27;type&#x27;: &#x27;DEMAND&#x27;, &#x27;top&#x27;: 103.0, &#x27;bottom&#x27;: 98.0, &#x27;created_at&#x27;: 8, &#x27;ob_bar&#x27;: 5,
+ &#x27;level&#x27;: &#x27;internal&#x27;, &#x27;structure&#x27;: &#x27;BOS&#x27;, &#x27;quality_displacement&#x27;: False,
+ &#x27;quality_large_bar&#x27;: True, &#x27;quality_fvg&#x27;: True, &#x27;quality_liquidity_sweep&#x27;: True,
+ &#x27;quality_volume_expansion&#x27;: True, &#x27;quality&#x27;: 4, &#x27;mitigated_at&#x27;: 12}</code></pre>
+<p>Every hand-derived field matches, including the <code>ATR_200</code> series.</p>
+<h3 id="scaling-up-the-real-dataset">Scaling up — the real dataset</h3>
+<pre class="lang-python"><code>df  = bot.compute_indicators(bot.load_candles())
+obs = bot.compute_smc(df)
+print(len(obs), pd.Series([o[&quot;level&quot;] for o in obs]).value_counts().to_dict())
+print(pd.Series([o[&quot;quality&quot;] for o in obs]).value_counts().sort_index().to_dict())</code></pre>
+<p>Actual output:</p>
+<pre><code>761 {&#x27;internal&#x27;: 659, &#x27;swing&#x27;: 102}
+{0: 93, 1: 154, 2: 206, 3: 197, 4: 90, 5: 21}</code></pre>
+<p>761 Order Blocks over 8,767 bars. The quality distribution is roughly bell-shaped and centred on 2 — worth knowing, because it shows the composite score is not degenerate (it is not all zeros or all fives).</p>
+<hr>
+<h2 id="3-3-buildorderblockfromcrossover-l770895-protected-core">3.3 <code>_build_order_block_from_crossover()</code> — L770–895 · PROTECTED CORE</h2>
+<h3 id="what-the-paper-claims-here-2">WHAT THE PAPER CLAIMS HERE</h3>
+<p><em>Methodology, &quot;Order Block quality.&quot;</em> Each Order Block is scored on five independent binary criteria. The criteria are described as <em>independent</em> because they are — they are summed, never multiplied or ranked, and the sum is used only as a cumulative eligibility threshold, never as an ordinal statistic in a test.</p>
+<p><strong>This is also the function that carried the disclosed lookahead bug</strong> and now carries its fix and its runtime guards. Know it cold.</p>
+<h3 id="what-the-code-does-2">WHAT THE CODE DOES</h3>
+<p>First the zone itself (L789–798):</p>
+<pre class="lang-python"><code>ob_bar_index = pivot_bar + int(extreme_selector(extreme_source[pivot_bar : confirmation_bar + 1]))
+ob = {&quot;type&quot;: ob_type,
+      &quot;top&quot;:    float(parsed_highs[ob_bar_index]),
+      &quot;bottom&quot;: float(parsed_lows[ob_bar_index]),
+      &quot;created_at&quot;: confirmation_bar, &quot;ob_bar&quot;: ob_bar_index, ...}</code></pre>
+<p><code>extreme_selector</code> / <code>extreme_source</code> are the only difference between the DEMAND and SUPPLY call sites — <code>argmin</code>/<code>parsed_lows</code> versus <code>argmax</code>/<code>parsed_highs</code>. Everything below is shared.</p>
+<p>Note the two distinct bar indices, which panelists confuse constantly:</p>
+<ul><li><strong><code>ob_bar</code></strong> — the candle the zone is drawn on.</li><li><strong><code>created_at</code></strong> — the later candle whose close confirmed the break, and therefore the first moment the zone is <em>knowable</em>.</li></ul>
+<p>The gap between them is the same quantity that becomes the KDJ exit window <code>w</code> (§3.5).</p>
+<p><strong>Criterion 1 — displacement (L800–826).</strong> A strong-bodied candle in the zone&#x27;s direction within 3 bars after the OB bar:</p>
+<pre class="lang-python"><code>for j in range(ob_bar_index + 1, min(confirmation_bar + 1, ob_bar_index + 4)):
+    assert j &lt;= confirmation_bar, &quot;LOOKAHEAD: ...&quot;
+    candle_body = float(df.at[j,&quot;close&quot;]) - float(df.at[j,&quot;open&quot;])
+    displacement_threshold = 1.5 * float(atr_200[ob_bar_index]) if not np.isnan(atr_200[ob_bar_index]) else 0
+    if ob[&quot;type&quot;] == &quot;DEMAND&quot; and candle_body &gt; 0 and abs(candle_body) &gt;= displacement_threshold:
+        displacement = True; break</code></pre>
+<p><strong>Criterion 2 — large bar (L828–833).</strong> The OB candle&#x27;s own range meets or exceeds <code>ATR_200</code> at that bar. No forward search at all.</p>
+<p><strong>Criterion 3 — fair value gap (L835–856).</strong> The 3-candle FVG definition: for a DEMAND zone, a gap exists if <code>low[j+2] &gt; high[j]</code> for some <code>j</code> in the window — two candles later, price has left an untraded band behind it.</p>
+<pre class="lang-python"><code>for j in range(ob_bar_index, min(confirmation_bar - 1, ob_bar_index + 3)):
+    assert j + 2 &lt;= confirmation_bar, &quot;LOOKAHEAD: ...&quot;
+    if ob[&quot;type&quot;] == &quot;DEMAND&quot; and float(lows[j+2]) &gt; float(highs[j]):
+        fair_value_gap = True; break</code></pre>
+<p><strong>Criterion 4 — liquidity sweep (L858–866).</strong> The OB candle&#x27;s own extreme takes out the prior 10 bars&#x27; extreme. Backward-looking only.</p>
+<p><strong>Criterion 5 — volume expansion (L868–882).</strong> Either the OB candle&#x27;s volume is at least 1.25× the trailing 20-bar average, <strong>or</strong> its body occupies more than 60% of its range. An <code>or</code>, not an <code>and</code> — a decisive candle counts whether the decisiveness shows up as volume or as shape.</p>
+<p>Then the sum (L884–892):</p>
+<pre class="lang-python"><code>ob[&quot;quality&quot;] = int(ob[&quot;quality_displacement&quot;] + ob[&quot;quality_large_bar&quot;] + ob[&quot;quality_fvg&quot;]
+                    + ob[&quot;quality_liquidity_sweep&quot;] + ob[&quot;quality_volume_expansion&quot;])</code></pre>
+<h3 id="the-disclosed-bug-and-how-the-fix-works">THE DISCLOSED BUG, AND HOW THE FIX WORKS</h3>
+<p><code>docs/SCRATCH_RESULTS_METHODS.md</code>, <em>Corrected errors → Backtest-engine bug</em>: the displacement and FVG forward searches were originally bounded by <strong>dataset length</strong> instead of by the Order Block&#x27;s own confirmation bar. That let them read one to two candles that would not have been available at the moment the zone became eligible. That is genuine data leakage. It was found by a dedicated no-lookahead audit and fixed in commit <code>cb4ed93</code> by bounding both loops at <code>confirmation_bar</code>.</p>
+<p>Read the two bounds carefully — they are not the same, and the difference is the substance of the fix:</p>
+<div class="tw"><table><thead><tr><th>Criterion</th><th>Bound</th><th>Why that expression</th></tr></thead><tbody><tr><td>Displacement</td><td><code>min(confirmation_bar + 1, ob_bar_index + 4)</code></td><td>reads <strong>one</strong> bar <code>j</code>, so <code>j ≤ confirmation_bar</code> is the constraint</td></tr><tr><td>FVG</td><td><code>min(confirmation_bar − 1, ob_bar_index + 3)</code></td><td>reads bars <code>j</code> <strong>and <code>j+2</code></strong>, so <code>j + 2 ≤ confirmation_bar</code> is the constraint</td></tr></tbody></table></div>
+<p>The <code>−1</code> in the FVG bound is not a typo or an off-by-one; it is what keeps the <em>furthest</em> read, <code>j+2</code>, inside the confirmation bar.</p>
+<p><strong>What happens if the window is too narrow to evaluate the criterion?</strong> The loop body never executes and the criterion stays <code>False</code>. That is a deliberate choice: the criterion is <strong>frozen at what was knowable at confirmation time</strong>, not marked unknown and skipped. An Order Block confirmed one bar after its own candle simply cannot have a confirmed FVG, and the engine records that as &quot;no&quot;, which is the truthful answer at that moment.</p>
+<p><strong>Why the fix does not move the headline figures.</strong> The published 27-trade baseline runs at <code>min_ob_quality=0</code>. Every Order Block passes a threshold of zero regardless of its score, so a change in scoring cannot change which trades fire. The bug is real and disclosed; its effect on the baseline is nil, and that is verifiable rather than asserted — the regression harness passes across the fix.</p>
+<p><strong>The <code>except AssertionError: raise</code> pattern (L823/L853).</strong> Each criterion is wrapped in a broad <code>try/except</code> so a malformed bar cannot crash a 761-block scan. But an <code>AssertionError</code> is re-raised explicitly <em>before</em> the broad handler can swallow it. Without that line, the no-lookahead assertions would be silently caught by the very safety net meant to protect the loop, and the guard would be decorative. This is the single most easily-missed detail in the function.</p>
+<h3 id="hand-check-score-the-order-block-from-3-2">HAND CHECK — score the Order Block from §3.2</h3>
+<p>Same 12-bar fixture. The zone is <code>ob_bar = 5</code>, <code>confirmation_bar = 8</code>, type DEMAND, and <code>ATR_200[5] = 5.0</code>.</p>
+<p><strong>1 — Displacement.</strong> Window: <code>range(6, min(9, 9))</code> → bars 6, 7, 8. Threshold <code>= 1.5 × 5.0 = 7.5</code>.</p>
+<pre><code>bar 6 body = 104 − 102 = 2   ( 2 &lt; 7.5 )
+bar 7 body = 107 − 104 = 3   ( 3 &lt; 7.5 )
+bar 8 body = 111 − 107 = 4   ( 4 &lt; 7.5 )</code></pre>
+<p>→ <strong>False</strong></p>
+<p><strong>2 — Large bar.</strong> Bar 5 range <code>= 103 − 98 = 5</code>; <code>ATR_200[5] = 5.0</code>; <code>5 ≥ 5.0</code> → <strong>True</strong> (a boundary case, and <code>&gt;=</code> is the operator).</p>
+<p><strong>3 — FVG.</strong> Window: <code>range(5, min(7, 8))</code> → bars 5, 6.</p>
+<pre><code>j = 5:  low[7] = 103  &gt;  high[5] = 103 ?   103 &gt; 103 is False
+j = 6:  low[8] = 106  &gt;  high[6] = 105 ?   True  →  gap found</code></pre>
+<p>→ <strong>True</strong>. Note <code>j = 5</code> failing on an exact tie: the operator is strict <code>&gt;</code>.</p>
+<p><strong>4 — Liquidity sweep.</strong> Window <code>lows[0..4] = 99, 100, 102, 100, 99</code> → min 99. <code>low[5] = 98 ≤ 99</code> → <strong>True</strong>.</p>
+<p><strong>5 — Volume expansion.</strong> Trailing 20-bar mean of <code>volume[0..4]</code> = 100. <code>volume[5] = 200 ≥ 1.25 × 100 = 125</code> → <strong>True</strong>. (The body test would have failed on its own: <code>|102 − 100| / 5 = 0.4</code>, not <code>&gt; 0.6</code>. The <code>or</code> is what carries it.)</p>
+<p><strong>Composite:</strong> <code>0 + 1 + 1 + 1 + 1 = </code> <strong>4</strong>.</p>
+<h3 id="confirm-against-the-code-1">CONFIRM AGAINST THE CODE</h3>
+<p>Re-run the §3.2 snippet; the printed dict already carries every criterion:</p>
+<pre><code>&#x27;quality_displacement&#x27;: False, &#x27;quality_large_bar&#x27;: True, &#x27;quality_fvg&#x27;: True,
+&#x27;quality_liquidity_sweep&#x27;: True, &#x27;quality_volume_expansion&#x27;: True, &#x27;quality&#x27;: 4</code></pre>
+<p>All five hand-derived booleans and the composite match.</p>
+<hr>
+<h2 id="3-4-getstructuraltp-l896926-protected-core">3.4 <code>get_structural_tp()</code> — L896–926 · PROTECTED CORE</h2>
+<h3 id="what-the-code-does-3">WHAT THE CODE DOES</h3>
+<p>Six lines. Given an entry price and a side, find the nearest Order Block of the <em>opposing</em> type on the correct side of price, and return the edge of it that price would reach first:</p>
+<pre class="lang-python"><code>if side == &quot;LONG&quot;:
+    candidate_targets = [ob for ob in valid_order_blocks
+                         if ob[&quot;type&quot;] == &quot;SUPPLY&quot; and ob[&quot;bottom&quot;] &gt; entry_price]
+    return min(candidate_targets, key=lambda ob: ob[&quot;bottom&quot;])[&quot;bottom&quot;] if candidate_targets else None
+else:
+    candidate_targets = [ob for ob in valid_order_blocks
+                         if ob[&quot;type&quot;] == &quot;DEMAND&quot; and ob[&quot;top&quot;] &lt; entry_price]
+    return max(candidate_targets, key=lambda ob: ob[&quot;top&quot;])[&quot;top&quot;] if candidate_targets else None</code></pre>
+<p>For a LONG the target is the <strong>bottom</strong> of the nearest SUPPLY zone above — the near edge, the first price at which supply is expected to appear. For a SHORT it is the <strong>top</strong> of the nearest DEMAND zone below. Taking the near edge rather than the middle or far edge is the conservative choice: the target is the first point of expected resistance, not the optimistic one.</p>
+<p>Returns <code>None</code> when nothing qualifies. The caller then falls back to a fixed <code>2 × risk</code> target (§3.7). About that fallback: it means &quot;structural&quot; targets are used when structure exists and a fixed multiple otherwise, and which one was used is recorded per trade as <code>tp_is_structural</code>, so the split is auditable rather than hidden.</p>
+<p><strong>Why this cannot look ahead:</strong> <code>valid_order_blocks</code> is <code>active_order_blocks_for_tp</code>, filtered in the driver loop by <code>created_at &lt; i &lt; mitigated_at</code>. Every zone considered was confirmed strictly before the current bar.</p>
+<hr>
+<h2 id="3-5-the-dual-kdj-architecture-kdjresetinitupdateexit-l9271063-protecte">3.5 The dual-KDJ architecture — <code>kdj_reset_init/update/exit</code>, L927–1063 · PROTECTED CORE</h2>
+<p><strong>This is the single most likely question at a defense.</strong> Two KDJ systems exist in this project on purpose, and a reader who has skimmed the code will assume it is an inconsistency.</p>
+<h3 id="what-the-paper-claims-here-3">WHAT THE PAPER CLAIMS HERE</h3>
+<p><em>Methodology, &quot;Exit logic.&quot;</em> Entry gating reads a static, full-history KDJ(9,3,3). Exit timing uses a separate per-trade oscillator, seeded from that static series at the entry candle and then recursed forward on a trade-specific window length <code>w</code>.</p>
+<h3 id="the-two-systems-side-by-side">THE TWO SYSTEMS, SIDE BY SIDE</h3>
+<div class="tw"><table><thead><tr><th></th><th><strong>System A — entry gating</strong></th><th><strong>System B — exit timing</strong></th></tr></thead><tbody><tr><td>Where</td><td><code>compute_indicators()</code>, L581–590</td><td><code>kdj_reset_init/update/exit</code>, L927–1063</td></tr><tr><td>Period</td><td>fixed 9</td><td><code>w = entry_idx − ob_bar</code>, per trade</td></tr><tr><td>Computed</td><td>once, over the whole dataset</td><td>per trade, bar by bar, from entry</td></tr><tr><td>Seed</td><td>K = D = first RSV</td><td>K, D copied from System A at the entry bar</td></tr><tr><td>Reads</td><td>every <code>kdj_k</code>, <code>kdj_d</code>, <code>kdj_j</code> in an entry condition</td><td>nothing in an entry condition</td></tr><tr><td>Affects</td><td>which trades open</td><td>only when an open trade closes</td></tr></tbody></table></div>
+<p><code>docs/SCRATCH_RESULTS_METHODS.md</code> records the audit result plainly: <em>&quot;The exit-side reset period <code>w</code> has no effect on entry — confirmed by read-only audit.&quot;</em> The two systems never touch. They are separate by design, and unifying them would be a strategy change, not a cleanup.</p>
+<h3 id="kdjresetinit-l927977"><code>kdj_reset_init()</code> — L927–977</h3>
+<pre class="lang-python"><code>period = default_period                                  # 9
+if ob_bar is not None and isinstance(ob_bar, int) and ob_bar &gt;= 0:
+    period = max(1, entry_idx - ob_bar)
+return {&quot;k&quot;: float(df.at[entry_idx,&quot;K&quot;]), &quot;d&quot;: float(df.at[entry_idx,&quot;D&quot;]),
+        &quot;prev_k&quot;: float(df.at[entry_idx,&quot;K&quot;]), &quot;prev_d&quot;: float(df.at[entry_idx,&quot;D&quot;]),
+        &quot;period&quot;: int(period), &quot;entry_idx&quot;: int(entry_idx), &quot;armed&quot;: False}</code></pre>
+<p>Three design decisions, each of which a panelist may probe:</p>
+<ol><li><strong>The seed is the live static K/D at the entry bar</strong> — not 50, not a backfill. The exit oscillator therefore starts from the market&#x27;s actual momentum state at entry rather than from a neutral fiction.</li><li><strong><code>w = entry_idx − ob_bar</code></strong> ties the exit window to how <em>stale</em> the triggering Order Block was. A zone that price returned to quickly gets a short, twitchy exit oscillator; a zone price took months to revisit gets a long, slow one. The rationale is that the timescale of the setup should set the timescale of the exit.</li><li><strong><code>ob_bar=None</code> → <code>period = 9</code>.</strong> This is not dead code: the ablation arms (§4) have no Order Block, and this is the engine&#x27;s own explicit no-OB case, reused rather than reimplemented.</li></ol>
+<blockquote><p><strong>Correct the &quot;two-bar window&quot; story if you have heard it.</strong> An earlier paper draft used a two-bar <code>w</code> as an illustrative example. Across the 27 baseline trades the observed <code>w</code> runs <strong>14 to 439, median 74</strong> — it never approaches single digits. The paper text was corrected; the code was not changed, because the code was never wrong.</p></blockquote>
+<h3 id="kdjresetupdate-l9781031"><code>kdj_reset_update()</code> — L978–1031</h3>
+<pre class="lang-python"><code>window_start = max(cur_idx - period + 1, 0)
+window_high  = df[&quot;high&quot;].iloc[window_start : cur_idx + 1]
+window_low   = df[&quot;low&quot;].iloc[window_start : cur_idx + 1]
+...
+raw_stochastic_value = ((df.at[cur_idx,&quot;close&quot;] - window_lowest) / rsv_denominator * 100) if rsv_denominator &gt; 0 else 50.0
+state[&quot;prev_k&quot;] = state[&quot;k&quot;]; state[&quot;prev_d&quot;] = state[&quot;d&quot;]
+state[&quot;k&quot;] = state[&quot;k&quot;] * (1 - 1/3) + raw_stochastic_value * (1/3)
+state[&quot;d&quot;] = state[&quot;d&quot;] * (1 - 1/3) + state[&quot;k&quot;]            * (1/3)
+if side == &quot;SHORT&quot; and state[&quot;k&quot;] &lt; state[&quot;d&quot;]: state[&quot;armed&quot;] = True
+if side == &quot;LONG&quot;  and state[&quot;k&quot;] &gt; state[&quot;d&quot;]: state[&quot;armed&quot;] = True</code></pre>
+<p>The smoothing is identical to System A&#x27;s (α = 1/3, D smooths the <em>new</em> K); only the RSV window length differs. The slice <code>[window_start : cur_idx + 1]</code> ends at the current bar — no forward read.</p>
+<p><strong>The <code>armed</code> flag is the part that carries the logic.</strong> The state machine will not exit on the first crossing it sees. It must first cross <em>in the trade&#x27;s favour</em> (arming), and only a subsequent cross <em>against</em> it is an exit. That makes the exit a genuine momentum reversal rather than a coin-flip on the first wobble.</p>
+<h3 id="kdjresetexit-l10321063"><code>kdj_reset_exit()</code> — L1032–1063</h3>
+<pre class="lang-python"><code>if not state[&quot;armed&quot;]: return False
+if side == &quot;SHORT&quot;: return state[&quot;prev_k&quot;] &lt;= state[&quot;prev_d&quot;] and state[&quot;k&quot;] &gt; state[&quot;d&quot;]
+else:               return state[&quot;prev_k&quot;] &gt;= state[&quot;prev_d&quot;] and state[&quot;k&quot;] &lt; state[&quot;d&quot;]</code></pre>
+<p>True on exactly the bar of the reversal crossing, using <code>prev_*</code> versus current — a state comparison, not a level test. It cannot fire twice on the same crossing.</p>
+<h3 id="hand-check-one-init-and-one-update">HAND CHECK — one init and one update</h3>
+<p>Use the six-bar KDJ fixture from §3.1 Hand Check B, entering at bar 5 with a triggering Order Block at bar 2.</p>
+<p><strong>Init.</strong> <code>w = entry_idx − ob_bar = 5 − 2 = 3</code>. Seeds come straight from System A at bar 5: <code>K[5] = 56.546203</code>, <code>D[5] = 53.716922</code>.</p>
+<pre><code>state = {k: 56.546203, d: 53.716922, prev_k: 56.546203, prev_d: 53.716922,
+         period: 3, entry_idx: 5, armed: False}</code></pre>
+<p><strong>One update at bar 5, side LONG.</strong> Window start <code>= max(5 − 3 + 1, 0) = 3</code>, so the window is bars 3–5:</p>
+<pre><code>highs[3..5] = 115, 113, 117  → highest = 117
+lows [3..5] =  95,  93,  97  → lowest  =  93
+RSV = (close[5] − 93) / (117 − 93) × 100 = (107 − 93)/24 × 100 = 58.33333333
+
+k = 56.546203 × (2/3) + 58.33333333 × (1/3) = 37.697469 + 19.444444 = 57.141913
+d = 53.716922 × (2/3) + 57.141913   × (1/3) = 35.811281 + 19.047304 = 54.858586</code></pre>
+<p><code>k &gt; d</code> and side is LONG → <strong>armed becomes True</strong>. <code>kdj_reset_exit</code> is still <code>False</code>: arming is not exiting.</p>
+<h3 id="confirm-against-the-code-2">CONFIRM AGAINST THE CODE</h3>
+<pre class="lang-python"><code>r2 = bot.compute_indicators(d2)          # the six-bar fixture from 3.1B
+st = bot.kdj_reset_init(r2, entry_idx=5, ob_bar=2)
+print(st)
+print(bot.kdj_reset_init(r2, entry_idx=5, ob_bar=None)[&quot;period&quot;])
+st2 = bot.kdj_reset_update(dict(st), r2, 5, &quot;LONG&quot;)
+print(st2, bot.kdj_reset_exit(st2, &quot;LONG&quot;))</code></pre>
+<p>Actual output (rounded to 6 dp):</p>
+<pre><code>{&#x27;k&#x27;: 56.546203, &#x27;d&#x27;: 53.716922, &#x27;prev_k&#x27;: 56.546203, &#x27;prev_d&#x27;: 53.716922,
+ &#x27;period&#x27;: 3, &#x27;entry_idx&#x27;: 5, &#x27;armed&#x27;: False}
+9
+{&#x27;k&#x27;: 57.141913, &#x27;d&#x27;: 54.858586, &#x27;prev_k&#x27;: 56.546203, &#x27;prev_d&#x27;: 53.716922,
+ &#x27;period&#x27;: 3, &#x27;entry_idx&#x27;: 5, &#x27;armed&#x27;: True} False</code></pre>
+<p>The <code>ob_bar=None</code> fallback returns period 9, as documented.</p>
+<h3 id="confirm-the-w-range-on-real-data">CONFIRM THE <code>w</code> RANGE ON REAL DATA</h3>
+<pre class="lang-python"><code>print(t.kdj_exit_window.min(), t.kdj_exit_window.max(), t.kdj_exit_window.median())</code></pre>
+<p>Actual output:</p>
+<pre><code>14 439 74.0</code></pre>
+<p>Matching <code>docs/SCRATCH_RESULTS_METHODS.md</code> exactly. <code>kdj_exit_window</code> is recorded on every trade row precisely so this is checkable without recomputing <code>entry_idx − ob_bar</code> by hand.</p>
+<hr>
+<h2 id="3-6-resolvestructuraltpob-l10641080">3.6 <code>_resolve_structural_tp_ob()</code> — L1064–1080</h2>
+<p>Bookkeeping. <code>get_structural_tp()</code> returns only a <em>price</em>; the closed-trade record wants to log <em>which</em> Order Block that price came from. This finds it back by matching within a small relative tolerance:</p>
+<pre class="lang-python"><code>tolerance = 1e-6
+candidates = [ob for ob in valid_obs_tp
+              if ob[&quot;type&quot;] == opposing_type
+              and abs(ob[level_key] - structural_tp_price) &lt;= tolerance * max(1.0, abs(structural_tp_price))]
+return min(candidates, key=lambda ob: abs(ob[level_key] - structural_tp_price)) if candidates else None</code></pre>
+<p>The tolerance is <em>relative</em> (scaled by the price magnitude, floored at 1.0) because an exact float equality test on a value that has been through a <code>min()</code>/<code>max()</code> and a dict round-trip is fragile. It affects only which <code>tp_ob_*</code> diagnostic fields get filled in, never the take-profit price itself — that was already decided in §3.4.</p>
+<hr>
+<h2 id="3-7-the-entry-gates-tryenterlong-l10811160-tryentershort-l11611234-pro">3.7 The entry gates — <code>_try_enter_long</code> L1081–1160, <code>_try_enter_short</code> L1161–1234 · PROTECTED CORE</h2>
+<h3 id="what-the-paper-claims-here-4">WHAT THE PAPER CLAIMS HERE</h3>
+<p><em>Methodology, &quot;Entry conditions.&quot;</em> A trade opens only when price is inside a live Order Block <strong>and</strong> momentum, oscillator and volatility conditions all agree, <strong>and</strong> the resulting risk geometry clears two minimum standards.</p>
+<h3 id="the-long-gate-as-a-checklist">THE LONG GATE AS A CHECKLIST</h3>
+<p>The function loops over every currently-active DEMAND zone and takes the first that clears <strong>eight gates in this order</strong>. Every gate is a <code>continue</code>, so one failure moves to the next zone, not to the next bar.</p>
+<div class="tw"><table><thead><tr><th>#</th><th>Line</th><th>Gate</th><th>Code</th><th>In words</th></tr></thead><tbody><tr><td>1</td><td>1110</td><td>Zone touch</td><td><code>low &lt;= ob[&quot;top&quot;] and close &gt;= ob[&quot;bottom&quot;]</code></td><td>price is inside the zone</td></tr><tr><td>2</td><td>1112</td><td>MACD below zero and rising</td><td><code>hist &lt; 0 and hist &gt; hist[-1]</code></td><td>momentum is negative but turning up</td></tr><tr><td>3</td><td>1115</td><td>Rising for ≥ 2 bars</td><td><code>hist[-1] &gt; hist[-2]</code></td><td>not a one-bar blip</td></tr><tr><td>4</td><td>1117</td><td>KDJ oversold and turning</td><td><code>K &lt; 50 and K &gt; K[-1] and J &lt; 60</code></td><td>oscillator is low and lifting</td></tr><tr><td>5</td><td>1119</td><td>K acceleration in window</td><td><code>1 &lt;= k_accel &lt;= 6</code></td><td>accelerating, but not a spike</td></tr><tr><td>6</td><td>1121</td><td>Volatility regime</td><td><code>not (0.8 &lt;= atr_r &lt;= 1.0)</code></td><td>skip the dead zone</td></tr><tr><td>7</td><td>1124–1131</td><td>Stop distance</td><td><code>risk/close &gt;= 0.015</code></td><td>stop at least 1.5% away</td></tr><tr><td>8</td><td>1133–1136</td><td>Reward:risk</td><td><code>(tp − close)/risk &gt;= 1.5</code></td><td>target at least 1.5× the risk</td></tr></tbody></table></div>
+<p>Gates 5 and 6 are the two most likely to be challenged, so state them precisely:</p>
+<p><strong>Gate 5 — <code>k_accel</code></strong> is the <em>second difference</em> of K over three bars, computed in the driver loop at L1480:</p>
+<pre class="lang-python"><code>kdj_k_acceleration = (kdj_k - kdj_k_prev_bar) - (kdj_k_prev_bar - kdj_k_two_bars_ago)</code></pre>
+<p>The window <code>[1, 6]</code> excludes two different failure modes at once. <code>k_accel &lt;= 0</code> means K is not yet accelerating in the trade&#x27;s favour — the turn has not happened. <code>k_accel &gt; 6</code> means a single-bar spike, which on 4h BTC data typically mean-reverts on the next candle. The filter wants a turn that is real but not violent.</p>
+<p><strong>Gate 6 — <code>atr_r</code></strong> is <code>ATR(14) / ATR(200)</code>, current volatility against the long-horizon baseline. The excluded band is <code>0.8 ≤ atr_r ≤ 1.0</code>, i.e. <em>&quot;current volatility is roughly normal.&quot;</em> This is a <strong>band exclusion, not a threshold</strong>: both unusually quiet (<code>&lt; 0.8</code>) and unusually active (<code>&gt; 1.0</code>) regimes are allowed, and only the ordinary middle is skipped. The reasoning is that the setup depends on a volatility event, and an average-volatility market provides no edge either way.</p>
+<p>Then the stop and target (L1124–1136):</p>
+<pre class="lang-python"><code>stop_loss_candidate = ob[&quot;bottom&quot;] - atr_14 * 0.5     # half an ATR below the zone
+risk = close - stop_loss_candidate
+if risk &lt;= 0: continue
+if risk / close &lt; MIN_STOP_LOSS_DISTANCE_RATIO: continue          # &gt;= 1.5%
+structural_tp_price = get_structural_tp(close, &quot;LONG&quot;, valid_obs_tp)
+take_profit_price   = structural_tp_price if structural_tp_price else close + risk * 2.0
+if (take_profit_price - close) / risk &lt; MIN_RISK_REWARD_RATIO: continue   # &gt;= 1.5</code></pre>
+<p>The stop sits half an ATR <em>below the zone</em>, not below the entry price — it is anchored to structure, with a volatility buffer. Note that the fallback target is <code>2 × risk</code> while the <em>minimum acceptable</em> ratio is 1.5: a structural target closer than 1.5R is rejected outright rather than being widened to fit.</p>
+<h3 id="the-short-gate-is-not-a-sign-flip">THE SHORT GATE IS NOT A SIGN FLIP</h3>
+<p><code>_try_enter_short</code> is <em>not</em> the mirror image, and glossing it as one is an error a panelist can catch. It carries <strong>two extra gates the LONG side does not have</strong>:</p>
+<pre class="lang-python"><code>if not (kdj_k &gt; 50 and kdj_j &gt; kdj_k &gt; kdj_d): continue   # gate 4, note the ORDERING test
+...
+if kdj_k &lt; KDJ_K_SHORT_FLOOR: continue    # L1193  K &gt;= 70   — extra
+if kdj_j &gt; KDJ_J_SHORT_CAP:   continue    # L1197  J &lt;= 100  — extra</code></pre>
+<p>So the SHORT side must be genuinely overbought (<code>K ≥ 70</code>, stricter than the <code>K &gt; 50</code> in gate 4) <em>and</em> not already exhausted (<code>J ≤ 100</code>). Gate 4 itself also tests an <strong>ordering</strong> — <code>J &gt; K &gt; D</code> — which has no LONG equivalent.</p>
+<p><strong>Why the asymmetry?</strong> BTC over this window is a structurally upward-drifting asset. A short is fighting that drift, so it is held to a stricter oscillator standard. This is a stated design decision, not an oversight. The resulting split is <strong>15 LONG / 12 SHORT</strong> across the 27 baseline trades — the extra gates tighten shorts without eliminating them.</p>
+<h3 id="hand-check-walk-a-real-entry-through-the-gates">HAND CHECK — walk a real entry through the gates</h3>
+<p>A contrived bar can only show a gate <em>rejecting</em>. To see all eight <em>pass</em>, walk the actual first trade of the baseline. Pull its bar with:</p>
+<pre class="lang-python"><code>i = int(t.iloc[0].entry_idx)
+for col in [&quot;close&quot;,&quot;MACD_hist&quot;,&quot;K&quot;,&quot;D&quot;,&quot;J&quot;,&quot;ATR&quot;,&quot;ATR_200&quot;]:
+    print(col, df.at[i-2,col], df.at[i-1,col], df.at[i,col])</code></pre>
+<p>Actual output, for <code>i = 335</code> (<code>2022-02-26 04:00:00</code>), a <strong>SHORT</strong>:</p>
+<pre><code>close      39410.92           38676.14           39219.17
+MACD_hist  394.5281944527     363.9833451310     363.6716077851
+K          77.7382875909      77.4183549156      80.6206254068
+D          65.1791446867      69.2588814297      73.0461294221
+J          102.8565733992     93.7373018874      95.7696173764
+ATR        1247.8828571429    1248.3514285714    1262.5707142857
+ATR_200     901.3945000000     902.5204000000     902.3649000000</code></pre>
+<p>The entry Order Block is <code>SUPPLY, top 39494.35, bottom 38909.26, ob_bar 307, created_at 308, quality 2</code>. Now walk the SHORT checklist by hand:</p>
+<div class="tw"><table><thead><tr><th>#</th><th>Gate</th><th>Arithmetic</th><th>Verdict</th></tr></thead><tbody><tr><td>1</td><td>zone touch</td><td><code>high 39600.00 ≥ 38909.26</code> and <code>close 39219.17 ≤ 39494.35</code></td><td>pass</td></tr><tr><td>2</td><td>hist &gt; 0 and falling</td><td><code>363.6716 &gt; 0</code> and <code>363.6716 &lt; 363.9833</code></td><td>pass</td></tr><tr><td>3</td><td>falling ≥ 2 bars</td><td><code>363.9833 &lt; 394.5282</code></td><td>pass</td></tr><tr><td>4</td><td>K &gt; 50 and J &gt; K &gt; D</td><td><code>80.62 &gt; 50</code>; <code>95.77 &gt; 80.62 &gt; 73.05</code></td><td>pass</td></tr><tr><td>5</td><td>k_accel in [1,6]</td><td><code>(80.6206 − 77.4184) − (77.4184 − 77.7383) = 3.2022 + 0.3199 = 3.5222</code></td><td>pass</td></tr><tr><td>6</td><td>atr_r outside [0.8,1.0]</td><td><code>1262.5707 / 902.3649 = 1.39918</code></td><td>pass</td></tr><tr><td>—</td><td>K floor</td><td><code>80.62 ≥ 70</code></td><td>pass</td></tr><tr><td>—</td><td>J cap</td><td><code>95.77 ≤ 100</code></td><td>pass</td></tr><tr><td>7</td><td>stop distance</td><td><code>SL = 39494.35 + 1262.5707 × 0.5 = 40125.6354</code>; <code>risk = 906.4654</code>; <code>906.4654 / 39219.17 = 2.311%</code> ≥ 1.5%</td><td>pass</td></tr><tr><td>8</td><td>reward:risk</td><td><code>TP = 35515.83</code> (structural, from the DEMAND zone at bar 325); <code>(39219.17 − 35515.83) / 906.4654 = 4.085</code> ≥ 1.5</td><td>pass</td></tr></tbody></table></div>
+<p>Every intermediate above is reproducible with a calculator from the printed bar values, and every one is confirmed by the trade record itself:</p>
+<pre><code>side SHORT | entry_idx 335 | entry 39219.17 | stop_loss 40125.635357
+take_profit 35515.83 | tp_is_structural True | tp_ob_bar 325 | kdj_exit_window 28</code></pre>
+<p>Note <code>kdj_exit_window = 28 = 335 − 307</code> — the entry bar minus the OB bar, exactly as §3.5 specifies.</p>
+<p>This trade closed at <code>-0.664547%</code> on a trailing exit. <strong>Report it as it is.</strong> The first trade of the baseline is a loser, and showing that you walk a losing trade rather than a cherry-picked winner is worth more at a defense than the number itself.</p>
+<hr>
+<h2 id="3-8-the-exit-ladder-checklongexitconditions-l12351291-checkshort-l1292">3.8 The exit ladder — <code>_check_long_exit_conditions</code> L1235–1291, <code>_check_short_...</code> L1292–1336 · PROTECTED CORE</h2>
+<h3 id="what-the-paper-claims-here-5">WHAT THE PAPER CLAIMS HERE</h3>
+<p><em>Methodology, &quot;Exit logic.&quot;</em> Five exit mechanisms are evaluated on every bar of an open position, <strong>in a fixed priority order</strong>. The order is part of the strategy, not an implementation detail — a different order produces a different trade log.</p>
+<h3 id="the-five-rungs-in-order-long">THE FIVE RUNGS, IN ORDER (LONG)</h3>
+<p><strong>Rung 1 — trailing 50% retrace (L1259–1263).</strong> Only armed once the trade has been up ≥ 1.5% at some point:</p>
+<pre class="lang-python"><code>if peak_pnl_pct &gt;= 1.5:
+    trailing_floor = entry_price * (1 + peak_pnl_pct * 0.5 / 100)
+    if close &lt;= trailing_floor:
+        return &quot;TRAILING EXIT (50% RETRACE)&quot;, pnl_pct, ...</code></pre>
+<p>The floor gives back half of the best unrealised gain. If a trade peaked at +4%, the floor sits at +2%.</p>
+<p><strong>The state update between rungs 1 and 2 (L1265) — read this twice.</strong></p>
+<pre class="lang-python"><code>kdj_state = kdj_reset_update(kdj_state, df, i, &quot;LONG&quot;)</code></pre>
+<p>The KDJ exit machine advances with <strong>this</strong> bar&#x27;s price action <em>before</em> the KDJ rung is tested — <strong>but only if rung 1 did not already fire</strong>, because rung 1 returns first. That ordering is preserved deliberately from the original engine. Moving this line changes which bar&#x27;s data the KDJ exit is allowed to react to, and therefore changes the trade log. It is called out in the function&#x27;s own docstring for exactly that reason.</p>
+<p><strong>Rung 2 — KDJ reset exit (L1270–1272).</strong></p>
+<pre class="lang-python"><code>if (i - entry_idx) &gt;= 3 and kdj_reset_exit(kdj_state, &quot;LONG&quot;):
+    return &quot;KDJ RESET EXIT&quot;, pnl_pct, ...</code></pre>
+<p>The <code>&gt;= 3</code> bar guard suppresses single-bar oscillator noise in the first two bars of a trade, which would otherwise close positions before the thesis has had a chance to develop.</p>
+<p><strong>Rung 3 — ATR move exit (L1274–1276).</strong> <code>close &gt;= entry + entry_atr × 1.8</code> → take the move. Note <code>entry_atr</code> is <strong>frozen at entry</strong>, not recomputed each bar; the target distance does not drift with volatility mid-trade.</p>
+<p><strong>Rung 4 — breakeven ratchet (L1278–1280).</strong> Not an exit. Once the move has run <code>2.0 × entry_atr</code> in favour, the stop is raised to the entry price:</p>
+<pre class="lang-python"><code>if close &gt;= entry_price + entry_atr * ATR_MULT_BREAKEVEN:
+    stop_loss_price = max(stop_loss_price, entry_price)</code></pre>
+<p>The <code>max()</code> guarantees the stop can only ratchet <strong>up</strong>, never loosen.</p>
+<p><strong>Rung 5 — hard stop / hard target (L1282–1287).</strong> Last, because everything above is a <em>managed</em> exit and these are the backstops.</p>
+<pre class="lang-python"><code>if   close &lt;= stop_loss_price:    return &quot;HIT STOP LOSS&quot;,   (close-entry)/entry*100, ...
+elif close &gt;= take_profit_price:  return &quot;HIT TAKE PROFIT&quot;, (close-entry)/entry*100, ...</code></pre>
+<p>Note that rungs 1–3 return the already-computed running <code>pnl_pct</code>, while rung 5 recomputes from <code>close</code> — the same value by construction, but written explicitly at the two rungs that represent a <em>price level</em> being reached.</p>
+<p><strong>The SHORT ladder (L1292–1336)</strong> is the same five rungs with the inequalities reversed, and — unlike the entry gates — it genuinely is a mirror image, including <code>min()</code> instead of <code>max()</code> on the breakeven ratchet.</p>
+<h3 id="why-the-order-matters">WHY THE ORDER MATTERS</h3>
+<p>Because rungs are <code>return</code> statements, at most one fires per bar. On a bar where several conditions are simultaneously true, the <em>highest</em> rung wins. The empirical distribution over the 27 baseline trades:</p>
+<pre class="lang-python"><code>print(t.exit_reason.value_counts().to_dict())</code></pre>
+<p>Actual output:</p>
+<pre><code>{&#x27;ATR MOVE EXIT&#x27;: 9, &#x27;TRAILING EXIT (50% RETRACE)&#x27;: 8, &#x27;KDJ RESET EXIT&#x27;: 8, &#x27;HIT STOP LOSS&#x27;: 2}</code></pre>
+<p>Read that carefully, because it is a genuinely useful defense fact: <strong>25 of 27 trades ended on a managed exit; only 2 hit the hard stop, and none hit the hard take-profit.</strong> The ladder, not the stop, is doing the work. And the two stop-outs are the reason the loss side of the distribution is bounded, which is what produces the −6.46% maximum drawdown reported in §5B.</p>
+<hr>
+<h2 id="3-9-recordclosedtrade-l13371380">3.9 <code>_record_closed_trade()</code> — L1337–1380</h2>
+<p>Appends one row, identical schema for LONG and SHORT, and marks the closing bar&#x27;s <code>Trade_Status</code>. Reproduced from the nested <code>close_trade()</code> closures in the original engine, with <strong>one addition</strong>: <code>kdj_exit_window</code>, added so the frozen-at-entry KDJ period <code>w</code> is visible per trade instead of only recomputable from <code>entry_idx − entry_ob_bar</code> by hand.</p>
+<p>The row is grouped as: identity (<code>side</code>, <code>entry_idx</code>, <code>exit_idx</code>), prices (<code>entry</code>, <code>exit</code>, <code>stop_loss</code>, <code>take_profit</code>, <code>pnl_pct</code>), full entry-OB provenance (bar, composite quality, <strong>all five criteria as separate booleans</strong>, <code>created_at</code>, level, type), TP provenance (<code>tp_is_structural</code> plus the same fields for the TP zone), and outcome (<code>hold_bars</code>, <code>exit_reason</code>, <code>kdj_exit_window</code>).</p>
+<p><strong>Why the five booleans are stored separately rather than only the sum:</strong> the composite score is lossy — a 2 could be <code>displacement + fvg</code> or <code>large_bar + sweep</code>, which are different market claims. Storing the components keeps every downstream analysis able to ask about a specific criterion without re-running the engine. The Google Sheets export (§3B) and the dashboard both read these columns directly.</p>
+<hr>
+<h2 id="3-10-simulatetrades-l13811637-protected-core">3.10 <code>simulate_trades()</code> — L1381–1637 · PROTECTED CORE</h2>
+<h3 id="what-the-paper-claims-here-6">WHAT THE PAPER CLAIMS HERE</h3>
+<p>This function <em>is</em> the strategy under test. Every headline figure in the paper is read from its output.</p>
+<h3 id="the-state-machine">THE STATE MACHINE</h3>
+<p>Exactly one position at a time. Three states, and the transitions are the whole engine:</p>
+<pre><code>        ┌──────────────────────────────────────────────┐
+        │                                              │
+        ▼         _try_enter_long()                    │
+   ┌─────────┐  ──────────────────►  ┌──────────┐      │
+   │  FLAT   │                       │   LONG   │──────┤ exit ladder fires
+   │ (None)  │  ──────────────────►  ├──────────┤      │ → _record_closed_trade()
+   └─────────┘  _try_enter_short()   │  SHORT   │──────┘ → back to FLAT
+                                     └──────────┘</code></pre>
+<p><strong>No overlapping positions</strong> is not a simplification, it is a load-bearing property. It is what makes the equity curve in §5B a plain sequential walk over exits rather than an approximation, and it is why <code>hold_bars</code> can be summed to give time-in-market without double-counting.</p>
+<h3 id="walking-the-loop">WALKING THE LOOP</h3>
+<p><strong>Warm-up (L1460).</strong> <code>start_bar = SWING_STRUCTURE_LOOKBACK_BARS + 5 = 55</code>. The first 55 bars are never traded — the 50-bar pivot lookback needs history before it can confirm anything.</p>
+<p><strong>Per-bar reads (L1463–1475).</strong> Price and indicator values for bars <code>i</code>, <code>i−1</code>, <code>i−2</code> are pulled into locals. Only backward indices appear. There is no <code>i+1</code> anywhere in this loop.</p>
+<p><strong>Derived quantities (L1480, L1484).</strong> <code>kdj_k_acceleration</code> and <code>atr_regime_ratio</code>, as detailed in §3.7.</p>
+<p><strong>Order Block activity filter (L1490–1502).</strong> Three filters, all causal:</p>
+<pre class="lang-python"><code>active_order_blocks_for_entry = [
+    ob for ob in order_blocks
+    if ob[&quot;created_at&quot;] &lt; i &lt; ob[&quot;mitigated_at&quot;]              # confirmed, not yet invalidated
+    and i - ob[&quot;created_at&quot;] &lt;= MAX_ORDER_BLOCK_AGE_BARS      # not older than 500 bars
+    and ob.get(&quot;quality&quot;, 0) &gt;= effective_min_ob_quality      # quality threshold
+]</code></pre>
+<p><code>created_at &lt; i</code> is strict: a zone cannot be traded on the very bar that confirmed it. Note the <strong>entry</strong> list applies the quality threshold and the <strong>take-profit</strong> list does not — a low-quality zone is not good enough to enter <em>on</em>, but is still valid market structure to target. That is a deliberate asymmetry, and it is why <code>active_order_blocks_for_tp</code> exists as a separate list.</p>
+<p><strong>Touch log (L1504–1520).</strong> Every bar where an active zone overlaps the bar&#x27;s range is recorded with a full indicator snapshot — <strong>including bars that did not produce a trade.</strong> This is diagnostic only; it feeds the dashboard&#x27;s touch view and the <code>ob_touches</code> table. It is worth pointing at in a defense: the project records its rejected setups, not only its taken ones.</p>
+<p><strong>Entry attempt (L1547–1562).</strong> LONG is tried first; SHORT only if LONG returned <code>None</code>. On a bar where both sides could theoretically qualify, LONG wins. Given the mutually contradictory MACD conditions (<code>hist &lt; 0</code> for LONG, <code>hist &gt; 0</code> for SHORT), this can never actually arise — but the ordering is fixed and deterministic either way.</p>
+<p><strong>Position management (L1564–1614).</strong> Compute running <code>pnl_pct</code>, update <code>peak_pnl_pct</code> (which the trailing rung needs), write the per-bar status columns, then call the exit ladder. If it returns a reason, record the trade and go flat.</p>
+<p><strong>The SMC cache (L1431–1437).</strong></p>
+<pre class="lang-python"><code>cache_key = (len(df), float(df[&quot;close&quot;].iloc[-1]) if not df.empty else 0.0)</code></pre>
+<p>Order Block detection is deterministic given the candle series, so it is cached across repeated <code>simulate_trades()</code> calls on the same data — which matters because <code>--serve</code> runs the simulation once per quality level (0, 1, 2, 3) on the same 8,767 bars. The key <code>(length, last close)</code> is a cheap fingerprint. It is safe here because every caller in this file passes either the locked dataset or the formulation window, which differ in both length and last close; it would be unsafe as a general-purpose cache, and that is worth knowing rather than defending as ideal.</p>
+<p><strong>Summary statistics (L1616–1627).</strong></p>
+<pre class="lang-python"><code>total_return_pct = trades_df[&quot;pnl_pct&quot;].sum()      # a SUM, not a compounded product
+avg_return_pct   = trades_df[&quot;pnl_pct&quot;].mean()
+win_count        = (trades_df[&quot;pnl_pct&quot;] &gt; 0).sum()</code></pre>
+<p><strong>The <code>+30.31%</code> headline is a simple sum of per-trade percentage returns, not a compounded equity curve.</strong> Be precise about this. It is the convention the paper reports and it is stated as such; the <em>compounded</em> figure appears separately as <code>final_capital</code> in <code>_run_strategy_dollar_arm</code> (§5B), where $10,000 becomes $13,417.77 — i.e. +34.18% compounded. The two are different quantities computed from the same trades, both are reported, and they are never reconciled into one number.</p>
+<p>A &quot;win&quot; is <code>pnl_pct &gt; 0</code> — strictly greater than zero. A hypothetical exact break-even trade would count as a loss. None occur in the baseline.</p>
+<h3 id="confirm-against-the-code-the-whole-engine-end-to-end">CONFIRM AGAINST THE CODE — the whole engine end to end</h3>
+<pre class="lang-python"><code>df  = bot.compute_indicators(bot.load_candles())
+sim = bot.simulate_trades(df, min_ob_quality=0)
+t   = sim.attrs[&quot;trades_df&quot;]
+print(len(t), (t.pnl_pct&gt;0).sum(), t.pnl_pct.sum(), t.side.value_counts().to_dict())</code></pre>
+<p>Actual output:</p>
+<pre><code>27 19 30.306456356031937 {&#x27;LONG&#x27;: 15, &#x27;SHORT&#x27;: 12}</code></pre>
+<p>And the authoritative check, which compares all 8,767 bars <em>and</em> all 27 trades against the committed golden master:</p>
+<pre><code>python scratch/regression.py</code></pre>
+<h3 id="noted-duplication-say-it-before-a-panelist-finds-it">NOTED DUPLICATION — say it before a panelist finds it</h3>
+<p>The entry predicate exists in <strong>four</strong> places and the exit ladder in <strong>four</strong>:</p>
+<div class="tw"><table><thead><tr><th>Logic</th><th>Locations</th></tr></thead><tbody><tr><td>Entry conditions</td><td><code>_try_enter_long</code> (L1081), <code>_try_enter_short</code> (L1161), <code>ablation_entry_long_ok</code> (L2120), <code>ablation_entry_short_ok</code> (L2146)</td></tr><tr><td>Exit ladder</td><td><code>_check_long_exit_conditions</code> (L1235), <code>_check_short_exit_conditions</code> (L1292), and twice inline inside <code>run_ablation_arm</code> (L2176)</td></tr></tbody></table></div>
+<p>This is <strong>not</strong> an accident, and the honest answer has two parts.</p>
+<p><em>Why they exist:</em> the ablation copies must be able to differ from the baseline in exactly one respect — the removal of the Order Block gate — while remaining identical in every other. Keeping them as separate, individually readable functions makes that single difference visible by direct comparison rather than hidden behind a flag argument.</p>
+<p><em>Why they agree:</em> the ablation gates were transcribed line-for-line from the entry functions and can be diffed against them directly. Compare <code>_try_enter_long</code> L1112–1122 against <code>ablation_entry_long_ok</code> L2133–2142 — the same five conditions in the same order, with only the zone-touch check removed. The ablation&#x27;s post-entry exit logic reuses this file&#x27;s own <code>kdj_reset_init/update/exit</code> unmodified rather than reimplementing them.</p>
+<p><em>The honest caveat:</em> four copies is four places a future edit could drift. Consolidating them behind one predicate is a legitimate improvement, and it is deliberately deferred until after the paper freeze, because refactoring the protected core carries more risk right now than the duplication does.</p>
+<hr>
+<h1 id="part-3b-live-data-pull-google-sheets-export-l16382076">Part 3B — Live data pull + Google Sheets export (L1638–2076)</h1>
+<p><em>Light depth. Pure I/O and formatting. No line in this section computes strategy maths, which is why it sat outside the &quot;no strategy changes&quot; freeze and could be relocated during consolidation.</em></p>
+<h2 id="3b-1-two-disclosed-relocation-adjustments-l16551667">3B.1 Two disclosed relocation adjustments (L1655–1667)</h2>
+<p>Both were forced by the file&#x27;s new location and are stated in the section banner rather than left to be discovered:</p>
+<ol><li><strong><code>BASE_DIR</code> lost one <code>dirname()</code> hop.</strong> This file lives at the repo root; the retired <code>src/Binance backtest bot.py</code> was one directory deeper. <code>SERVICE KEY/</code> resolves to the same folder as before.</li><li><strong>The Binance client is now constructed lazily</strong> (<code>_get_binance_client()</code>, L1707) instead of at import time. The original module-level <code>client = Client(...)</code> could raise before any function was called, which would have made a bare <code>import</code> of this file fail without API keys. Now importing never touches the network — which is what makes every REPL block in this guide safe to run offline.</li></ol>
+<h2 id="3b-2-resolvegoogleservicekeypath-l16781706">3B.2 <code>resolve_google_service_key_path()</code> (L1678–1706)</h2>
+<p>Auto-discovers a service-account JSON under <code>SERVICE KEY/</code>, choosing the <strong>most recently modified non-&quot;disabled&quot; key file</strong>. If a Sheets push starts failing with an auth error, check whether a stale key file has become newer than the working one before assuming the code broke.</p>
+<h2 id="3b-3-getcandles-l17191777">3B.3 <code>get_candles()</code> (L1719–1777)</h2>
+<p>The one routine network call. Paginates Binance klines 1,000 at a time, keeps eight columns, casts to float, and applies the project&#x27;s historical cache convention:</p>
+<pre class="lang-python"><code>df[&quot;open_time&quot;] = pd.to_datetime(df[&quot;open_time&quot;], unit=&quot;ms&quot;) + pd.Timedelta(hours=8)</code></pre>
+<p><strong>The UTC+8 shift is a labelling convention, not a data transformation.</strong> It adds the same eight hours to every bar. Bar ordering, bar spacing, and every relative quantity in the entire analysis are unchanged; only the printed timestamps differ. It is why <code>load_candles()</code> reports a first bar of <code>2022-01-01 08:00:00</code> rather than <code>00:00</code>.</p>
+<p>Called only by <code>--serve</code> and by the OOS validation function. The default offline pipeline never reaches it.</p>
+<h2 id="3b-4-the-sheets-writers-l17802076">3B.4 The Sheets writers (L1780–2076)</h2>
+<div class="tw"><table><thead><tr><th>Function</th><th>Line</th><th>Writes</th></tr></thead><tbody><tr><td><code>_get_or_create_sheet</code></td><td>1780</td><td>idempotent worksheet creation</td></tr><tr><td><code>_format_df_for_export_full</code></td><td>1789</td><td><strong>all 26 sim-dataframe columns</strong> per bar — not a curated subset</td></tr><tr><td><code>_write_sheet</code></td><td>1810</td><td>the values</td></tr><tr><td><code>_apply_pnl_formatting</code></td><td>1815</td><td>green/red cell colouring on P&amp;L</td></tr><tr><td><code>_authorize_gsheet_workbook</code></td><td>1864</td><td>credentials</td></tr><tr><td><code>_write_benchmark_sheet</code> / <code>push_benchmark_vs_passive_to_gsheet</code></td><td>1895 / 1938</td><td>2 tabs, gross + fee-adjusted</td></tr><tr><td><code>_write_trades_sheet</code> / <code>_write_results_sheet</code> / <code>push_trades_and_results_to_gsheet</code></td><td>1982 / 2014 / 2040</td><td>4 tabs, the full 40-column trade schema</td></tr><tr><td><code>push_candles_to_gsheet</code></td><td>2058</td><td>2 tabs of per-bar data</td></tr></tbody></table></div>
+<p><strong>Why none of this can move a published number.</strong> Every push takes a finished DataFrame and writes it out. <code>_apply_pnl_formatting</code> sets cell colours — the <em>values</em> are already written by <code>_write_sheet</code> before it runs. Delete this entire section and every figure in the paper is unchanged; you would simply lose the spreadsheet copy.</p>
+<p><strong>One superseded export, deliberately left defined.</strong> <code>push_all_thresholds_to_gsheet</code> (per-quality-threshold, per-bar &quot;Quality 0&quot;..&quot;Quality 3&quot; sheets) is still in the file but is <strong>no longer called</strong>, and its sheets are actively deleted from the live workbook on every push. It was superseded on purpose by the full-column exports above, not deprecated by accident. Do not re-wire it.</p>
+<hr>
+<h1 id="part-4-the-ablation-study-l20772502">Part 4 — The ablation study (L2077–2502)</h1>
+<h2 id="4-1-what-the-paper-claims-here">4.1 WHAT THE PAPER CLAIMS HERE</h2>
+<p><em>Methodology, &quot;Design of the three-arm comparison.&quot;</em> Three configurations are compared on identical data to isolate where the performance comes from:</p>
+<div class="tw"><table><thead><tr><th>Arm</th><th>Entry</th><th>Stop</th></tr></thead><tbody><tr><td>1 — baseline</td><td>indicators <strong>+ Order Block touch</strong></td><td>OB edge ∓ 0.5 × ATR(14)</td></tr><tr><td>2 — <code>flat_atr</code></td><td>indicators only</td><td><code>close ∓ 1.5 × ATR(14)</code></td></tr><tr><td>3 — <code>swing_pivot</code></td><td>indicators only</td><td>5-bar low/high (prior bars only) ∓ 0.5 × ATR(14)</td></tr></tbody></table></div>
+<p>Arms 2 and 3 exist as a <em>pair</em> for a specific reason. If only one OB-free arm were tested and it underperformed, the result would be ambiguous: was it the missing Order Block gate, or just a worse stop? Two arms with two different stop schemes separate those explanations.</p>
+<p>Both OB-free arms keep <code>rr_min = 1.5</code> and <code>sl_ratio_min = 0.015</code> identical to the baseline, and use a <strong>fixed 2R take-profit</strong> rather than a structural one — using a structural TP would reintroduce an Order Block dependency into a configuration designed to remove it.</p>
+<h2 id="4-2-the-disclosed-limitation-read-this-before-quoting-any-ablation-num">4.2 THE DISCLOSED LIMITATION — read this before quoting any ablation number</h2>
+<p>The section banner (L2085–2098) states it, and it is not softened here:</p>
+<blockquote><p>The script that originally produced the exact per-trade pools behind the published 140/138-trade arms <strong>was never committed to this repository.</strong> <code>run_ablation_arm()</code> is a fresh, best-faith reconstruction from the <em>documented</em> design, not a byte-for-byte recovery. It is <strong>not guaranteed to reproduce the locked figures.</strong> A prior attempt at the same reconstruction already diverged by more than 10 win-rate points.</p></blockquote>
+<p><code>run_ablation_study()</code> (L2430) therefore prints an explicit <strong>MATCH</strong> or <strong>DIVERGE</strong> against <code>LOCKED_ABLATION_ARMS</code> on every run, and a DIVERGE is an expected, already-known reconstruction-fidelity gap — not a new finding.</p>
+<p><strong>How to answer a panelist on this.</strong> The published arm figures come from a lost script. The committed code reconstructs the documented design and says out loud when it disagrees. The honest framing is: <em>the direction of the ablation result is supported — removing the Order Block gate turns a profitable configuration into two unprofitable ones — while the exact 140/138-trade figures are carried as reference numbers whose generating script is not available for re-execution.</em> Do not present them as reproducible-on-demand, because they are not.</p>
+<h2 id="4-3-ablationentrylongok-l2120-ablationentryshortok-l2146">4.3 <code>ablation_entry_long_ok</code> (L2120) / <code>ablation_entry_short_ok</code> (L2146)</h2>
+<p>The baseline entry gates with the zone-touch line removed, and nothing else changed. Diff them directly against <code>_try_enter_long</code> / <code>_try_enter_short</code> (§3.7): the same five LONG conditions in the same order, and the same seven SHORT conditions including the <code>K ≥ 70</code> floor and <code>J ≤ 100</code> cap. Returning a bool instead of a position tuple is the only structural difference.</p>
+<h2 id="4-4-runablationarm-l21762337">4.4 <code>run_ablation_arm()</code> (L2176–2337)</h2>
+<p>One bar-by-bar simulation per arm. The stop rule is the branch point:</p>
+<pre class="lang-python"><code># flat_atr   : SL = close - 1.5 * ATR(14)   (LONG)   /  close + 1.5 * ATR(14)  (SHORT)
+# swing_pivot: SL = min(low[i-5 : i]) - 0.5 * ATR(14)  /  max(high[i-5 : i]) + 0.5 * ATR(14)</code></pre>
+<p>The swing-pivot window is <code>[i-5 : i]</code> — <strong>prior bars only</strong>, excluding the current bar. Post-entry exit logic is copied from <code>simulate_trades()</code> and calls this file&#x27;s own <code>kdj_reset_init(..., ob_bar=None)</code>, which falls back to <code>default_period=9</code> (§3.5) — the engine&#x27;s own documented no-OB case, not a special path invented for the ablation.</p>
+<h2 id="4-5-summarizetradepool-l23382368">4.5 <code>summarize_trade_pool()</code> (L2338–2368)</h2>
+<p>Six numbers from a <code>pnl_pct</code> column: <code>n</code>, <code>wins</code>, <code>win_rate</code>, <code>total_return</code>, <code>avg_return</code>, <code>sd</code> (<code>None</code> when <code>n ≤ 1</code>).</p>
+<p><strong>HAND CHECK.</strong> Three trades: <code>+2.00%</code>, <code>+0.15%</code>, <code>−1.00%</code>.</p>
+<pre><code>n     = 3
+wins  = 2                    (strictly &gt; 0)
+rate  = 2/3 × 100 = 66.6667%
+total = 2.00 + 0.15 − 1.00 = 1.15%
+avg   = 1.15 / 3 = 0.383333%
+sd    : mean = 0.383333
+        deviations = 1.616667, −0.233333, −1.383333
+        squares    = 2.613611, 0.054444, 1.913611  → sum 4.581667
+        ddof=1     → 4.581667 / 2 = 2.290833  →  √ = 1.513550</code></pre>
+<p><strong>CONFIRM AGAINST THE CODE</strong></p>
+<pre class="lang-python"><code>tp = pd.DataFrame({&quot;entry_idx&quot;:[10,20,30], &quot;pnl_pct&quot;:[2.0, 0.15, -1.0]})
+print(bot.summarize_trade_pool(tp))</code></pre>
+<p>Actual output:</p>
+<pre><code>{&#x27;n&#x27;: 3, &#x27;wins&#x27;: 2, &#x27;win_rate&#x27;: 66.66666666666666, &#x27;total_return&#x27;: 1.15,
+ &#x27;avg_return&#x27;: 0.3833333333333333, &#x27;sd&#x27;: 1.51354991108101}</code></pre>
+<h2 id="4-6-bootstrapablationarmvsbaseline-l23692429">4.6 <code>bootstrap_ablation_arm_vs_baseline()</code> (L2369–2429)</h2>
+<p><strong>Do not confuse this with the paper&#x27;s headline CI.</strong> They are different designs answering different questions:</p>
+<div class="tw"><table><thead><tr><th></th><th><code>bootstrap_ablation_arm_vs_baseline</code> (L2369)</th><th><code>run_bootstrap_ci</code> (L2737)</th></tr></thead><tbody><tr><td>Resamples from</td><td>the <strong>ablation arm&#x27;s</strong> 140/138 trades</td><td>the <strong>baseline&#x27;s own</strong> 27 trades</td></tr><tr><td>At size</td><td>27 (the baseline&#x27;s <code>n</code>)</td><td>27 (its own <code>n</code>)</td></tr><tr><td>Design</td><td>between-arms</td><td>within-arm</td></tr><tr><td>Question</td><td>&quot;if the arm were the truth, how often would a 27-trade sample from it look as good as the baseline?&quot;</td><td>&quot;how uncertain is the baseline&#x27;s own return?&quot;</td></tr><tr><td>Output</td><td>empirical p-values</td><td>a 95% percentile interval</td></tr></tbody></table></div>
+<p>They are kept as two functions on purpose. Collapsing them into one would merge two distinct inferential questions behind one name.</p>
+<h2 id="4-7-runablationstudy-l24302502">4.7 <code>run_ablation_study()</code> (L2430–2502)</h2>
+<p>Runs the baseline plus both arms, bootstraps each against the baseline, prints the MATCH/DIVERGE verdicts, and returns the results dict that <code>--serve</code> writes to <code>artifacts/ablation_reconstruction.json</code>.</p>
+<hr>
+<h1 id="part-5-statistical-primitives-l25032721">Part 5 — Statistical primitives (L2503–2721)</h1>
+<p>Seven functions. Together they are roughly 40 lines of executable code, and every one of them is a thin, documented wrapper over <code>scipy.stats</code> or a textbook formula. That is the point: <strong>there is no bespoke statistical machinery in this project.</strong> The provenance audit (<code>docs/PROVENANCE_VERDICT.md</code>) reached the same conclusion independently.</p>
+<h2 id="5-1-binomialtest-l25212550">5.1 <code>binomial_test()</code> — L2521–2550</h2>
+<h3 id="what-the-paper-claims-here-7">WHAT THE PAPER CLAIMS HERE</h3>
+<p><em>Results, &quot;Overall performance.&quot;</em> Nineteen wins in twenty-seven trades gives a one-sided exact binomial p of 0.026 against a fair-coin null. The paper uses the one-sided test as its primary figure — the strategy&#x27;s construction supplies a directional prior — and reports the two-sided value alongside it.</p>
+<h3 id="what-the-code-does-4">WHAT THE CODE DOES</h3>
+<pre class="lang-python"><code>one_sided = scipy_stats.binomtest(win_count, trade_count, null_win_probability, alternative=&quot;greater&quot;)
+two_sided = scipy_stats.binomtest(win_count, trade_count, null_win_probability, alternative=&quot;two-sided&quot;)
+return {&quot;p_one_sided&quot;: one_sided.pvalue, &quot;p_two_sided&quot;: two_sided.pvalue}</code></pre>
+<p>Two SciPy calls. <strong>Exact</strong>, not normal-approximated — with n = 27 the normal approximation is not trustworthy, and <code>binomtest</code> sums actual binomial probabilities.</p>
+<h3 id="hand-check-small-enough-to-do-fully">HAND CHECK — small enough to do fully</h3>
+<p>A 27-term sum is not calculator work, so verify the <em>mechanism</em> on a 5-trade pool, 4 wins, p = 0.5:</p>
+<pre><code>P(X ≥ 4) = [C(5,4) + C(5,5)] / 2^5 = (5 + 1)/32 = 6/32 = 0.1875</code></pre>
+<p>Two-sided at p = 0.5 is symmetric, so it is exactly double: <code>0.375</code>.</p>
+<p>Then the real one, structurally:</p>
+<pre><code>p_one_sided = Σ(k=19..27) C(27,k) / 2^27</code></pre>
+<p><code>2^27 = 134,217,728</code>. The numerator is 3,505,867, giving <code>3,505,867 / 134,217,728 = 0.0261195</code>. And because the null is p = 0.5 the two-sided value is exactly <code>2 × 0.0261195 = 0.0522390</code> — a relationship you can check by eye in the output below, and a quick way to confirm the two calls are consistent.</p>
+<h3 id="confirm-against-the-code-3">CONFIRM AGAINST THE CODE</h3>
+<pre class="lang-python"><code>print(bot.binomial_test(4, 5))
+print(bot.binomial_test(19, 27))</code></pre>
+<p>Actual output:</p>
+<pre><code>{&#x27;p_one_sided&#x27;: 0.1875, &#x27;p_two_sided&#x27;: 0.375}
+{&#x27;p_one_sided&#x27;: 0.026119492948055267, &#x27;p_two_sided&#x27;: 0.052238985896110535}</code></pre>
+<p><code>0.026119…</code> → the paper&#x27;s <strong>p = 0.026</strong>. And <code>2 × 0.026119492948055267 = 0.052238985896110535</code> exactly.</p>
+<h2 id="5-2-bootstrapresample-l25532601">5.2 <code>bootstrap_resample()</code> — L2553–2601</h2>
+<h3 id="what-the-paper-claims-here-8">WHAT THE PAPER CLAIMS HERE</h3>
+<p><em>Methodology, &quot;Bootstrap.&quot;</em> Twenty-seven trades, skewed by a few large winners, is too small and too non-normal for a textbook <code>mean ± 1.96 SE</code> interval. The nonparametric percentile bootstrap assumes nothing about the distribution&#x27;s shape; it uses the data&#x27;s own shape (Efron &amp; Tibshirani, 1993). B = 10,000, n = 27, seed 42.</p>
+<h3 id="what-the-code-does-5">WHAT THE CODE DOES</h3>
+<pre class="lang-python"><code>values = np.asarray(values)
+n   = resample_size if resample_size is not None else len(values)
+rng = np.random.default_rng(seed)
+for k in range(bootstrap_resamples):
+    sample = rng.choice(values, size=n, replace=True)
+    resample_totals[k] = sample.sum()
+    resample_means[k]  = sample.mean()</code></pre>
+<p>Three choices worth defending explicitly:</p>
+<ul><li><strong><code>replace=True</code>.</strong> Drawing <em>with</em> replacement is what lets a resample&#x27;s total differ from the original at all. Without it, every resample would be a permutation of the same 27 values and every total would be identical.</li><li><strong><code>size=n</code>.</strong> Drawing exactly <code>n</code> follows Efron&#x27;s prescription, so the spread between resamples reflects genuine sampling uncertainty rather than an artifact of a changed sample size.</li><li><strong><code>np.random.default_rng(seed)</code></strong>, the modern Generator API rather than the legacy <code>RandomState</code>. Seeded, so the interval is exactly reproducible.</li></ul>
+<p><strong>What the bootstrap does <em>not</em> capture, stated plainly:</strong> it treats the 27 realized trades as the population. It quantifies sampling uncertainty <em>given this trade log</em>. It cannot tell you which trades a different price history would have produced. The function&#x27;s own docstring says so.</p>
+<h3 id="hand-check-b-4-at-seed-7">HAND CHECK — B = 4 at seed 7</h3>
+<p>10,000 resamples is not hand work; four is. Values <code>[1, −2, 3, −4, 5]</code>, <code>B = 4</code>, <code>seed = 7</code>. The draws the generator produces:</p>
+<pre><code>draw 1:  5, −4, −4,  5,  3   → total   5   mean  1.0
+draw 2: −4,  5, −2,  1, −2   → total  −2   mean −0.4
+draw 3: −2,  5,  5,  1,  3   → total  12   mean  2.4
+draw 4:  5,  1, −4,  1,  3   → total   6   mean  1.2</code></pre>
+<p>Every draw has repeats and omissions — that is <code>replace=True</code> working.</p>
+<p>Now the percentile step by hand. Sorted totals: <code>[−2, 5, 6, 12]</code>. NumPy&#x27;s default linear interpolation puts the 2.5th percentile at position <code>0.025 × (4 − 1) = 0.075</code> along the sorted array:</p>
+<pre><code>p2.5  = −2 + 0.075 × (5 − (−2)) = −2 + 0.525 = −1.475
+p97.5 = position 0.975 × 3 = 2.925  →  6 + 0.925 × (12 − 6) = 6 + 5.55 = 11.55</code></pre>
+<h3 id="confirm-against-the-code-4">CONFIRM AGAINST THE CODE</h3>
+<pre class="lang-python"><code>vals = np.array([1.0, -2.0, 3.0, -4.0, 5.0])
+br = bot.bootstrap_resample(vals, 4, 7)
+print(br[&quot;resample_totals&quot;].tolist(), br[&quot;resample_means&quot;].tolist())
+print(np.percentile(br[&quot;resample_totals&quot;], [2.5, 97.5]).tolist())</code></pre>
+<p>Actual output:</p>
+<pre><code>[5.0, -2.0, 12.0, 6.0] [1.0, -0.4, 2.4, 1.2]
+[-1.4749999999999999, 11.549999999999999]</code></pre>
+<p>Same draws, same totals, same percentile cuts. The full-scale version is <code>bot.run_bootstrap_ci(t)</code> — §5B.1.</p>
+<h2 id="5-3-pearsoncorrelation-l26042627-spearmancorrelation-l26302662">5.3 <code>pearson_correlation()</code> — L2604–2627 · <code>spearman_correlation()</code> — L2630–2662</h2>
+<p>Both are two-line SciPy wrappers returning <code>{r|rho, p_value, n}</code>. Pearson assumes a straight-line relationship and is sensitive to outliers; Spearman works on ranks and only assumes a consistent direction. They are reported <strong>together, on purpose</strong>: if both agree in sign and significance, the association is not an artifact of a few extreme trades.</p>
+<p><code>spearman_correlation</code> is the one genuinely new function in the file (module docstring, and L2643–2651 restate it). It reproduces figures that previously existed only in markdown notes.</p>
+<h3 id="hand-check-pearson-on-four-pairs">HAND CHECK — Pearson on four pairs</h3>
+<pre><code>x = 1, 2, 3, 4        y = 2, 1, 4, 3
+x̄ = 2.5              ȳ = 2.5
+dx = −1.5, −0.5, 0.5, 1.5
+dy = −0.5, −1.5, 1.5, 0.5
+
+Σ dx·dy = 0.75 + 0.75 + 0.75 + 0.75 = 3.0
+Σ dx²   = 2.25 + 0.25 + 0.25 + 2.25 = 5.0
+Σ dy²   = 0.25 + 2.25 + 2.25 + 0.25 = 5.0
+
+r = 3.0 / √(5.0 × 5.0) = 3.0 / 5.0 = 0.6</code></pre>
+<p>Because <code>y</code> here is a permutation of the ranks of <code>x</code>, Spearman&#x27;s rho on the same data is also 0.6 — a small, useful sanity property of this fixture.</p>
+<h3 id="confirm-against-the-code-5">CONFIRM AGAINST THE CODE</h3>
+<pre class="lang-python"><code>print(bot.pearson_correlation([1,2,3,4], [2.0,1.0,4.0,3.0]))
+print(bot.spearman_correlation([1,2,3,4], [2.0,1.0,4.0,3.0]))</code></pre>
+<p>Actual output:</p>
+<pre><code>{&#x27;r&#x27;: 0.6, &#x27;p_value&#x27;: 0.3999999999999999, &#x27;n&#x27;: 4}
+{&#x27;rho&#x27;: 0.6000000000000001, &#x27;p_value&#x27;: 0.4, &#x27;n&#x27;: 4}</code></pre>
+<h3 id="the-real-figures-and-a-disclosed-correction">THE REAL FIGURES, AND A DISCLOSED CORRECTION</h3>
+<pre class="lang-python"><code>print(bot.pearson_correlation(t.hold_bars.values, t.pnl_pct.values))
+print(bot.spearman_correlation(t.hold_bars.values, t.pnl_pct.values))</code></pre>
+<p>Actual output:</p>
+<pre><code>{&#x27;r&#x27;: 0.490698051200364,  &#x27;p_value&#x27;: 0.009356041907353906, &#x27;n&#x27;: 27}
+{&#x27;rho&#x27;: 0.47972823534097186, &#x27;p_value&#x27;: 0.011334889028469911, &#x27;n&#x27;: 27}</code></pre>
+<p>Two draft documents once reported these as <strong>p &lt; 0.001</strong>. Independent recomputation gave p ≈ 0.0094 (Pearson) and p ≈ 0.0113 (Spearman) — still significant at α = 0.05, but the wrong significance bucket at α = 0.001. Both documents were corrected; <code>docs/SCRATCH_RESULTS_METHODS.md</code> records the correction. Volunteer this before a panelist finds it: a project that catches its own reporting errors is demonstrating the same discipline as one that catches its own code bugs.</p>
+<h2 id="5-4-maxdrawdownpct-l26652686">5.4 <code>max_drawdown_pct()</code> — L2665–2686</h2>
+<pre class="lang-python"><code>equity_curve = pd.Series(equity_curve)
+running_max  = equity_curve.cummax()
+drawdown_pct = (equity_curve - running_max) / running_max * 100
+return drawdown_pct.min()</code></pre>
+<p>Four lines. Drawdown at each point is measured against the <strong>running peak so far</strong>, not against the global maximum — which is why <code>cummax()</code> and not <code>max()</code>. Returns the most negative value.</p>
+<h3 id="hand-check">HAND CHECK</h3>
+<p>Equity curve <code>[100, 120, 90, 110, 105]</code>:</p>
+<pre><code>point:      100    120     90     110     105
+cummax:     100    120    120     120     120
+drawdown:     0      0   −25%   −8.33%  −12.5%</code></pre>
+<p><code>(90 − 120)/120 × 100 = −25%</code> is the worst → <strong>−25.0</strong>.</p>
+<p>Note the deliberate trap in the fixture: the <em>lowest</em> equity point is 90 and the <em>last</em> is 105, but the worst drawdown is measured from the 120 peak, not from the start or the end.</p>
+<h3 id="confirm-against-the-code-6">CONFIRM AGAINST THE CODE</h3>
+<pre class="lang-python"><code>print(bot.max_drawdown_pct([100, 120, 90, 110, 105]))</code></pre>
+<p>Actual output: <code>-25.0</code></p>
+<h2 id="5-5-sharpesortinoratios-l26892718">5.5 <code>sharpe_sortino_ratios()</code> — L2689–2718</h2>
+<pre class="lang-python"><code>mean_return = np.mean(bar_returns)
+return_std  = np.std(bar_returns, ddof=1)
+sharpe  = (mean_return / return_std) * np.sqrt(periods_per_year) if return_std &gt; 0 else float(&quot;nan&quot;)
+
+downside_returns   = np.minimum(bar_returns, 0.0)
+downside_deviation = np.sqrt(np.mean(np.asarray(downside_returns) ** 2))
+sortino = (mean_return / downside_deviation) * np.sqrt(periods_per_year) if downside_deviation &gt; 0 else float(&quot;nan&quot;)</code></pre>
+<p>Three things a panelist may probe, answered up front:</p>
+<ol><li><strong>The risk-free rate is implicitly zero.</strong> There is no <code>− r_f</code> term. Over a crypto window with this return magnitude the simplification is conventional, but it <em>is</em> a simplification and is disclosed as one.</li><li><strong>Sharpe uses <code>ddof=1</code></strong> (sample SD) but <strong>Sortino&#x27;s downside deviation uses the plain mean of squares</strong> over <em>all</em> periods, with gains set to zero — not the SD of the negative subset. That is the standard Sortino construction: it penalises downside magnitude while keeping the denominator on the same period count as the numerator.</li><li><strong>Annualisation is <code>√(periods_per_year)</code></strong>, with <code>PERIODS_PER_YEAR_4H_BARS = 6 × 365.25 = 2191.5</code> (L2733) — six 4-hour bars a day, leap-year-averaged — and <code>PERIODS_PER_YEAR_WEEKLY = 52</code> for the weekly DCA arms.</li></ol>
+<h3 id="hand-check-six-bar-returns">HAND CHECK — six bar returns</h3>
+<pre><code>returns = 0.01, −0.02, 0.03, 0.00, −0.01, 0.02
+
+mean = 0.03 / 6 = 0.005
+deviations       = 0.005, −0.025, 0.025, −0.005, −0.015, 0.015
+squares          = 0.000025, 0.000625, 0.000625, 0.000025, 0.000225, 0.000225
+Σ = 0.00175      → ddof=1 → 0.00175 / 5 = 0.00035  →  SD = 0.018708287
+
+√2191.5 = 46.813460
+
+Sharpe  = (0.005 / 0.018708287) × 46.813460 = 0.267261 × 46.813460 = 12.511423
+
+downside = min(r, 0) = 0, −0.02, 0, 0, −0.01, 0
+squares  = 0, 0.0004, 0, 0, 0.0001, 0   → mean = 0.0005/6 = 0.000083333
+downside deviation = √0.000083333 = 0.009128709
+
+Sortino = (0.005 / 0.009128709) × 46.813460 = 0.547723 × 46.813460 = 25.640788</code></pre>
+<p>Sortino exceeds Sharpe here because two of six periods were negative and their magnitudes were modest — exactly the asymmetry Sortino is built to reward.</p>
+<h3 id="confirm-against-the-code-7">CONFIRM AGAINST THE CODE</h3>
+<pre class="lang-python"><code>rets = [0.01, -0.02, 0.03, 0.00, -0.01, 0.02]
+print(bot.PERIODS_PER_YEAR_4H_BARS)
+print(bot.sharpe_sortino_ratios(rets, bot.PERIODS_PER_YEAR_4H_BARS))</code></pre>
+<p>Actual output:</p>
+<pre><code>2191.5
+(12.51142335171, 25.64078781940992)</code></pre>
+<hr>
+<h1 id="part-5b-applied-analyses-l27223841">Part 5B — Applied analyses (L2722–3841)</h1>
+<p>Each function here applies Part 5&#x27;s primitives to one question the paper raises. <code>PERIODS_PER_YEAR_4H_BARS = 2191.5</code> and <code>PERIODS_PER_YEAR_WEEKLY = 52</code> are defined at L2733–2734.</p>
+<h2 id="5b-1-runbootstrapci-l27372775">5B.1 <code>run_bootstrap_ci()</code> — L2737–2775</h2>
+<p>The paper&#x27;s canonical interval. B = 10,000, seed = 42, resampling the baseline&#x27;s own 27 <code>pnl_pct</code> values at n = 27, then taking the 2.5th and 97.5th percentiles of the resample totals and means.</p>
+<p><strong>Not hand-reproducible at B = 10,000</strong> — the mechanism is verified at B = 4 in §5.2 instead. The full figure:</p>
+<pre class="lang-python"><code>print(bot.run_bootstrap_ci(t))</code></pre>
+<p>Actual output:</p>
+<pre><code>{&#x27;n&#x27;: 27, &#x27;b&#x27;: 10000, &#x27;seed&#x27;: 42,
+ &#x27;total_return_point_pct&#x27;: 30.306456356031937,
+ &#x27;total_return_ci_pct&#x27;: [5.9866116295368155, 54.98658996206774],
+ &#x27;avg_return_point_pct&#x27;: 1.1224613465197013,
+ &#x27;avg_return_ci_pct&#x27;: [0.2217263566495117, 2.036540368965472],
+ &#x27;pct_resamples_total_le_zero&#x27;: 0.75, &#x27;pct_resamples_avg_le_zero&#x27;: 0.75}</code></pre>
+<p>→ the paper&#x27;s <strong>95% CI [+5.99%, +54.99%]</strong> on total return. Two readings worth having ready:</p>
+<ul><li><strong>The interval excludes zero, but not by much at the low end.</strong> +5.99% is the honest lower bound, and it should be quoted as often as the +30.31% point estimate.</li><li><strong><code>pct_resamples_total_le_zero = 0.75</code></strong> means 75 of 10,000 resamples (0.75%) came out at or below zero. That is a directly interpretable companion to the interval.</li></ul>
+<h3 id="the-disclosed-two-value-ci">The disclosed two-value CI</h3>
+<p><code>docs/SCRATCH_RESULTS_METHODS.md</code> records that the bootstrap CI has <strong>two different, individually correct values</strong> depending on which surface computes it:</p>
+<div class="tw"><table><thead><tr><th>Surface</th><th>B</th><th>PRNG</th><th>95% CI</th></tr></thead><tbody><tr><td>Python (this function)</td><td>10,000</td><td>numpy <code>default_rng</code>, seed 42</td><td><strong>[+5.99%, +54.99%]</strong> — the paper&#x27;s canonical figure</td></tr><tr><td>Dashboard (<code>statsCompute.ts</code>)</td><td>2,000</td><td>JS mulberry32, seed 42</td><td>[+7.48%, +54.46%]</td></tr></tbody></table></div>
+<p>The root cause is <strong>the B mismatch alone, not a logic bug</strong> — verified by porting the mulberry32 PRNG into Python and reproducing [+7.48%, +54.46%] exactly at B = 2,000. Both values are reported and the gap is explained; they are deliberately not unified into one number. This is the visible product of the intentional Python↔TypeScript independence (§7).</p>
+<h2 id="5b-2-runbenchmarkvsbuyandhold-l27782857">5B.2 <code>run_benchmark_vs_buy_and_hold()</code> — L2778–2857</h2>
+<p>Strategy versus same-window BTC buy-and-hold on a 100-indexed basis.</p>
+<p>The strategy&#x27;s equity curve is <strong>event-driven</strong> (L2826–2833): flat between trades, compounding only at each exit bar.</p>
+<pre class="lang-python"><code>equity_by_bar[0] = 100.0
+for i in range(1, n_bars):
+    if i in exit_pnl_by_bar:
+        running_equity *= (1 + exit_pnl_by_bar[i] / 100)
+    equity_by_bar[i] = running_equity</code></pre>
+<p>This is <strong>exact, not an approximation</strong>, and the reason is §3.10: the engine never holds overlapping positions, so a sequential walk over exits cannot miss or double-count anything.</p>
+<p>The last block correlates each trade&#x27;s own return against BTC&#x27;s return over that trade&#x27;s identical holding window — a low or negative correlation indicates the strategy is not merely capturing directional beta.</p>
+<pre class="lang-python"><code>print(bot.run_benchmark_vs_buy_and_hold(df, t))</code></pre>
+<p>Actual output (reformatted):</p>
+<pre><code>n_bars 8767
+strategy      total_return_pct 30.306456  time_in_market_pct 2.634881
+              bars_of_exposure 231        return_per_bar_pct 0.131197
+              max_drawdown_pct -6.461922  sharpe 1.114203  sortino 2.727302
+buy_and_hold  total_return_pct 87.652243  time_in_market_pct 100.0
+              bars_of_exposure 8766       return_per_bar_pct 0.009999
+              max_drawdown_pct -67.213929 sharpe 0.564186  sortino 0.803381
+correlation   pearson_r -0.368753  n 27  p 0.058391</code></pre>
+<p><strong>Four things to be able to say about that block.</strong></p>
+<ol><li><strong>Buy-and-hold wins on raw return, 87.65% against 30.31%.</strong> State it first, before the favourable numbers. The strategy&#x27;s case is <em>never</em> a raw-return case.</li><li><strong>Time in market is 2.63% against 100%</strong> — 231 exposed bars out of 8,767. Per exposed bar the strategy returns 0.131% against 0.0100%, about thirteen times more. That is the actual claim.</li><li><strong>Maximum drawdown −6.46% against −67.21%</strong>, and Sharpe 1.114 against 0.564. The edge is risk- and exposure-adjusted.</li><li><strong>Pearson r = −0.369, p = 0.058.</strong> The trades are <em>mildly negatively</em> correlated with BTC&#x27;s move over their own holding windows, and that is <strong>not significant at α = 0.05</strong>. Report it that way. It is suggestive that the strategy is not simply long beta; it is not proof.</li></ol>
+<p><strong>A reconciliation you should expect to be asked about.</strong> This function reports buy-and-hold at <strong>+87.65%</strong>, while §5B.6&#x27;s passive benchmark reports lump-sum buy-and-hold at <strong>+90.07%</strong>. Both are correct and they measure different things: this one is <strong>close-to-close</strong> (<code>close.iloc[-1]</code> vs <code>close.iloc[0]</code>), while <code>_run_lump_sum_dollar_arm</code> buys at the first bar&#x27;s <strong>open</strong> (L3699). A lower purchase price gives a higher return on the same sale price. Neither figure is wrong; know which is which.</p>
+<h2 id="5b-3-isoweekfirstbars-l28602872-rundcablendanalysis-l28752993">5B.3 <code>_iso_week_first_bars()</code> — L2860–2872 · <code>run_dca_blend_analysis()</code> — L2875–2993</h2>
+<p><code>_iso_week_first_bars</code> returns the bar index of the first bar of every ISO calendar week. It is a <strong>single shared helper</strong> used by both the DCA blend and the passive benchmark&#x27;s DCA arm, specifically so the two cannot drift apart on contribution timing.</p>
+<p><code>run_dca_blend_analysis</code> models the paper&#x27;s &quot;complementary sleeve&quot; question: an investor already dollar-cost-averaging into BTC diverts 10%, 20% or 30% of each weekly contribution into the strategy instead. For each split it builds two portfolios — 100% DCA, and the blend — and compares Sharpe, Sortino and drawdown.</p>
+<p>Two methodological choices, both disclosed in the docstring:</p>
+<ol><li><strong>Returns are computed net of each period&#x27;s own contribution</strong> — <code>(value[k] − contribution[k]) / value[k-1] − 1</code> — so injected capital is never misread as investment return. This is the single most common error in DCA calculators, and it is avoided explicitly.</li><li><strong>Drawdown is reported two ways</strong>: principal-inclusive percentage (the conventional DCA-calculator presentation) <em>and</em> a peak-to-trough cumulative-P&amp;L retracement in <strong>dollars</strong>. A <em>percentage</em> drawdown on cumulative P&amp;L is ill-defined early in the series, when P&amp;L is near zero or negative, so the dollar figure is used there instead.</li></ol>
+<h2 id="5b-4-runfeeslippagesensitivity-l29963073">5B.4 <code>run_fee_slippage_sensitivity()</code> — L2996–3073</h2>
+<h3 id="what-the-paper-claims-here-9">WHAT THE PAPER CLAIMS HERE</h3>
+<p>The headline figures are <strong>gross</strong> — no transaction cost is modelled anywhere in <code>simulate_trades()</code>. This function asks whether the significance conclusions survive a realistic cost adjustment.</p>
+<h3 id="what-the-code-does-6">WHAT THE CODE DOES</h3>
+<p>A flat round-trip percentage drag subtracted from each trade&#x27;s <code>pnl_pct</code>, then every headline statistic recomputed:</p>
+<pre class="lang-python"><code>fee_round_trip_pct      = 2 * taker_fee_bps * 0.01      # 2 × 5bps  = 0.10%
+slippage_round_trip_pct = 2 * slippage_bps  * 0.01      # 2 × 5bps  = 0.10%
+primary_round_trip_pct  = 0.20%</code></pre>
+<ul><li><strong>GROSS</strong> (0.00%) — as currently reported.</li><li><strong>FEE ONLY</strong> (0.10%) — 5 bps/side taker, the confirmed Binance USDT-M Futures standard tier.</li><li><strong>PRIMARY</strong> (0.20%) — fees plus 5 bps/side conservative slippage.</li><li>A legacy LOW/MID/HIGH band (0.14 / 0.24 / 0.40%) predating the confirmed fee figure, kept for comparison.</li></ul>
+<p>Fees and slippage are kept as <strong>separate line items</strong> because the fee is a published exchange number and the slippage is an estimate. Blending them would hide which half is evidence and which is judgement.</p>
+<p><code>flipped_trades</code> lists every trade that was a winner gross and a loser net — the most honest single output of the whole function.</p>
+<h3 id="hand-check-three-trades-at-the-primary-drag">HAND CHECK — three trades at the PRIMARY drag</h3>
+<p>Trades <code>+2.00%</code>, <code>+0.15%</code>, <code>−1.00%</code>; drag <code>0.20%</code>:</p>
+<pre><code>adjusted: 2.00 − 0.20 = +1.80
+          0.15 − 0.20 = −0.05   ← flips from win to loss
+         −1.00 − 0.20 = −1.20
+
+total    = 1.80 − 0.05 − 1.20 = +0.55
+wins     = 1 of 3  → 33.33%   (was 2 of 3 = 66.67% gross)
+flipped  = the +0.15% trade</code></pre>
+<p>The 0.15% trade is deliberately chosen to sit just inside the drag. It shows the mechanism that matters: cost sensitivity is concentrated entirely in the trades whose gross margin is smaller than the drag.</p>
+<h3 id="confirm-against-the-code-8">CONFIRM AGAINST THE CODE</h3>
+<pre class="lang-python"><code>tp = pd.DataFrame({&quot;entry_idx&quot;:[10,20,30], &quot;pnl_pct&quot;:[2.0, 0.15, -1.0]})
+for r in bot.run_fee_slippage_sensitivity(tp, include_legacy_sensitivity_band=False):
+    print(r[&quot;label&quot;][:28], r[&quot;drag_pct&quot;], round(r[&quot;total_return_pct&quot;],4),
+          r[&quot;wins&quot;], round(r[&quot;win_rate_pct&quot;],4), r[&quot;flipped_trades&quot;])</code></pre>
+<p>Actual output:</p>
+<pre><code>GROSS (no fees, no slippage  0.0 1.15 2 66.6667 []
+FEE ONLY (confirmed 5.00bps/ 0.1 0.85 2 66.6667 []
+PRIMARY: FEE (confirmed) + C 0.2 0.55 1 33.3333 [{&#x27;entry_idx&#x27;: 20, &#x27;gross_pnl_pct&#x27;: 0.15, &#x27;net_pnl_pct&#x27;: -0.05000000000000002}]</code></pre>
+<p>On the real 27 trades the PRIMARY scenario takes the total from <strong>+30.31%</strong> to <strong>+24.91%</strong> (<code>docs/SCRATCH_RESULTS_METHODS.md</code>) — the strategy stays profitable under confirmed fees plus conservative slippage. That is the sentence to have ready.</p>
+<h2 id="5b-5-runregimebreakdown-l30763170">5B.5 <code>run_regime_breakdown()</code> — L3076–3170</h2>
+<p>Tags each trade by the macro regime at its entry bar, by <strong>two independent methods, both reported</strong>:</p>
+<ol><li><strong>Calendar</strong> — 2022 = bear, 2023 = chop, 2024+ = bull, the standard BTC cycle narrative for this window.</li><li><strong>Drawdown from all-time high</strong> — BEAR ≤ −40%, CHOP −40% to −12%, BULL &gt; −12%.</li></ol>
+<pre class="lang-python"><code>running_ath = np.maximum.accumulate(np.concatenate([[ath_seed], df[&quot;close&quot;].values]))[1:]
+drawdown_pct = (df[&quot;close&quot;].values / running_ath - 1.0) * 100.0</code></pre>
+<p><strong>The <code>ath_seed = 69000.0</code> is the detail to be ready to defend.</strong> It is BTC&#x27;s actual 2021-11-10 all-time high, which <strong>predates this dataset&#x27;s first bar by seven weeks</strong>. Seeding the running ATH from the dataset&#x27;s own first bar instead would read early-2022 — already about 32% below the real high — as &quot;at the high,&quot; and would mislabel a large block of 2022 trades. The seed imports one fact from outside the window, and that is disclosed rather than buried.</p>
+<p>The −40% / −12% thresholds are explicitly called a judgment call in the docstring, stated so they can be re-argued.</p>
+<p>The two methods <strong>disagree on a meaningful fraction of trades</strong>, and the function returns <code>method_agreement</code> with the full disagreement list rather than collapsing to one number. Reporting both is the honest choice: they measure genuinely different things.</p>
+<h2 id="5b-6-runforwardoosvalidation-l31733258-the-one-network-call">5B.6 <code>run_forward_oos_validation()</code> — L3173–3258 · <strong>the one network call</strong></h2>
+<p>Pulls fresh candles live from Binance through a fixed, closed end date, confirms the locked 27-trade baseline reproduces against the fresh pull, and reports any trades entered after the locked window&#x27;s end as genuinely out-of-sample — those postdate every commit to the strategy code.</p>
+<p><strong>It is off by default.</strong> A bare <code>python research_analysis.py</code> never calls it; only <code>--include-oos-live</code> does. Say this if asked whether results depend on a live connection: they do not, and the flag exists precisely so that is provable rather than promised.</p>
+<h2 id="5b-7-paper-sync-machinery-l32613525">5B.7 Paper-sync machinery — L3261–3525</h2>
+<p><code>run_paper_sync_check()</code> (L3261), <code>_parse_claude_md_locked_results()</code> (L3332), <code>_PaperSyncCheck</code> (L3368) and <code>generate_paper_sync_report()</code> (L3398) recompute the headline figures and diff them against the locked values, writing <code>artifacts/paper_sync_report.md</code>. <code>--serve</code> regenerates it on every run and prints a warning if any mismatch appears.</p>
+<p>This is a <em>guardrail</em>, not an analysis. Its value is that a number cannot drift silently between the code and the write-up.</p>
+<h2 id="5b-8-the-formulation-window-l35263606">5B.8 The formulation window — L3526–3606</h2>
+<p><code>load_formulation_period_window()</code> (L3526) takes a fixed prefix of <code>artifacts/candles_extended.json</code> and <strong>asserts</strong> its last bar is <code>2022-01-01 04:00:00</code> — one bar before the locked window begins:</p>
+<pre class="lang-python"><code>assert last_open_time == &quot;2022-01-01 04:00:00&quot;, (
+    f&quot;expected the formulation-period slice to end at 2022-01-01 04:00:00 ...&quot;)</code></pre>
+<p>That assertion is the guard against the two windows silently overlapping.</p>
+<p><strong>The 2018–2022 window is NOT out-of-sample.</strong> It is the period the strategy&#x27;s rule <em>structure</em> was originally formed against. It is reported for comparison, and every reference to it must carry that caveat. It is also where the paper&#x27;s disclosed data-completeness gap lives: 8,750 rows against 8,767 expected, seventeen candles missing across eight exchange-side outages, the largest a run of seven (source: the paper&#x27;s Methodology → <em>Data</em>; this figure is not carried in <code>docs/SCRATCH_RESULTS_METHODS.md</code>). No figure from the primary window is affected.</p>
+<p><code>reconcile_formulation_window_trades()</code> (L3555) cross-checks the trades computed here against the already-published figures in <code>artifacts/oos_validation_analysis.json</code>.</p>
+<h2 id="5b-9-the-three-dollar-arms-l36083714">5B.9 The three dollar arms — L3608–3714</h2>
+<div class="tw"><table><thead><tr><th>Function</th><th>Line</th><th>Arm</th></tr></thead><tbody><tr><td><code>_run_strategy_dollar_arm</code></td><td>3608</td><td>capital idle between trades, compounding at each exit</td></tr><tr><td><code>_run_dca_dollar_arm</code></td><td>3652</td><td>capital split evenly across every ISO week, bought at that week&#x27;s first-bar <strong>close</strong></td></tr><tr><td><code>_run_lump_sum_dollar_arm</code></td><td>3695</td><td>all capital deployed at the window&#x27;s first bar&#x27;s <strong>open</strong>, held</td></tr></tbody></table></div>
+<p><strong>The <code>final_capital</code> / <code>total_return_pct</code> distinction (L3640–3646).</strong> In the strategy arm, <code>final_capital</code> is the real terminal value of the compounded sequential curve, <strong>not</strong> back-derived from <code>total_return_pct</code>. The two differ because <code>total_return_pct</code> is a simple <em>sum</em> of <code>pnl_pct</code> (matching the locked headline convention) while the curve compounds multiplicatively. Both are shown; they are never reconciled. On the real data that is +30.31% summed versus $13,417.77 terminal on $10,000 — a compounded +34.18%.</p>
+<p><strong>Where the drag is applied</strong> differs by arm, and the asymmetry is deliberate: the strategy arm takes a <strong>round-trip</strong> 0.20% per trade, while the DCA and lump-sum arms take a <strong>one-sided</strong> 0.10% markup on the purchase price only — because those arms are <em>held</em>, not round-tripped, within the window.</p>
+<h3 id="hand-check-the-dca-arm-over-three-iso-weeks">HAND CHECK — the DCA arm over three ISO weeks</h3>
+<p>Six bars spanning three ISO weeks, prices 100, 110, 120, 130, 140, 150, with $300 starting capital:</p>
+<pre><code>ISO weeks:  2022-01-03/05 → W1   2022-01-10/12 → W2   2022-01-17/19 → W3
+first bar of each week: indices 0, 2, 4
+contribution = 300 / 3 = $100 per week
+
+units bought:  100/100 = 1.000000
+               100/120 = 0.833333
+               100/140 = 0.714286
+                 total = 2.547619
+
+final value = value at the LAST CONTRIBUTION BAR (index 4, price 140)
+            = 2.547619 × 140 = $356.666667
+total return = (356.666667 − 300) / 300 × 100 = +18.888889%</code></pre>
+<p><strong>Note the subtlety, because it is a real convention and a fair question:</strong> the arm&#x27;s final value is read at the last <em>contribution</em> bar (index 4), not at the last bar of the data (index 5). The period-return series is defined on contribution bars, so the terminal value is taken on the same grid. On 8,767 bars the effect is a fraction of one week; on this six-bar fixture it is visible, which is exactly why the fixture is built this way.</p>
+<p>The lump-sum arm buys at bar 0&#x27;s <strong>open</strong> = 100 → 3 units → 3 × 150 = $450 → <strong>+50%</strong>.</p>
+<h3 id="confirm-against-the-code-9">CONFIRM AGAINST THE CODE</h3>
+<pre class="lang-python"><code>dts = pd.to_datetime([&quot;2022-01-03&quot;,&quot;2022-01-05&quot;,&quot;2022-01-10&quot;,
+                      &quot;2022-01-12&quot;,&quot;2022-01-17&quot;,&quot;2022-01-19&quot;])
+d5 = pd.DataFrame({&quot;open_time&quot;:dts,&quot;open&quot;:[100,110,120,130,140,150],
+                   &quot;high&quot;:[0]*6,&quot;low&quot;:[0]*6,
+                   &quot;close&quot;:[100,110,120,130,140,150],&quot;volume&quot;:[1]*6})
+print(bot._iso_week_first_bars(d5).tolist())
+a = bot._run_dca_dollar_arm(d5, 300.0);        print(a[&quot;total_return_pct&quot;], a[&quot;final_capital&quot;], a[&quot;n_contributions&quot;])
+b = bot._run_lump_sum_dollar_arm(d5, 300.0);   print(b[&quot;total_return_pct&quot;], b[&quot;final_capital&quot;])</code></pre>
+<p>Actual output:</p>
+<pre><code>[0, 2, 4]
+18.888888888888893 356.6666666666667 3
+50.0 450.0</code></pre>
+<h2 id="5b-10-runbenchmarkvspassive-l37163782">5B.10 <code>run_benchmark_vs_passive()</code> — L3716–3782</h2>
+<p>Assembles the three arms into the paper&#x27;s head-to-head table, for two windows, gross and fee-adjusted. From <code>docs/SCRATCH_RESULTS_METHODS.md</code>, $10,000 per arm:</p>
+<p><strong>2022–2026 (locked window), gross</strong></p>
+<div class="tw"><table><thead><tr><th>Arm</th><th>Return</th><th>Terminal</th><th>Sharpe</th><th>MaxDD</th><th>Time in market</th></tr></thead><tbody><tr><td>OB-gated strategy</td><td>+30.31%</td><td>$13,417.77</td><td>1.114</td><td>−6.46%</td><td><strong>2.63%</strong></td></tr><tr><td>Weekly DCA into BTC</td><td>+123.13%</td><td>$22,312.94</td><td>0.556</td><td>−27.85%</td><td>100%</td></tr><tr><td>Lump-sum buy &amp; hold</td><td>+90.07%</td><td>$19,007.32</td><td>0.564</td><td>−67.21%</td><td>100%</td></tr></tbody></table></div>
+<p>Fee-adjusted strategy: <strong>+24.91% → $12,719.01</strong>.</p>
+<p><strong>2018–2022 (formulation period, NOT out-of-sample)</strong></p>
+<div class="tw"><table><thead><tr><th>Arm</th><th>Return</th><th>Terminal</th></tr></thead><tbody><tr><td>Strategy</td><td>+21.82%</td><td>$12,282.53</td></tr><tr><td>DCA</td><td>+439.88%</td><td>$53,987.55</td></tr><tr><td>Lump-sum</td><td>+236.96%</td><td>$33,696.49</td></tr></tbody></table></div>
+<p><strong>Both passive arms beat the strategy on raw terminal value in both windows.</strong> That is the result, and it is reported as the result. <code>docs/SCRATCH_RESULTS_METHODS.md</code> states the rule directly: <em>any statement of the strategy &quot;beating&quot; DCA or BTC must carry the exposure-time caveat (2.63% vs 100%) in the same sentence.</em> The defensible claim is about return per unit of exposure and per unit of drawdown, not about terminal wealth.</p>
+<h2 id="5b-11-buildtradesandresultstable-l37853838">5B.11 <code>build_trades_and_results_table()</code> — L3785–3838</h2>
+<p>Assembles the per-trade table (sorted by <code>entry_idx</code>, with resolved timestamps) and the extended results summary — the base <code>trade_stats</code> plus wins, losses, SD and the binomial p — for one window. This is what the Sheets export and the artifact writer both consume, so the spreadsheet and the JSON cannot disagree.</p>
+<hr>
+<h1 id="part-6-artifact-export-database-persistence-l38424293">Part 6 — Artifact export + database persistence (L3842–4293)</h1>
+<p><em>Light depth, with one check worth running.</em></p>
+<h2 id="6-1-what-it-writes">6.1 What it writes</h2>
+<p><code>export_dashboard_artifacts()</code> (L3971) is the workhorse. Per run it produces:</p>
+<div class="tw"><table><thead><tr><th>File</th><th>Line</th><th>Contents</th></tr></thead><tbody><tr><td><code>artifacts/manifest.json</code></td><td>4064</td><td>run parameters + candle count</td></tr><tr><td><code>artifacts/candles.json</code></td><td>4066</td><td>every bar with indicators</td></tr><tr><td><code>artifacts/threshold_runs.json</code></td><td>4068</td><td>summary per quality level</td></tr><tr><td><code>artifacts/runs_by_threshold.json</code></td><td>4070</td><td>OBs + trades + stats per level</td></tr><tr><td><code>artifacts/verification_report.json</code></td><td>4072</td><td>SHA-256 hashes and source checks</td></tr><tr><td><code>artifacts/candles.csv</code></td><td>4076</td><td>the CSV <code>load_candles()</code> reads back</td></tr><tr><td><code>artifacts/threshold_runs.csv</code></td><td>4077</td><td>flat summary</td></tr><tr><td><code>artifacts/trades_default_view.csv</code></td><td>4079</td><td>the default-quality trade log</td></tr><tr><td><code>artifacts/orderblocks_default_view.csv</code></td><td>4080</td><td>the default-quality OB list</td></tr></tbody></table></div>
+<p>and <code>write_statistical_artifacts()</code> (L4258) adds four more: <code>bootstrap_power_analysis.json</code>, <code>fee_slippage_analysis.json</code>, <code>ablation_reconstruction.json</code>, <code>benchmark_vs_passive.json</code>.</p>
+<blockquote><p><strong>A gotcha worth knowing before a live demo.</strong> <code>--serve</code> <strong>rewrites</strong> <code>artifacts/candles.csv</code>. Running it re-pulls candles and overwrites the cache the offline pipeline reads. Also note that <code>trades_default_view.csv</code> is the <strong>default view quality</strong> (1 by default), not the q≥0 baseline — that CSV holds a different trade count than 27. Quoting a number off the wrong CSV during a defense is an avoidable mistake.</p></blockquote>
+<h2 id="6-2-the-verification-report-l39203968">6.2 The verification report (L3920–3968)</h2>
+<p><code>hash_payload()</code> (L3896) takes a SHA-256 over a canonical JSON encoding — sorted keys, no whitespace — so two independently generated exports can be compared by hash rather than by diffing the full payload. <code>build_verification_report()</code> hashes the OHLC series, the indicator series, and each quality level&#x27;s Order Blocks, trades and stats separately, so a mismatch localises to a specific payload rather than just failing.</p>
+<p><strong>CHECK — reproducibility, in one line</strong></p>
+<pre class="lang-python"><code>c = [{&quot;time&quot;:1,&quot;open&quot;:1.0,&quot;high&quot;:2.0,&quot;low&quot;:0.5,&quot;close&quot;:1.5}]
+print(bot.hash_payload(c) == bot.hash_payload(c), bot.hash_payload(c)[:16])</code></pre>
+<p>The hash is deterministic across processes and machines because the encoding is canonical. That is the whole mechanism: same data in, same hash out, from anyone&#x27;s copy of the repository.</p>
+<h2 id="6-3-tonative-l3867-and-normalizerecords-l3890">6.3 <code>to_native()</code> (L3867) and <code>normalize_records()</code> (L3890)</h2>
+<p>Per-cell numpy→Python conversion while building record dicts. See §1.4 for why this is <em>not</em> the same function as <code>json_safe()</code>.</p>
+<h2 id="6-4-pushallgsheetexports-l4203">6.4 <code>push_all_gsheet_exports()</code> (L4203)</h2>
+<p>Calls the three Sheets pushes in sequence. <strong>Every push is non-fatal</strong>: a failure in one is reported and skipped, never aborting the rest. That is deliberate — a credentials problem should not cost you an artifact export.</p>
+<hr>
+<h1 id="part-7-http-server-l42944563">Part 7 — HTTP server (L4294–4563)</h1>
+<p><em>Light depth. Serves already-computed data.</em></p>
+<p><code>DashboardRequestHandler</code> (L4312) extends Python&#x27;s built-in static file server. Static mapping: <code>dashboard-v2/dist/</code> under <code>/dashboard/</code>, and <code>artifacts/*.json|csv</code> as plain files. An unknown sub-path under <code>/dashboard/</code> falls back to <code>index.html</code> (L4329–4333) — the standard SPA convention; this app keeps its tabs in React state rather than in the URL, so a hard reload on a sub-path should not 404.</p>
+<div class="tw"><table><thead><tr><th>Route</th><th>Method</th><th>Handler</th><th>Line</th></tr></thead><tbody><tr><td><code>/api/iterations</code></td><td>GET</td><td><code>handle_get_iterations</code></td><td>4405</td></tr><tr><td><code>/api/get_theme</code></td><td>GET</td><td><code>handle_get_theme</code></td><td>4463</td></tr><tr><td><code>/api/trades…</code></td><td>GET</td><td><code>handle_get_trades</code></td><td>4354</td></tr><tr><td><code>/api/push_gsheet</code></td><td>POST</td><td><code>handle_push_gsheet</code></td><td>4500</td></tr><tr><td><code>/api/save_theme</code></td><td>POST</td><td><code>handle_save_theme</code></td><td>4486</td></tr></tbody></table></div>
+<p><code>run_dashboard_server()</code> (L4514) starts a threaded server on port 8765, binds to <code>127.0.0.1</code> by default (loopback only, so a native run is not reachable from the LAN), and honours <code>DASHBOARD_HOST</code> — which the Dockerfile sets to <code>0.0.0.0</code>, because <code>docker run -p</code> does not forward to a container&#x27;s loopback interface.</p>
+<h2 id="the-independence-rule-the-most-important-paragraph-in-part-7">THE INDEPENDENCE RULE — the most important paragraph in Part 7</h2>
+<p><strong>The dashboard recomputes its statistics in TypeScript, from the exported per-trade data, and never imports a Python-computed statistic.</strong> <code>dashboard-v2/src/components/stats/statsCompute.ts</code> and <code>statMath.ts</code> independently implement the win rate, the one-sided binomial test, Pearson/Spearman correlation and a percentile bootstrap CI.</p>
+<p>That is <strong>an intentional cross-check, not duplicated effort.</strong> Two independent implementations, in two languages, computing the same statistics from the same trade data, and agreeing — which is a far stronger claim than one implementation agreeing with itself.</p>
+<p>The bootstrap CI gap documented in §5B.1 is the <em>visible product</em> of that independence: the two surfaces use different B and different PRNGs, and the project reports both values with the cause identified, rather than forcing them to match. <strong>Never make the JS side import from Python.</strong> Doing so would destroy the only genuine cross-validation in the project.</p>
+<hr>
+<h1 id="part-8-cli-and-main-l45644847">Part 8 — CLI and main (L4564–4847)</h1>
+<h2 id="8-1-runfullanalysispipeline-l45684750">8.1 <code>run_full_analysis_pipeline()</code> — L4568–4750</h2>
+<p>The default entrypoint. Loads data, runs the OB-gated baseline, runs the three-arm ablation, then runs every Section 5/5B analysis against the baseline trade log, printing each through <code>report_stat()</code> and returning one results dict.</p>
+<p><strong>Offline by default.</strong> Every step runs against the committed <code>artifacts/candles.csv</code> and <code>artifacts/candles_extended.json</code>. The one exception, <code>run_forward_oos_validation()</code>, runs only with <code>include_oos_live=True</code>.</p>
+<h2 id="8-2-runservemode-l47524800">8.2 <code>run_serve_mode()</code> — L4752–4800</h2>
+<p>The <code>--serve</code> path, in order:</p>
+<ol><li><code>export_dashboard_artifacts(...)</code> — artifacts + database rows.</li><li><code>generate_paper_sync_report(...)</code> — writes <code>artifacts/paper_sync_report.md</code>, printing a <strong>warning</strong> if any figure mismatches the locked results.</li><li><code>write_statistical_artifacts(...)</code> — the four analysis JSON files.</li><li><code>run_dashboard_server(port=8765)</code> — unless <code>--no-server</code>.</li></ol>
+<p>Steps 2 and 3 are each wrapped in <code>try/except</code> and degrade to a warning; a failure there must not cost you the artifact export.</p>
+<blockquote><p><strong>Noted inefficiency.</strong> <code>--serve</code> re-simulates the formulation window more than once across these steps. It is wasted CPU, not a correctness problem — <code>simulate_trades()</code> is deterministic, so every repetition produces the same trades. Left as-is during the paper freeze; noted here so it is not mistaken for something meaningful.</p></blockquote>
+<h2 id="8-3-the-flags-l48064832">8.3 The flags — L4806–4832</h2>
+<div class="tw"><table><thead><tr><th>Flag</th><th>Default</th><th>Effect</th></tr></thead><tbody><tr><td><code>--serve</code></td><td>off</td><td>export artifacts + DB, then start the dashboard server</td></tr><tr><td><code>--include-oos-live</code></td><td>off</td><td><strong>the only flag that enables a network call</strong></td></tr><tr><td><code>--bootstrap-n</code></td><td>10000</td><td>B for the canonical CI</td></tr><tr><td><code>--seed</code></td><td>42</td><td>RNG seed for all bootstrap resampling</td></tr><tr><td><code>--json-out</code></td><td>none</td><td>write every section&#x27;s results to one JSON file</td></tr><tr><td><code>--symbol</code> / <code>--timeframe</code></td><td>BTCUSDT / 4h</td><td></td></tr><tr><td><code>--start</code> / <code>--end</code></td><td>2022-01-01 / 2026-01-01</td><td>the locked window</td></tr><tr><td><code>--levels</code></td><td><code>0,1,2,3</code></td><td>quality levels to export</td></tr><tr><td><code>--default-view-quality</code></td><td>1</td><td>which level the dashboard opens on</td></tr><tr><td><code>--output-dir</code></td><td><code>artifacts</code></td><td></td></tr><tr><td><code>--export-gsheet</code></td><td>off</td><td>push the three Sheets exports</td></tr><tr><td><code>--db-url</code></td><td>none</td><td>SQLAlchemy URL; else <code>sqlite:///backtest_results.db</code></td></tr><tr><td><code>--no-server</code> / <code>--no-browser</code></td><td>off</td><td>suppress the server / the browser tab</td></tr></tbody></table></div>
+<p>L4835 coerces <code>--levels</code> from a comma string to a list of ints and forces <code>--default-view-quality</code> into that list if it was not already there.</p>
+<h2 id="8-4-the-dispatch-l48394847">8.4 The dispatch — L4839–4847</h2>
+<pre class="lang-python"><code>if cli_args.serve:
+    run_serve_mode(cli_args)
+else:
+    run_full_analysis_pipeline(include_oos_live=..., bootstrap_resamples=..., seed=..., json_out=...)</code></pre>
+<p>Two paths. That is the entire top-level control flow of a 4,847-line file.</p>
+<hr>
+<h1 id="appendix-a-every-hand-check-in-one-table">Appendix A — Every hand check, in one table</h1>
+<p>Run the §0.2 loader first. Each row&#x27;s expected value was produced by running the real function on that exact input.</p>
+<div class="tw"><table><thead><tr><th>§</th><th>Module</th><th>Input</th><th>Hand-derived value</th><th>Code output</th></tr></thead><tbody><tr><td>1.3</td><td>headline consistency</td><td>27 trades</td><td>19 wins; 70.37%; 1.12% avg</td><td><code>27 19 70.37037… 30.30645… 1.12246… 2.41013…</code></td></tr><tr><td>2.1</td><td><code>load_candles</code></td><td>the locked CSV</td><td>1461 days × 6 + 1 = 8,767</td><td><code>8767 … 1461</code></td></tr><tr><td>3.1A</td><td><code>compute_indicators</code> MACD</td><td>6 closes</td><td>hist[1] = 0.127635</td><td><code>0.127635</code></td></tr><tr><td>3.1B</td><td><code>compute_indicators</code> KDJ</td><td>6 H/L/C</td><td>K[1] 51.515152, D[1] 50.505051, J[1] 53.535354</td><td>identical</td></tr><tr><td>3.1C</td><td><code>compute_indicators</code> ATR</td><td>4 H/L/C, period 3</td><td>TR 5,7,5,8; ATR[3] 6.666667; ATR200[3] 6.25</td><td>identical</td></tr><tr><td>3.2</td><td><code>compute_smc</code></td><td>12 synthetic bars</td><td>1 DEMAND, top 103, bottom 98, ob_bar 5, created_at 8, BOS/internal, mitigated 12</td><td>identical</td></tr><tr><td>3.3</td><td>OB quality criteria</td><td>same 12 bars</td><td>F/T/T/T/T → composite 4</td><td>identical</td></tr><tr><td>3.5</td><td><code>kdj_reset_init/update</code></td><td>entry 5, ob_bar 2</td><td>w = 3; k 57.141913, d 54.858586, armed True</td><td>identical</td></tr><tr><td>3.5</td><td><code>w</code> on real data</td><td>27 trades</td><td>—</td><td><code>14 439 74.0</code></td></tr><tr><td>3.7</td><td>LONG/SHORT entry gates</td><td>real trade @ i=335</td><td>all 8 gates pass; risk 2.311%, R:R 4.085</td><td>trade record matches</td></tr><tr><td>3.8</td><td>exit ladder</td><td>27 trades</td><td>—</td><td><code>ATR 9, TRAILING 8, KDJ 8, SL 2</code></td></tr><tr><td>4.5</td><td><code>summarize_trade_pool</code></td><td>3 trades</td><td>n 3, wins 2, 66.6667%, total 1.15, sd 1.513550</td><td>identical</td></tr><tr><td>5.1</td><td><code>binomial_test</code></td><td>4/5 and 19/27</td><td>0.1875 / 0.375; 0.0261195 / 0.0522390</td><td>identical</td></tr><tr><td>5.2</td><td><code>bootstrap_resample</code></td><td>5 values, B=4, seed 7</td><td>totals 5, −2, 12, 6; p2.5 −1.475</td><td>identical</td></tr><tr><td>5.3</td><td><code>pearson_correlation</code></td><td>4 (x,y) pairs</td><td>r = 3.0/5.0 = 0.6</td><td><code>0.6</code></td></tr><tr><td>5.4</td><td><code>max_drawdown_pct</code></td><td>5-point curve</td><td>−25.0</td><td><code>-25.0</code></td></tr><tr><td>5.5</td><td><code>sharpe_sortino_ratios</code></td><td>6 returns</td><td>12.511423 / 25.640788</td><td><code>12.51142335171, 25.64078781940992</code></td></tr><tr><td>5B.4</td><td><code>run_fee_slippage_sensitivity</code></td><td>3 trades, 0.20% drag</td><td>total +0.55, 1 win, 1 flip</td><td>identical</td></tr><tr><td>5B.9</td><td><code>_run_dca_dollar_arm</code></td><td>3 ISO weeks, $300</td><td>2.547619 units → $356.666667, +18.888889%</td><td>identical</td></tr><tr><td>5B.9</td><td><code>_run_lump_sum_dollar_arm</code></td><td>same 6 bars</td><td>3 units → $450, +50%</td><td>identical</td></tr></tbody></table></div>
+<h1 id="appendix-b-known-imperfections-all-disclosed">Appendix B — Known imperfections, all disclosed</h1>
+<p>Volunteering these is stronger than being caught by them.</p>
+<div class="tw"><table><thead><tr><th>#</th><th>What</th><th>Where</th><th>Status</th></tr></thead><tbody><tr><td>1</td><td>ATR code comment says &quot;Wilder&#x27;s RMA&quot;; the code computes a <strong>plain rolling mean</strong></td><td>L592–605</td><td>Paper reports the rolling mean, and discloses the stale comment. Code and paper agree; the comment does not.</td></tr><tr><td>2</td><td>FVG/displacement forward searches could read 1–2 bars past the confirmation bar</td><td><code>_build_order_block_from_crossover</code></td><td><strong>Fixed</strong> (<code>cb4ed93</code>), guarded by runtime asserts. Does not move the q≥0 baseline.</td></tr><tr><td>3</td><td>Correlation p-values once reported as <code>p &lt; 0.001</code></td><td>two draft documents</td><td><strong>Corrected</strong> to 0.0094 / 0.0113.</td></tr><tr><td>4</td><td>Bootstrap CI has two values: [+5.99, +54.99] Python vs [+7.48, +54.46] dashboard</td><td>§5B.1</td><td>Cause identified (B mismatch alone). Both reported; deliberately not unified.</td></tr><tr><td>5</td><td>Ablation arms&#x27; 140/138-trade pools are not reproducible from committed code</td><td>§4.2</td><td>Disclosed. Reconstruction prints MATCH/DIVERGE; a DIVERGE is expected.</td></tr><tr><td>6</td><td>&quot;190 qualifying signals&quot; denominator</td><td>paper</td><td><strong>Open question.</strong> Derived using the ablation&#x27;s stop rule, not the OB-gated strategy&#x27;s. Do not cite as settled.</td></tr><tr><td>7</td><td>2018–2022 formulation window has 8,750 of 8,767 expected rows</td><td>§5B.8</td><td>Disclosed. 17 candles across 8 exchange outages. No primary-window figure affected.</td></tr><tr><td>8</td><td>Entry predicate exists in 4 places, exit ladder in 4</td><td>§3.10</td><td>Intentional (ablation isolation); consolidation deferred until after the paper freeze.</td></tr><tr><td>9</td><td><code>load_extended_candles_window</code> (L489–517) has zero callers</td><td>§2.2</td><td>Dead code, identified. Left in place to avoid touching the file during freeze.</td></tr><tr><td>10</td><td><code>--serve</code> re-simulates the formulation window more than once</td><td>§8.2</td><td>Wasted CPU only; <code>simulate_trades()</code> is deterministic.</td></tr><tr><td>11</td><td>Risk-free rate implicitly zero in Sharpe/Sortino</td><td>§5.5</td><td>Conventional for this window; disclosed as a simplification.</td></tr><tr><td>12</td><td>The SMC cache key is <code>(length, last close)</code></td><td>§3.10</td><td>Safe for every caller in this file; would be unsafe as a general-purpose cache.</td></tr></tbody></table></div>
+<hr>
+<p><em>Generated for the ISEF defense of &quot;Harnessing Bitcoin Volatility.&quot; Every figure in this guide is traceable to <code>docs/SCRATCH_RESULTS_METHODS.md</code> or to a REPL block printed above it.</em></p>
+</main>
+</div>
+</body>
+</html>
