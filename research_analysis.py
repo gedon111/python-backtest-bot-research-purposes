@@ -2355,7 +2355,7 @@ def build_verification_summary(blocks):
     return rows
 
 
-# --- Independent verification: the .xlsx writer ------------------------------
+# --- Independent verification: the .xlsx writer -----------------------------
 
 def write_formula_workbook_xlsx(path, windows):
     """
@@ -2482,7 +2482,7 @@ def export_formula_workbook(path=os.path.join("artifacts", "verification_formula
     return path
 
 
-# --- Independent verification: the Google Sheets writer ----------------------
+# --- Independent verification: the Google Sheets writer ---------------------
 
 def _windows_from_export_result(export_result):
     """Reshape what build_trades_and_results_table()'s caller already produced
