@@ -1,6 +1,6 @@
 # Paper/codebase sync report
 
-Generated: 2026-09-02T12:45:46.756640+00:00
+Generated: 2026-09-05T07:09:10.857781+00:00
 
 Recomputed live from `artifacts/candles.csv` and this file's own strategy-engine functions, then cross-checked against the figures parsed out of `CLAUDE.md`'s "Locked results" section. A MISMATCH row is a correctness finding, not something this script resolves automatically -- see `CLAUDE.md`'s rule on newly found bugs.
 
