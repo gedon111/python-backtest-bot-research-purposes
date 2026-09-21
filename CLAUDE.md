@@ -79,19 +79,33 @@ push-to-gsheet button call `push_all_gsheet_exports()` in
 `research_analysis.py`, Section 6): `push_candles_to_gsheet` (2 tabs, ALL
 26 sim-dataframe columns per bar, not a curated subset - see
 `_format_df_for_export_full`, Section 3B), `push_trades_and_results_to_gsheet`
-(4 tabs, full 40-column trade schema including numeric OB-criteria
-diagnostics alongside the booleans, plus `kdj_exit_window` - the frozen-at-
-entry KDJ-reset period `w` from `kdj_reset_init()`, added 2026-08-14 so it's
-visible per-trade instead of only derivable from entry_idx/entry_ob_bar by
-hand), `push_benchmark_vs_passive_to_gsheet`
+(4 tabs, the full 40-column trade schema, plus `kdj_exit_window` - the
+frozen-at-entry KDJ-reset period `w` from `kdj_reset_init()`, added
+2026-08-14 so it's visible per-trade instead of only derivable from
+entry_idx/entry_ob_bar by hand). CORRECTION (2026-09-21): 11 of those 40
+columns - the numeric OB-criteria diagnostics,
+`entry_ob_displacement_max_body_move` through `entry_ob_body_ratio` - are
+EMPTY on the current in-process path. They were populated by the retired
+`analysis/export_trades_and_results.py`'s `compute_ob_criteria_diagnostics()`,
+which `build_trades_and_results_table()` deliberately did not port (its own
+docstring says so); `_write_trades_sheet` therefore writes "" for each via
+`r.get(c, "")`. The committed `artifacts/export_trades_and_results.json` still
+carries values for them from the old pipeline, so do not read that artifact as
+evidence the current path fills them. The BOOLEAN `quality_*` columns are
+unaffected and are populated. If the numeric diagnostics are wanted back,
+port that function - don't assume they're already there.
+`push_benchmark_vs_passive_to_gsheet`
 (2 tabs, gross + fee-adjusted blocks) - all three computed in-process now
 (no more subprocess + JSON round-trip through `analysis/*.py`, which is
-retired). The OLD `push_all_thresholds_to_gsheet` (per-quality-threshold,
-per-bar "Quality 0".."Quality 3" sheets) is left defined in
-`research_analysis.py` (Section 3B) but is no longer called by default -
-its sheets are actively deleted from the live workbook on every push. Do not
-re-wire it back in without asking; it was deliberately superseded, not
-deprecated by accident.
+retired). CORRECTION (2026-09-21): the OLD
+`push_all_thresholds_to_gsheet` (per-quality-threshold, per-bar
+"Quality 0".."Quality 3" sheets) is described above as "left defined in
+Section 3B but no longer called". It is not - the function is ABSENT from the
+codebase entirely (zero matches), and nothing deletes its sheets either
+(there is no `del_worksheet` call anywhere in the repo, so any stale
+"Quality N" tabs in the live workbook are still sitting there and must be
+removed by hand). It was deliberately superseded, not deprecated by accident:
+do not re-add it without asking.
 Section 3C adds an INDEPENDENT verification layer on top of this pipeline:
 `Verify Indicators/Trades/Trade Bars/OB Quality/Stats <window>` tabs plus a
 `Verification Summary` tab, whose cells are native spreadsheet FORMULAS
