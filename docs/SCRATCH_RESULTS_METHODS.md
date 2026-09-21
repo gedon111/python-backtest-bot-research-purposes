@@ -117,6 +117,29 @@ confirmation bar, never by dataset length. This is enforced inline with
 runtime assertions at each forward-search site, so a regression would fail
 immediately on the next run rather than requiring a separate audit pass.
 
+## Reporting notes on the record (not bugs, not silently reconciled)
+
+1. **`compute_indicators()`'s ATR comment is stale.** The comment above the
+   ATR block (`research_analysis.py`, Section 3) describes "Wilder's
+   smoothing (RMA)" and gives the RMA recurrence; the code is
+   `true_range.rolling(atr_period, min_periods=1).mean()`, a plain rolling
+   MEAN of True Range. The CODE is what the paper's numbers come from and it
+   is intended: an independent recomputation matches the SMA exactly (diff
+   0.0), the dashboard labels it `ATR(14, SMA-of-TR)`, and the Section 3C
+   formulas reproduce the SMA and pass at 1e-5. Only the comment is wrong.
+   Recorded rather than patched, per CLAUDE.md's "Known bugs" rule.
+
+2. **The benchmark row mixes two return conventions.** In
+   `artifacts/benchmark_vs_passive.json` the OB-gated arm reports
+   `total_return_pct` = 30.3065 (the arithmetic SUM of per-trade `pnl_pct`)
+   beside `final_capital` = 13417.77, which is the *compounded* +34.1777% on
+   $10,000. The two fields in the same row do not correspond to each other.
+   Both are individually correct under their own convention; the figure the
+   paper cites as the headline total net return is the arithmetic one
+   (+30.31%), which is what Section 3C's formula layer independently
+   reproduces. Any statement pairing "+30.31%" with "$13,417.77" needs to say
+   which convention each number uses.
+
 ## Regression baseline
 
 `scratch/regression.py` holds a golden-master snapshot (fixtures in
@@ -126,12 +149,76 @@ A fresh run is compared against that snapshot bar-by-bar (1e-6 tolerance)
 and trade-by-trade (matched on entry_idx, 1e-5 tolerance) to confirm the
 engine still reproduces the locked results above.
 
-## Independent JS verification
+## Independent verification surfaces
 
-The dashboard (`dashboard-v2`) recomputes win rate, the one-sided binomial
-test, Pearson/Spearman correlation, and a percentile bootstrap CI from the
-same per-trade data the Python pipeline exports, using its own independent
+Two surfaces recompute this study's numbers from scratch rather than
+displaying Python's. Neither imports anything from the Python side. Cite
+either as an independent check; cite both when the claim is that a figure is
+implementation-independent.
+
+### 1. TypeScript (`dashboard-v2`) - statistics and OB quality
+
+The dashboard recomputes win rate, the one-sided binomial test,
+Pearson/Spearman correlation, and a percentile bootstrap CI from the same
+per-trade data the Python pipeline exports, using its own independent
 TypeScript implementation (`statsCompute.ts`, `statMath.ts`) rather than
 importing any Python-computed statistic. The bootstrap CI gap documented
 above is the visible product of that independence: two separate
 implementations computing the same statistic from the same trade data.
+`obQualityVerification.ts` does the same for the 5 Order Block quality
+criteria, exposing a `matchesRecorded` flag per criterion (verified against
+all 761 Order Blocks: zero mismatches).
+
+### 2. Native spreadsheet formulas - indicators, OB quality, trades, statistics
+
+`research_analysis.py`'s Section 3C emits a spreadsheet that *derives* the
+numbers instead of receiving them. Same generator, two targets: a
+self-contained `artifacts/verification_formulas.xlsx`
+(`python research_analysis.py --export-formula-workbook`) and the live Google
+Sheets workbook's `Verify *` tabs (pushed by `--export-gsheet`, with
+`value_input_option=USER_ENTERED` so they land as live formulas). Each derived
+value sits beside the Python-published one with an absolute diff and a
+PASS/FAIL cell; `Verification Summary` rolls every check group up to one
+GRAND TOTAL cell and is deliberately the first sheet, so
+`soffice --headless --convert-to csv` grades the whole workbook in one call.
+
+**What the formulas are allowed to read:** raw OHLCV, plus six integer bar
+indices per trade (`side`, `entry_idx`, `exit_idx`, `entry_ob_bar`,
+`entry_ob_created_at`, `tp_ob_bar`). No price, level, indicator value or
+metric crosses over. The Order Block zone edges are NOT taken from Python -
+the formulas rebuild the LuxAlgo volatility-parsed body inversion themselves,
+so the stop-loss and the structural take-profit are independent derivations.
+
+**What it independently derives:** all 9 published indicator series per bar
+(MACD/MACD_signal/MACD_hist, RSV/K/D/J, ATR, ATR_200); all 5 Order Block
+quality criteria and their composite; per trade the entry fill, zone edges,
+stop-loss, structural-or-2R take-profit, frozen KDJ-reset window `w`, the
+full exit ladder (so the exit *reason* is a derived classification, not a
+copied label), the post-ratchet stop-loss and `pnl_pct`; and all 9 headline
+statistics, computed from the spreadsheet's own derived `pnl_pct` column.
+
+**What it deliberately does NOT attempt:** Order Block *detection*
+(`compute_smc()`'s pivot/BOS/CHoCH state machine) and trade *selection*
+(`simulate_trades()`'s per-bar scan). Selection takes the first *in list
+order* of ~760 Order Blocks that passes nine filters; any spreadsheet lookup
+substitute changes that tie-break to first-by-key. Porting either would
+manufacture disagreements that are artifacts of the port rather than
+findings, which in a paper where a disagreement is supposed to mean something
+is worse than not having the check. Hence the six indices above are inputs.
+
+**Tolerances (both visible as constants on `Verification Summary`):**
+indicator series 1e-5 absolute, because `_format_df_for_export_full()` rounds
+every published float to 6 dp, giving the *published* side up to 5e-7 of
+rounding error - the observed worst case across all 8,767 bars is 5.0004e-7,
+i.e. exactly that floor, which is the evidence the formula side is exact.
+Trade-level and statistical checks get 1e-9, since those tabs write raw
+unrounded floats.
+
+**Status as of this writing:** 17,639 checks, 0 failures, across both windows
+(8,767 + 8,750 per-bar indicator checks, 27 + 25 trades, 27 + 25 Order Block
+criteria sets, 9 + 9 statistics). Confirmed to have teeth by a negative
+control: perturbing one published value per check group produces exactly one
+FAIL in each, and leaves the other window clean. The spreadsheet reproduces
+the locked headline figures from raw candles alone - 27 trades, 19 wins,
+70.3703703703704%, +30.3064563560319%, +1.1224613465197%, SD 2.41013571893455%,
+one-sided p 0.0261194929480553, two-sided exactly 2x that.

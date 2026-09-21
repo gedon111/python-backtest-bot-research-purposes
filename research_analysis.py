@@ -59,6 +59,8 @@ SECTION MAP
   2    Data loading / preprocessing
   3    Strategy / backtest engine (protected core logic, see above)
   3B   Live data pull (get_candles) + Google Sheets export plumbing
+  3C   Independent spreadsheet reproduction (native-formula verification
+       workbook: .xlsx + the live Google Sheets 'Verify *' tabs)
   4    Ablation study (three-arm design)
   5    Statistical test primitives (binomial/Fisher/Welch/bootstrap/etc.)
   5B   Application-level analyses (benchmark/DCA/fee-slippage/regime/OOS/
@@ -105,6 +107,7 @@ import gspread
 import numpy as np
 import pandas as pd
 from binance.client import Client
+from openpyxl import Workbook
 from gspread_formatting import CellFormat, Color, TextFormat, format_cell_ranges
 from oauth2client.service_account import ServiceAccountCredentials
 from scipy import stats as scipy_stats
@@ -2072,6 +2075,1161 @@ def push_candles_to_gsheet(candles_result):
         print(f"  '{title}' done.")
 
     print("\nCheck GSHEET: candle-level sheets exported successfully.")
+
+
+# ============================================================================
+# SECTION 3C: INDEPENDENT SPREADSHEET REPRODUCTION (FORMULA WORKBOOK)
+# ============================================================================
+#
+# Everything above computes numbers in Python and prints them into a
+# spreadsheet cell. That makes the workbook a display surface with no opinion
+# of its own: a reader cannot tell a correct pipeline from a broken one,
+# because the sheet only echoes whatever Python handed it.
+#
+# This section emits a SECOND, INDEPENDENT computation surface. It writes
+# native spreadsheet formulas that re-derive the indicators, the Order Block
+# quality criteria, every trade's levels / exit classification / PnL, and the
+# nine headline statistics from RAW OHLCV alone, then sets each derived value
+# beside the Python-published one with a diff and a PASS/FAIL cell. It is the
+# same role `dashboard-v2`'s TypeScript already plays for the statistics (see
+# docs/SCRATCH_RESULTS_METHODS.md, "Independent verification surfaces"), and
+# the same `matchesRecorded` idiom as
+# dashboard-v2/src/components/chart/obQualityVerification.ts.
+#
+# WHAT THE FORMULAS ARE ALLOWED TO READ
+# -------------------------------------
+# Raw OHLCV only (open/high/low/close/volume), plus six integer bar indices
+# per trade taken from the published trade schema: side, entry_idx, exit_idx,
+# entry_ob_bar, entry_ob_created_at, tp_ob_bar. Nothing else. No price, no
+# level, no indicator value, no metric crosses over. In particular the Order
+# Block zone edges are NOT taken from Python: the formulas rebuild the
+# LuxAlgo volatility-parsed body inversion themselves (compute_smc(),
+# "parsed_high = low if bar range >= 2*ATR_200 else high") so the stop-loss
+# and the structural take-profit are genuinely independent derivations.
+#
+# WHAT IS DELIBERATELY NOT ATTEMPTED
+# ----------------------------------
+# Order Block DETECTION (compute_smc()'s pivot/BOS/CHoCH state machine) and
+# trade SELECTION (simulate_trades()'s per-bar scan). Detection is a
+# 7-variable latched state machine run twice at two lookbacks emitting a
+# variable-length table; selection takes the FIRST IN LIST ORDER of ~760
+# Order Blocks that passes nine filters, and any MINIFS/lookup substitute
+# changes that tie-break to first-by-key. Porting either would manufacture
+# disagreements that are artifacts of the port rather than findings, which in
+# a paper where a disagreement is supposed to mean something is worse than
+# not having the check at all. Hence the six indices above are inputs.
+#
+# FORMULA DIALECT
+# ---------------
+# The same emitted strings have to work in Excel, LibreOffice Calc AND Google
+# Sheets, so the generator is restricted to the common subset and to
+# non-volatile constructs: IF/AND/OR/NOT/ABS/MIN/MAX/SUM/AVERAGE/COUNT/
+# COUNTIF/COUNTA/STDEV.S/BINOM.DIST/INDEX/N. No LET/LAMBDA/ARRAYFORMULA
+# (Sheets-only), no XLOOKUP (absent from older Excel), and no OFFSET/INDIRECT
+# (volatile -- at 8,767 rows they make recalculation crawl). Variable-width
+# windows are built with INDEX range construction instead:
+#   MIN(INDEX($D:$D,MAX(2,ROW()-8)):INDEX($D:$D,ROW()))
+# where the MAX(2,...) clamp is what reproduces pandas' min_periods=1
+# expanding warmup.
+#
+# ONE dialect difference is unavoidable and is handled at a single point
+# (_XLSX_MODERN_FUNCTIONS / _to_xlsx_dialect): the post-2007 functions
+# STDEV.S and BINOM.DIST must be stored in an .xlsx file as _xlfn.STDEV.S /
+# _xlfn.BINOM.DIST, while Google Sheets wants the bare names. The generator
+# emits bare names and the .xlsx writer rewrites them.
+#
+# TOLERANCES, AND WHY THEY DIFFER
+# -------------------------------
+# Indicator series get 1e-5 absolute, NOT tighter, because
+# _format_df_for_export_full() rounds every float to 6 dp before writing, so
+# the PUBLISHED side carries up to 5e-7 of rounding error (the observed worst
+# case across all 8,767 bars is 5.0004e-7, i.e. exactly that floor). The raw
+# OHLCV inputs are unaffected, so the formula side is exact; the tolerance
+# absorbs the published side's rounding only. Trade-level and statistical
+# checks get 1e-9, because _write_trades_sheet()/_write_results_sheet() write
+# raw unrounded floats and there is nothing to absorb. Both tolerances are
+# written into the workbook as visible constants on 'Verification Summary'.
+
+VERIFY_TOLERANCE_INDICATOR = 1e-5
+VERIFY_TOLERANCE_TRADE = 1e-9
+
+_SUMMARY_SHEET = "Verification Summary"
+_TOL_INDICATOR_CELL = f"'{_SUMMARY_SHEET}'!$B$4"
+_TOL_TRADE_CELL = f"'{_SUMMARY_SHEET}'!$B$5"
+
+# Column letters of the Candles data sheets, whose column order is set by
+# _format_df_for_export_full() reading df.columns directly. Resolved at
+# runtime by _candle_column_letters() rather than hardcoded, so a new engine
+# column cannot silently shift what the formulas point at.
+_CANDLE_FORMULA_COLUMNS = ["open", "high", "low", "close", "volume",
+                           "MACD", "MACD_signal", "MACD_hist", "K", "D", "J", "ATR", "ATR_200", "RSV"]
+
+_XLSX_MODERN_FUNCTIONS = ["STDEV.S", "BINOM.DIST"]
+
+
+def _col_letter(col_index):
+    """1-based column index -> A1 column letters, multi-letter safe.
+
+    Deliberately NOT the `chr(64 + n)` idiom used by _apply_pnl_formatting()
+    and _write_trades_sheet() above: that breaks past column Z, and the
+    verify sheets below run well past it.
+    """
+    if col_index < 1:
+        raise ValueError(f"column index must be >= 1, got {col_index}")
+    letters = ""
+    while col_index > 0:
+        col_index, remainder = divmod(col_index - 1, 26)
+        letters = chr(65 + remainder) + letters
+    return letters
+
+
+def _a1(col_index, row_index):
+    """(1-based column, 1-based row) -> 'A1' style reference."""
+    return f"{_col_letter(col_index)}{row_index}"
+
+
+def _to_xlsx_dialect(formula):
+    """Rewrite the post-2007 function names an .xlsx file must store with the
+    _xlfn. prefix. Google Sheets wants the bare names, so this runs only in
+    the .xlsx writer. Verified necessary: without it LibreOffice/Excel read
+    STDEV.S and BINOM.DIST as #NAME?."""
+    if not isinstance(formula, str) or not formula.startswith("="):
+        return formula
+    for name in _XLSX_MODERN_FUNCTIONS:
+        formula = formula.replace(f"{name}(", f"_xlfn.{name}(")
+    return formula
+
+
+def _is_missing(value):
+    """True for every shape a "no value here" cell arrives in. pandas turns a
+    None integer column into float NaN on the way through
+    build_trades_and_results_table(), so `is None` alone is not enough -- the
+    one baseline trade with no opposing Order Block has tp_ob_bar = nan, not
+    None."""
+    if value is None or value == "":
+        return True
+    return isinstance(value, float) and value != value
+
+
+def _blank_or_int(value):
+    """Integer bar index, or "" when the field is absent."""
+    return "" if _is_missing(value) else int(value)
+
+
+def _blank_or_value(value):
+    """Published value, or "" when absent."""
+    return "" if _is_missing(value) else value
+
+
+def _candle_column_letters(candle_columns):
+    """Map each raw/indicator column name to its letter on the Candles sheet.
+
+    `candle_columns` is the column list actually written there (i.e.
+    _format_df_for_export_full(sim_df).columns), so if the engine ever adds a
+    column and shifts the layout, the formulas follow it instead of silently
+    reading the wrong one.
+    """
+    letters = {}
+    for name in _CANDLE_FORMULA_COLUMNS:
+        if name not in candle_columns:
+            raise ValueError(
+                f"Candles sheet is missing the '{name}' column the verification formulas read. "
+                f"Present columns: {list(candle_columns)}"
+            )
+        letters[name] = _col_letter(list(candle_columns).index(name) + 1)
+    return letters
+
+
+# --- Independent verification: the indicator series -------------------------
+
+# Local (formula-side) columns on a 'Verify Indicators' sheet. Order matters:
+# it defines the sheet layout and every reference below is derived from it.
+_INDICATOR_LOCAL_COLUMNS = [
+    "bar", "open", "high", "low", "close",
+    "true_range", "EMA_12", "EMA_26",
+    "MACD", "MACD_signal", "MACD_hist",
+    "low_min_9", "high_max_9", "RSV", "K", "D", "J", "ATR", "ATR_200",
+]
+# The nine series actually graded against the published Candles sheet. The
+# intermediates above (true_range, the two EMAs, the KDJ rolling extremes) are
+# shown but not graded -- Python never publishes them, so there is nothing to
+# compare against.
+_INDICATOR_GRADED_SERIES = ["MACD", "MACD_signal", "MACD_hist", "RSV", "K", "D", "J", "ATR", "ATR_200"]
+
+
+def build_indicator_formula_block(candles_sheet, candle_letters, n_bars):
+    """
+    Emit the 'Verify Indicators <window>' sheet: one row per bar, re-deriving
+    MACD(12,26,9), KDJ(9,3,3) and ATR(14)/ATR(200) from raw OHLCV with nothing
+    but per-row recursions and bounded windows, then diffing each against the
+    published Candles column.
+
+    Statistical/analytical question answered: none -- this is a verification
+    surface. It answers the engineering question "does the published indicator
+    series follow from the raw candles?" independently of the Python that
+    produced it.
+
+    The recursions reproduce pandas exactly:
+      * ewm(span=s, adjust=False) -> E_i = E_{i-1} + (2/(s+1)) * (x_i - E_{i-1}),
+        seeded E_0 = x_0 (which is what adjust=False does).
+      * ewm(alpha=1/3, adjust=False) for K, then D as the same smoothing of K,
+        seeded K_0 = RSV_0 and D_0 = K_0.
+      * rolling(n, min_periods=1) -> an INDEX-built window clamped at the
+        first data row, which is the expanding warmup.
+      * ATR is a plain rolling MEAN of True Range, matching the code
+        (`true_range.rolling(atr_period, min_periods=1).mean()`), not the
+        Wilder/RMA recurrence the comment above compute_indicators() describes.
+        See the note in docs/SCRATCH_RESULTS_METHODS.md.
+      * RSV's zero-range guard: pandas replaces a zero high-low range with NaN
+        and then fillna(50), so the formula returns 50 on that bar.
+
+    Parameters
+    ----------
+    candles_sheet : str
+        Title of the published Candles sheet this block cross-references.
+    candle_letters : dict
+        Column-name -> column-letter map from _candle_column_letters().
+    n_bars : int
+
+    Returns
+    -------
+    tuple of (list of list, str)
+        (rows including the header, the A1 column letter of the PASS column).
+    """
+    local = {name: idx + 1 for idx, name in enumerate(_INDICATOR_LOCAL_COLUMNS)}
+    n_local = len(_INDICATOR_LOCAL_COLUMNS)
+    published_start = n_local + 1
+    diff_start = published_start + len(_INDICATOR_GRADED_SERIES)
+    worst_col = diff_start + len(_INDICATOR_GRADED_SERIES)
+    pass_col = worst_col + 1
+
+    header = list(_INDICATOR_LOCAL_COLUMNS)
+    header += [f"published_{name}" for name in _INDICATOR_GRADED_SERIES]
+    header += [f"abs_diff_{name}" for name in _INDICATOR_GRADED_SERIES]
+    header += ["worst_abs_diff", "PASS"]
+
+    def L(name, row):
+        return _a1(local[name], row)
+
+    rows = [header]
+    for bar in range(n_bars):
+        r = bar + 2          # sheet row (row 1 is the header)
+        p = r - 1            # the row above == the previous bar
+        first = (bar == 0)
+
+        cells = [
+            bar,
+            f"='{candles_sheet}'!{candle_letters['open']}{r}",
+            f"='{candles_sheet}'!{candle_letters['high']}{r}",
+            f"='{candles_sheet}'!{candle_letters['low']}{r}",
+            f"='{candles_sheet}'!{candle_letters['close']}{r}",
+            # True Range: bar 0 has no previous close, so TR_0 = high - low.
+            (f"={L('high', r)}-{L('low', r)}" if first else
+             f"=MAX({L('high', r)}-{L('low', r)},"
+             f"ABS({L('high', r)}-{L('close', p)}),ABS({L('low', r)}-{L('close', p)}))"),
+            (f"={L('close', r)}" if first else
+             f"={L('EMA_12', p)}+(2/13)*({L('close', r)}-{L('EMA_12', p)})"),
+            (f"={L('close', r)}" if first else
+             f"={L('EMA_26', p)}+(2/27)*({L('close', r)}-{L('EMA_26', p)})"),
+            f"={L('EMA_12', r)}-{L('EMA_26', r)}",
+            (f"={L('MACD', r)}" if first else
+             f"={L('MACD_signal', p)}+(2/10)*({L('MACD', r)}-{L('MACD_signal', p)})"),
+            f"={L('MACD', r)}-{L('MACD_signal', r)}",
+            _rolling_window_formula("MIN", local["low"], 9),
+            _rolling_window_formula("MAX", local["high"], 9),
+            (f"=IF({L('high_max_9', r)}-{L('low_min_9', r)}=0,50,"
+             f"({L('close', r)}-{L('low_min_9', r)})/({L('high_max_9', r)}-{L('low_min_9', r)})*100)"),
+            (f"={L('RSV', r)}" if first else
+             f"={L('K', p)}+(1/3)*({L('RSV', r)}-{L('K', p)})"),
+            (f"={L('K', r)}" if first else
+             f"={L('D', p)}+(1/3)*({L('K', r)}-{L('D', p)})"),
+            f"=3*{L('K', r)}-2*{L('D', r)}",
+            _rolling_window_formula("AVERAGE", local["true_range"], 14),
+            _rolling_window_formula("AVERAGE", local["true_range"], 200),
+        ]
+        for name in _INDICATOR_GRADED_SERIES:
+            cells.append(f"='{candles_sheet}'!{candle_letters[name]}{r}")
+        for offset, name in enumerate(_INDICATOR_GRADED_SERIES):
+            cells.append(f"=ABS({L(name, r)}-{_a1(published_start + offset, r)})")
+        cells.append(f"=MAX({_a1(diff_start, r)}:{_a1(worst_col - 1, r)})")
+        cells.append(f"=IF({_a1(worst_col, r)}<={_TOL_INDICATOR_CELL},\"PASS\",\"FAIL\")")
+        rows.append(cells)
+
+    return rows, _col_letter(pass_col)
+
+
+def _rolling_window_formula(aggregate, col_index, window):
+    """pandas `rolling(window, min_periods=1).<aggregate>()` as a formula.
+
+    Built with INDEX range construction rather than OFFSET: OFFSET is volatile
+    and at 8,767 rows makes recalculation crawl. The MAX(2, ROW()-window+1)
+    clamp stops the window walking into the header row, which is exactly the
+    expanding warmup min_periods=1 produces for the first `window-1` bars.
+    """
+    letter = _col_letter(col_index)
+    return (f"={aggregate}(INDEX(${letter}:${letter},MAX(2,ROW()-{window - 1}))"
+            f":INDEX(${letter}:${letter},ROW()))")
+
+
+# --- Independent verification: per-trade levels, exits, and PnL --------------
+
+# The six integer indices per trade that ARE taken from Python (see this
+# section's header for why detection/selection are not ported). Everything
+# else on the two trade sheets is derived.
+_TRADE_INPUT_COLUMNS = ["side", "entry_idx", "exit_idx", "entry_ob_bar", "entry_ob_created_at", "tp_ob_bar"]
+
+_TRADE_LOCAL_COLUMNS = [
+    "trade_no", "side", "entry_idx", "exit_idx", "entry_ob_bar", "entry_ob_created_at", "tp_ob_bar",
+    "entry", "entry_ATR", "ob_bar_range", "ob_bar_ATR_200", "ob_parsed_low", "ob_parsed_high",
+    "stop_loss_at_entry", "risk", "tp_ob_range", "tp_ob_ATR_200", "tp_structural_level", "take_profit",
+    "kdj_exit_window", "exit", "pnl_pct", "stop_loss_at_exit", "exit_reason", "early_exit_count",
+]
+# Graded numerically against the published Trades sheet. hold_bars is
+# deliberately NOT graded: it is exit_idx - entry_idx, both of which are
+# inputs, so checking it would be vacuous. kdj_exit_window and exit_reason are
+# graded separately (an integer identity and a string identity respectively).
+_TRADE_GRADED_NUMERIC = ["entry", "exit", "stop_loss", "take_profit", "pnl_pct"]
+_TRADE_DERIVED_FOR_GRADED = {
+    "entry": "entry", "exit": "exit", "stop_loss": "stop_loss_at_exit",
+    "take_profit": "take_profit", "pnl_pct": "pnl_pct",
+}
+
+_TRADE_BAR_COLUMNS = [
+    "trade_no", "bar", "bars_held", "close", "high", "low",
+    "pnl_pct", "peak_pnl_pct", "trailing_floor", "trailing_exit",
+    "kdj_window", "window_low", "window_high", "RSV", "K", "D", "armed", "kdj_reset_exit",
+    "atr_move_exit", "breakeven_hit", "breakeven_latched", "effective_stop_loss",
+    "stop_loss_hit", "take_profit_hit", "exit_reason",
+]
+
+
+def build_trade_formula_block(trades, candles_sheet, indicators_sheet, trades_sheet,
+                              candle_letters, trade_bars_sheet):
+    """
+    Emit the 'Verify Trades <window>' sheet: one row per trade, re-deriving the
+    entry fill, the Order Block zone edges, the stop-loss, the structural (or
+    2R fallback) take-profit, the frozen KDJ-reset window `w`, the exit fill,
+    the post-ratchet stop-loss and pnl_pct -- then diffing each against the
+    published Trades sheet.
+
+    Statistical/analytical question answered: none -- a verification surface.
+
+    The engine details reproduced here, each of which is a real trap:
+      * Entry AND every exit book at that bar's CLOSE. That includes
+        'HIT STOP LOSS' and 'HIT TAKE PROFIT', which book at the close, never
+        at the SL/TP price -- so one pnl_pct formula covers every exit reason.
+      * The Order Block edges come from the volatility-parsed body: top is
+        parsed_high and bottom is parsed_low, and on a bar whose range is
+        >= 2*ATR_200 those are SWAPPED with the raw high/low.
+      * LONG stop = ob_bottom - ATR(14)*0.5; SHORT stop = ob_top + ATR(14)*0.5,
+        both using the ENTRY bar's ATR.
+      * The structural take-profit is the opposing Order Block's near edge
+        (a SUPPLY block's bottom for a LONG, a DEMAND block's top for a
+        SHORT), which needs that block's own parsed-body inversion too; with
+        no opposing block the target is the 2R fallback.
+      * `w` = max(1, entry_idx - entry_ob_bar), frozen for the trade's life.
+      * The published stop_loss is the value AFTER any breakeven ratchet, so
+        it is read off the per-bar block's exit row, not from the entry.
+
+    `early_exit_count` is the other half of the exit check: the per-bar block
+    must produce NO exit signal on any bar strictly before the published exit
+    bar. A formula-side exit that fires early is a FAIL even when the reason on
+    the exit bar happens to agree.
+
+    Returns
+    -------
+    tuple of (list of list, str, dict)
+        (rows including the header, PASS column letter, {trade_no: summary row
+        number} so the per-bar block can reference each trade's carried state).
+    """
+    for column in _TRADE_INPUT_COLUMNS:
+        missing = [i for i, trade in enumerate(trades) if column not in trade]
+        if missing:
+            raise ValueError(
+                f"Trade records are missing the '{column}' index the verification formulas "
+                f"take as an input (first offender: trade {missing[0]}). Fix the trade schema "
+                f"rather than defaulting it -- a blank index would make the formulas read the "
+                f"wrong bar and report a divergence that is not real."
+            )
+
+    local = {name: idx + 1 for idx, name in enumerate(_TRADE_LOCAL_COLUMNS)}
+    n_local = len(_TRADE_LOCAL_COLUMNS)
+    pub_start = n_local + 1
+    pub_cols = {name: pub_start + i for i, name in enumerate(
+        _TRADE_GRADED_NUMERIC + ["kdj_exit_window", "exit_reason", "hold_bars"])}
+    diff_start = pub_start + len(pub_cols)
+    worst_col = diff_start + len(_TRADE_GRADED_NUMERIC)
+    reason_col = worst_col + 1
+    window_col = reason_col + 1
+    pass_col = window_col + 1
+
+    header = list(_TRADE_LOCAL_COLUMNS)
+    header += [f"published_{n}" for n in _TRADE_GRADED_NUMERIC + ["kdj_exit_window", "exit_reason", "hold_bars"]]
+    header += [f"abs_diff_{n}" for n in _TRADE_GRADED_NUMERIC]
+    header += ["worst_abs_diff", "exit_reason_mismatch", "kdj_window_mismatch", "PASS"]
+
+    # Row ranges the per-bar block will occupy, computed up front so the
+    # summary can point at each trade's entry/exit rows directly (no lookup
+    # functions needed, and no tie-break semantics to get wrong).
+    bar_rows = {}
+    cursor = 2
+    for trade_no, trade in enumerate(trades, start=1):
+        n_block = int(trade["exit_idx"]) - int(trade["entry_idx"]) + 1  # entry bar + every held bar
+        bar_rows[trade_no] = (cursor, cursor + n_block - 1)
+        cursor += n_block
+
+    summary_rows = {}
+    rows = [header]
+    for trade_no, trade in enumerate(trades, start=1):
+        r = trade_no + 1
+        summary_rows[trade_no] = r
+        first_bar_row, exit_bar_row = bar_rows[trade_no]
+
+        def L(name):
+            return _a1(local[name], r)
+
+        is_long = f'{L("side")}="LONG"'
+        # Sheet row holding bar index N on the Candles/Verify Indicators
+        # sheets: N + 2 (row 1 is the header, so bar 0 is row 2).
+        def candle(col_name, index_cell):
+            letter = candle_letters[col_name]
+            return f"INDEX('{candles_sheet}'!${letter}:${letter},{index_cell}+2)"
+
+        def indicator(col_name, index_cell):
+            letter = _col_letter(_INDICATOR_LOCAL_COLUMNS.index(col_name) + 1)
+            return f"INDEX('{indicators_sheet}'!${letter}:${letter},{index_cell}+2)"
+
+        ob = L("entry_ob_bar")
+        tp_ob = L("tp_ob_bar")
+        tp_inverted = f'{L("tp_ob_range")}>=2*{L("tp_ob_ATR_200")}'
+        ob_inverted = f'{L("ob_bar_range")}>=2*{L("ob_bar_ATR_200")}'
+
+        cells = [
+            trade_no,
+            trade["side"],
+            int(trade["entry_idx"]),
+            int(trade["exit_idx"]),
+            int(trade["entry_ob_bar"]),
+            int(trade["entry_ob_created_at"]),
+            _blank_or_int(trade.get("tp_ob_bar")),
+            # Entry fills at the entry bar's close.
+            f"={candle('close', L('entry_idx'))}",
+            f"={indicator('ATR', L('entry_idx'))}",
+            f"={candle('high', ob)}-{candle('low', ob)}",
+            f"={indicator('ATR_200', ob)}",
+            # parsed_low = high when the OB bar's range >= 2*ATR_200, else low.
+            f"=IF({ob_inverted},{candle('high', ob)},{candle('low', ob)})",
+            f"=IF({ob_inverted},{candle('low', ob)},{candle('high', ob)})",
+            (f'=IF({is_long},{L("ob_parsed_low")}-{L("entry_ATR")}*0.5,'
+             f'{L("ob_parsed_high")}+{L("entry_ATR")}*0.5)'),
+            f'=IF({is_long},{L("entry")}-{L("stop_loss_at_entry")},{L("stop_loss_at_entry")}-{L("entry")})',
+            f'=IF({tp_ob}="","",{candle("high", tp_ob)}-{candle("low", tp_ob)})',
+            f'=IF({tp_ob}="","",{indicator("ATR_200", tp_ob)})',
+            # A LONG targets the nearest SUPPLY block's BOTTOM (parsed_low);
+            # a SHORT targets the nearest DEMAND block's TOP (parsed_high).
+            (f'=IF({tp_ob}="","",IF({is_long},'
+             f'IF({tp_inverted},{candle("high", tp_ob)},{candle("low", tp_ob)}),'
+             f'IF({tp_inverted},{candle("low", tp_ob)},{candle("high", tp_ob)})))'),
+            (f'=IF({tp_ob}<>"",{L("tp_structural_level")},'
+             f'IF({is_long},{L("entry")}+{L("risk")}*2,{L("entry")}-{L("risk")}*2))'),
+            f'=MAX(1,{L("entry_idx")}-{L("entry_ob_bar")})',
+            f"={candle('close', L('exit_idx'))}",
+            (f'=IF({is_long},({L("exit")}-{L("entry")})/{L("entry")}*100,'
+             f'({L("entry")}-{L("exit")})/{L("entry")}*100)'),
+            f"='{trade_bars_sheet}'!{_a1(_TRADE_BAR_COLUMNS.index('effective_stop_loss') + 1, exit_bar_row)}",
+            f"='{trade_bars_sheet}'!{_a1(_TRADE_BAR_COLUMNS.index('exit_reason') + 1, exit_bar_row)}",
+            _early_exit_count_formula(trade_bars_sheet, first_bar_row, exit_bar_row),
+        ]
+
+        published = {
+            "entry": trade["entry"], "exit": trade["exit"], "stop_loss": trade["stop_loss"],
+            "take_profit": trade["take_profit"], "pnl_pct": trade["pnl_pct"],
+            "kdj_exit_window": trade.get("kdj_exit_window", ""),
+            "exit_reason": trade["exit_reason"], "hold_bars": trade["hold_bars"],
+        }
+        for name in _TRADE_GRADED_NUMERIC + ["kdj_exit_window", "exit_reason", "hold_bars"]:
+            cells.append(_blank_or_value(published[name]))
+        for name in _TRADE_GRADED_NUMERIC:
+            derived = _a1(local[_TRADE_DERIVED_FOR_GRADED[name]], r)
+            cells.append(f"=ABS({derived}-{_a1(pub_cols[name], r)})")
+        cells.append(f"=MAX({_a1(diff_start, r)}:{_a1(worst_col - 1, r)})")
+        cells.append(f'=IF({L("exit_reason")}={_a1(pub_cols["exit_reason"], r)},0,1)')
+        cells.append(f'=IF({L("kdj_exit_window")}={_a1(pub_cols["kdj_exit_window"], r)},0,1)')
+        cells.append(
+            f'=IF(AND({_a1(worst_col, r)}<={_TOL_TRADE_CELL},{_a1(reason_col, r)}=0,'
+            f'{_a1(window_col, r)}=0,{L("early_exit_count")}=0),"PASS","FAIL")')
+        rows.append(cells)
+
+    return rows, _col_letter(pass_col), summary_rows, bar_rows
+
+
+def _early_exit_count_formula(trade_bars_sheet, first_bar_row, exit_bar_row):
+    """Count non-blank derived exit reasons strictly BEFORE the published exit
+    bar. Must be 0: the formula side firing early is a divergence even if the
+    reason on the published exit bar agrees. The entry row (first_bar_row) is
+    excluded by construction -- the engine never evaluates exits on the entry
+    bar, so that row's exit_reason is blank by design."""
+    letter = _col_letter(_TRADE_BAR_COLUMNS.index("exit_reason") + 1)
+    if exit_bar_row - 1 < first_bar_row + 1:
+        return 0
+    # The criterion is "?*" (at least one character of text), NOT "<>": a
+    # formula that returns "" is NOT blank to COUNTIF, so "<>" would count
+    # every no-exit bar and make every multi-bar trade fail. Verified in both
+    # engines.
+    return (f"=COUNTIF('{trade_bars_sheet}'!"
+            f"${letter}${first_bar_row + 1}:${letter}${exit_bar_row - 1},\"?*\")")
+
+
+def build_trade_bar_formula_block(trades, candles_sheet, indicators_sheet, trades_sheet,
+                                  candle_letters, summary_rows, bar_rows):
+    """
+    Emit the 'Verify Trade Bars <window>' sheet: the exit ladder, bar by bar,
+    for every bar each trade is open (the entry bar plus every held bar -- 231
+    rows in total across the 27 baseline trades, since hold_bars maxes at 16).
+
+    Statistical/analytical question answered: none -- a verification surface.
+    This is where the per-trade KDJ-reset state machine and the exit-priority
+    ladder are independently recomputed, so 'KDJ RESET EXIT' vs 'ATR MOVE EXIT'
+    vs 'TRAILING EXIT' is a derived classification rather than a copied label.
+
+    Ordering details reproduced from _check_long_exit_conditions() and its
+    SHORT mirror. Getting any of these wrong produces a false FAIL:
+
+      1. The entry bar evaluates NO exit (simulate_trades() takes the
+         `if position is None` branch on that bar and the `elif` exit branch
+         only from the next bar on). Every fire column is forced FALSE there,
+         and the entry row exists only to seed the carried state.
+      2. peak_pnl_pct is updated BEFORE the trailing check and is measured on
+         CLOSES only, so a bar that sets a new peak cannot trigger its own
+         trailing exit. It starts at 0.0, not at the entry bar's PnL.
+      3. The trailing exit is checked FIRST, and kdj_reset_update() runs only
+         AFTER it -- so on a trailing-exit bar the KDJ state is never advanced.
+         Harmless here: that bar is the last one, and trailing wins the
+         precedence ladder anyway, so no later row reads the stale state.
+      4. `armed` is a LATCH. Once K/D have crossed in the trade's favour once,
+         it stays armed -- hence a running cumulative OR down the block rather
+         than a per-row test. Arming is evaluated on the same bar's freshly
+         updated K/D, but since arming needs K>D and the LONG exit needs K<D,
+         a bar can never arm and exit at once.
+      5. The KDJ-reset exit is gated on (bar - entry_idx) >= 3: bars 1 and 2
+         of a trade can arm but cannot exit.
+      6. The breakeven ratchet mutates CARRIED state -- once any bar closes at
+         >= entry + entry_ATR*2.0 the stop is raised to the entry price and
+         stays there. So it is a second latch, and because the ratchet is
+         applied before the stop test on the SAME bar, the latch includes the
+         current bar.
+      7. The per-trade KDJ uses its own frozen window `w` and is seeded from
+         the STATIC full-history K and D at the entry bar -- two deliberately
+         separate KDJ systems (CLAUDE.md, "KDJ architecture"). The seed here
+         is read from the formula side's OWN static K/D column on the
+         'Verify Indicators' sheet, not from Python's published K/D.
+
+    Returns
+    -------
+    list of list
+        Rows including the header.
+    """
+    bar_local = {name: idx + 1 for idx, name in enumerate(_TRADE_BAR_COLUMNS)}
+    trade_local = {name: idx + 1 for idx, name in enumerate(_TRADE_LOCAL_COLUMNS)}
+    rows = [list(_TRADE_BAR_COLUMNS)]
+
+    for trade_no, trade in enumerate(trades, start=1):
+        entry_idx = int(trade["entry_idx"])
+        exit_idx = int(trade["exit_idx"])
+        summary_row = summary_rows[trade_no]
+        first_bar_row, _ = bar_rows[trade_no]
+
+        def T(name):
+            """Absolute reference to this trade's carried state on the summary
+            sheet (side, entry, entry_ATR, stop-loss at entry, take-profit, w)."""
+            return f"'{trades_sheet}'!${_col_letter(trade_local[name])}${summary_row}"
+
+        is_long = f'{T("side")}="LONG"'
+        entry = T("entry")
+        entry_atr = T("entry_ATR")
+        stop_at_entry = T("stop_loss_at_entry")
+        take_profit = T("take_profit")
+
+        for bar in range(entry_idx, exit_idx + 1):
+            r = first_bar_row + (bar - entry_idx)
+            p = r - 1
+            on_entry_bar = (bar == entry_idx)
+
+            def B(name, row=None):
+                return _a1(bar_local[name], r if row is None else row)
+
+            def candle(col_name, index_cell):
+                letter = candle_letters[col_name]
+                return f"INDEX('{candles_sheet}'!${letter}:${letter},{index_cell}+2)"
+
+            def indicator(col_name, index_cell):
+                letter = _col_letter(_INDICATOR_LOCAL_COLUMNS.index(col_name) + 1)
+                return f"INDEX('{indicators_sheet}'!${letter}:${letter},{index_cell}+2)"
+
+            bar_cell = B("bar")
+            # The per-trade KDJ window is `w` bars wide and clamped at bar 0:
+            # window_start = max(bar - w + 1, 0).
+            window_start = f'MAX({bar_cell}-{B("kdj_window")}+1,0)'
+            low_letter = candle_letters["low"]
+            high_letter = candle_letters["high"]
+
+            cells = [
+                trade_no,
+                bar,
+                f"={bar_cell}-{T('entry_idx')}",
+                f"={candle('close', bar_cell)}",
+                f"={candle('high', bar_cell)}",
+                f"={candle('low', bar_cell)}",
+                (f'=IF({is_long},({B("close")}-{entry})/{entry}*100,'
+                 f'({entry}-{B("close")})/{entry}*100)'),
+                # peak starts at 0.0 on the entry bar, then is a running max of
+                # the CLOSE-based PnL.
+                ("=0" if on_entry_bar else f'=MAX({B("peak_pnl_pct", p)},{B("pnl_pct")})'),
+                (f'=IF({is_long},{entry}*(1+{B("peak_pnl_pct")}*0.5/100),'
+                 f'{entry}*(1-{B("peak_pnl_pct")}*0.5/100))'),
+                ("=FALSE()" if on_entry_bar else
+                 f'=AND({B("peak_pnl_pct")}>=1.5,IF({is_long},'
+                 f'{B("close")}<={B("trailing_floor")},{B("close")}>={B("trailing_floor")}))'),
+                f"={T('kdj_exit_window')}",
+                (f"=MIN(INDEX('{candles_sheet}'!${low_letter}:${low_letter},{window_start}+2)"
+                 f":INDEX('{candles_sheet}'!${low_letter}:${low_letter},{bar_cell}+2))"),
+                (f"=MAX(INDEX('{candles_sheet}'!${high_letter}:${high_letter},{window_start}+2)"
+                 f":INDEX('{candles_sheet}'!${high_letter}:${high_letter},{bar_cell}+2))"),
+                (f'=IF({B("window_high")}-{B("window_low")}>0,'
+                 f'({B("close")}-{B("window_low")})/({B("window_high")}-{B("window_low")})*100,50)'),
+                # Seeded from the formula side's OWN static K/D at the entry bar.
+                (f"={indicator('K', bar_cell)}" if on_entry_bar else
+                 f'={B("K", p)}+(1/3)*({B("RSV")}-{B("K", p)})'),
+                (f"={indicator('D', bar_cell)}" if on_entry_bar else
+                 f'={B("D", p)}+(1/3)*({B("K")}-{B("D", p)})'),
+                ("=FALSE()" if on_entry_bar else
+                 f'=OR({B("armed", p)},IF({is_long},{B("K")}>{B("D")},{B("K")}<{B("D")}))'),
+                ("=FALSE()" if on_entry_bar else
+                 f'=AND({B("bars_held")}>=3,{B("armed")},IF({is_long},'
+                 f'AND({B("K", p)}>={B("D", p)},{B("K")}<{B("D")}),'
+                 f'AND({B("K", p)}<={B("D", p)},{B("K")}>{B("D")})))'),
+                ("=FALSE()" if on_entry_bar else
+                 f'=AND({entry_atr}>0,IF({is_long},'
+                 f'{B("close")}>={entry}+{entry_atr}*1.8,{B("close")}<={entry}-{entry_atr}*1.8))'),
+                # The ratchet sits BELOW the trailing / KDJ-reset / ATR-move
+                # exits in _check_long_exit_conditions(), each of which
+                # `return`s. So on a bar where any of those fires, the ratchet
+                # line is never reached and the stop is NOT raised -- which is
+                # exactly what the published stop_loss reflects. Missing this
+                # gate makes every ATR-move exit look like a stop_loss
+                # divergence of one 2*ATR step.
+                ("=FALSE()" if on_entry_bar else
+                 f'=AND(NOT({B("trailing_exit")}),NOT({B("kdj_reset_exit")}),'
+                 f'NOT({B("atr_move_exit")}),IF({is_long},'
+                 f'{B("close")}>={entry}+{entry_atr}*2,{B("close")}<={entry}-{entry_atr}*2))'),
+                ("=FALSE()" if on_entry_bar else
+                 f'=OR({B("breakeven_latched", p)},{B("breakeven_hit")})'),
+                (f'=IF({B("breakeven_latched")},IF({is_long},'
+                 f'MAX({stop_at_entry},{entry}),MIN({stop_at_entry},{entry})),{stop_at_entry})'),
+                ("=FALSE()" if on_entry_bar else
+                 f'=IF({is_long},{B("close")}<={B("effective_stop_loss")},'
+                 f'{B("close")}>={B("effective_stop_loss")})'),
+                ("=FALSE()" if on_entry_bar else
+                 f'=IF({is_long},{B("close")}>={take_profit},{B("close")}<={take_profit})'),
+                # The exit ladder, in the engine's own priority order.
+                ('=""' if on_entry_bar else
+                 f'=IF({B("trailing_exit")},"TRAILING EXIT (50% RETRACE)",'
+                 f'IF({B("kdj_reset_exit")},"KDJ RESET EXIT",'
+                 f'IF({B("atr_move_exit")},"ATR MOVE EXIT",'
+                 f'IF({B("stop_loss_hit")},"HIT STOP LOSS",'
+                 f'IF({B("take_profit_hit")},"HIT TAKE PROFIT","")))))'),
+            ]
+            rows.append(cells)
+
+    return rows
+
+
+# --- Independent verification: the 5 Order Block quality criteria ------------
+
+_OB_CRITERIA = ["displacement", "large_bar", "fvg", "liquidity_sweep", "volume_expansion"]
+
+_OB_LOCAL_COLUMNS = (
+    ["trade_no", "side", "entry_ob_bar", "entry_ob_created_at", "ob_type",
+     "ob_ATR_200", "ob_high", "ob_low", "ob_open", "ob_close", "ob_volume",
+     "displacement_threshold", "prior_10bar_extreme", "trailing_20bar_avg_volume", "body_over_range"]
+    + [f"derived_{name}" for name in _OB_CRITERIA] + ["derived_quality"]
+)
+
+
+def build_ob_quality_formula_block(trades, candles_sheet, indicators_sheet, candle_letters):
+    """
+    Emit the 'Verify OB Quality <window>' sheet: the 5 Order Block quality
+    criteria for each trade's triggering block, re-derived from raw price and
+    volume, diffed against the published booleans and their composite.
+
+    Statistical/analytical question answered: none -- a verification surface.
+    This is the same check dashboard-v2's obQualityVerification.ts already does
+    in TypeScript (`matchesRecorded`), now on a third surface. The booleans are
+    compared as 1/0 rather than TRUE/FALSE so that one emitted formula string
+    behaves identically in .xlsx and in Google Sheets regardless of how each
+    writer coerces a boolean.
+
+    Every forward search is bounded by the Order Block's own CONFIRMATION bar
+    (`created_at`), never by dataset length -- that bound is the disclosed
+    no-lookahead fix (docs/SCRATCH_RESULTS_METHODS.md, commit cb4ed93), and
+    reproducing it is the point. Because both forward searches span at most 3
+    bars, each is written as an explicit OR of three individually
+    bound-guarded terms rather than as a loop:
+      * displacement: bars ob+1 .. MIN(created_at, ob+3), a body of the OB's
+        own direction with |close-open| >= 1.5*ATR_200 measured AT the OB bar.
+      * fvg: j = ob .. MIN(created_at-2, ob+2), testing low[j+2] > high[j]
+        (demand) or high[j+2] < low[j] (supply).
+    The other three read backwards or at the OB bar only:
+      * large_bar: the OB bar's own range >= ATR_200.
+      * liquidity_sweep: the OB bar's extreme takes out the prior 10 bars',
+        exclusive of the OB bar itself.
+      * volume_expansion: volume >= 1.25x the prior 20-bar mean (exclusive),
+        OR body/range > 0.6.
+
+    Returns
+    -------
+    tuple of (list of list, str)
+        (rows including the header, PASS column letter).
+    """
+    local = {name: idx + 1 for idx, name in enumerate(_OB_LOCAL_COLUMNS)}
+    n_local = len(_OB_LOCAL_COLUMNS)
+    pub_cols = {name: n_local + 1 + i for i, name in enumerate(_OB_CRITERIA + ["quality"])}
+    diff_start = n_local + 1 + len(pub_cols)
+    diff_cols = {name: diff_start + i for i, name in enumerate(_OB_CRITERIA + ["quality"])}
+    worst_col = diff_start + len(diff_cols)
+    pass_col = worst_col + 1
+
+    header = list(_OB_LOCAL_COLUMNS)
+    header += [f"published_{n}" for n in _OB_CRITERIA + ["quality"]]
+    header += [f"mismatch_{n}" for n in _OB_CRITERIA + ["quality"]]
+    header += ["total_mismatches", "PASS"]
+
+    rows = [header]
+    for trade_no, trade in enumerate(trades, start=1):
+        r = trade_no + 1
+
+        def L(name):
+            return _a1(local[name], r)
+
+        def candle(col_name, index_expr):
+            letter = candle_letters[col_name]
+            return f"INDEX('{candles_sheet}'!${letter}:${letter},{index_expr}+2)"
+
+        ob = L("entry_ob_bar")
+        created = L("entry_ob_created_at")
+        is_demand = f'{L("ob_type")}="DEMAND"'
+        low_letter = candle_letters["low"]
+        high_letter = candle_letters["high"]
+        vol_letter = candle_letters["volume"]
+        atr200_letter = _col_letter(_INDICATOR_LOCAL_COLUMNS.index("ATR_200") + 1)
+
+        # displacement: OR over j = ob+1 .. MIN(created_at, ob+3).
+        displacement_terms = []
+        for step in (1, 2, 3):
+            j = f"({ob}+{step})"
+            body = f"({candle('close', j)}-{candle('open', j)})"
+            displacement_terms.append(
+                f'AND({j}<=MIN({created},{ob}+3),IF({is_demand},{body}>0,{body}<0),'
+                f'ABS({body})>={L("displacement_threshold")})')
+        displacement = "=OR(" + ",".join(displacement_terms) + ")"
+
+        # fvg: OR over j = ob .. MIN(created_at-2, ob+2), reading bar j+2.
+        fvg_terms = []
+        for step in (0, 1, 2):
+            j = f"({ob}+{step})"
+            j2 = f"({ob}+{step}+2)"
+            fvg_terms.append(
+                f'AND({j}<=MIN({created}-2,{ob}+2),IF({is_demand},'
+                f'{candle("low", j2)}>{candle("high", j)},'
+                f'{candle("high", j2)}<{candle("low", j)}))')
+        fvg = "=OR(" + ",".join(fvg_terms) + ")"
+
+        cells = [
+            trade_no,
+            trade["side"],
+            int(trade["entry_ob_bar"]),
+            int(trade["entry_ob_created_at"]),
+            trade["entry_ob_type"],
+            f"=INDEX('{indicators_sheet}'!${atr200_letter}:${atr200_letter},{ob}+2)",
+            f"={candle('high', ob)}",
+            f"={candle('low', ob)}",
+            f"={candle('open', ob)}",
+            f"={candle('close', ob)}",
+            f"={candle('volume', ob)}",
+            f'=1.5*{L("ob_ATR_200")}',
+            # Prior 10 bars, EXCLUSIVE of the OB bar: [ob-10, ob-1].
+            (f'=IF({is_demand},'
+             f"MIN(INDEX('{candles_sheet}'!${low_letter}:${low_letter},MAX(0,{ob}-10)+2)"
+             f":INDEX('{candles_sheet}'!${low_letter}:${low_letter},{ob}-1+2)),"
+             f"MAX(INDEX('{candles_sheet}'!${high_letter}:${high_letter},MAX(0,{ob}-10)+2)"
+             f":INDEX('{candles_sheet}'!${high_letter}:${high_letter},{ob}-1+2)))"),
+            (f"=AVERAGE(INDEX('{candles_sheet}'!${vol_letter}:${vol_letter},MAX(0,{ob}-20)+2)"
+             f":INDEX('{candles_sheet}'!${vol_letter}:${vol_letter},{ob}-1+2))"),
+            (f'=IF({L("ob_high")}-{L("ob_low")}>0,'
+             f'ABS({L("ob_close")}-{L("ob_open")})/({L("ob_high")}-{L("ob_low")}),0)'),
+            displacement,
+            f'=IF({L("ob_high")}-{L("ob_low")}>={L("ob_ATR_200")},TRUE(),FALSE())',
+            fvg,
+            (f'=IF({is_demand},{L("ob_low")}<={L("prior_10bar_extreme")},'
+             f'{L("ob_high")}>={L("prior_10bar_extreme")})'),
+            (f'=OR(AND({L("trailing_20bar_avg_volume")}>0,'
+             f'{L("ob_volume")}>=1.25*{L("trailing_20bar_avg_volume")}),'
+             f'{L("body_over_range")}>0.6)'),
+            "=" + "+".join(f'N({L("derived_" + name)})' for name in _OB_CRITERIA),
+        ]
+        for name in _OB_CRITERIA:
+            cells.append(int(bool(trade.get(f"entry_ob_quality_{name}"))))
+        cells.append(int(trade["entry_ob_quality"]))
+        for name in _OB_CRITERIA:
+            cells.append(f'=ABS(N({L("derived_" + name)})-{_a1(pub_cols[name], r)})')
+        cells.append(f'=ABS({L("derived_quality")}-{_a1(pub_cols["quality"], r)})')
+        cells.append(f"=SUM({_a1(diff_start, r)}:{_a1(worst_col - 1, r)})")
+        cells.append(f'=IF({_a1(worst_col, r)}=0,"PASS","FAIL")')
+        rows.append(cells)
+
+    return rows, _col_letter(pass_col)
+
+
+# --- Independent verification: the 9 headline statistics --------------------
+
+def build_stats_formula_block(results, trades_sheet, pnl_column_letter, n_trades):
+    """
+    Emit the 'Verify Stats <window>' sheet: the nine metrics
+    build_trades_and_results_table() publishes, each re-derived with native
+    spreadsheet functions from the 'Verify Trades' sheet's OWN derived pnl_pct
+    column -- not from Python's published pnl_pct -- and diffed against the
+    published Results value.
+
+    Statistical/analytical question answered: none directly; it re-derives the
+    ones Section 5 already answers, on a second surface. Conventions that have
+    to be matched rather than assumed:
+      * 'Total Net Return (%)' is an ARITHMETIC SUM of per-trade pnl_pct, not a
+        compounded return. (See docs/SCRATCH_RESULTS_METHODS.md's note on the
+        benchmark row, where a compounded final_capital sits beside this
+        arithmetic figure.)
+      * SD is the SAMPLE standard deviation (pandas .std() defaults to ddof=1),
+        hence STDEV.S and not STDEVP/STDEV.P.
+      * 'Wins' counts pnl_pct > 0 strictly, so a hypothetical exactly-flat
+        trade is a loss, not a win.
+      * scipy.binomtest(k, n, 0.5, alternative='greater') is exactly
+        1 - BINOM.DIST(k-1, n, 0.5, TRUE) -- the upper tail INCLUDING k, which
+        is why the first argument is k-1. Verified to 10 decimal places
+        (0.0261194929480553 for 19/27).
+      * At p = 0.5 the distribution is symmetric, so scipy's two-sided p-value
+        is exactly twice the one-sided one -- also verified, not assumed.
+    """
+    first = 2
+    last = n_trades + 1
+    pnl = f"'{trades_sheet}'!${pnl_column_letter}${first}:${pnl_column_letter}${last}"
+
+    # Metric rows start at sheet row 2 (row 1 is the header), and the derived
+    # value lives in column B -- so a metric's own cell is B(index+2). Derived
+    # rather than hardcoded so the layout and the references cannot drift apart.
+    order = ["Total Trades", "Wins", "Losses", "Win Rate (%)", "Total Net Return (%)",
+             "Avg Return/Trade (%)", "SD (Return/Trade %)",
+             "Binomial p (one-sided)", "Binomial p (two-sided)"]
+    def derived_cell(metric):
+        return f"B{order.index(metric) + 2}"
+
+    total = derived_cell("Total Trades")
+    wins = derived_cell("Wins")
+    one_sided = derived_cell("Binomial p (one-sided)")
+    formulas = [
+        ("Total Trades", f"=COUNT({pnl})"),
+        ("Wins", f'=COUNTIF({pnl},">0")'),
+        ("Losses", f"={total}-{wins}"),
+        ("Win Rate (%)", f"={wins}/{total}*100"),
+        ("Total Net Return (%)", f"=SUM({pnl})"),
+        ("Avg Return/Trade (%)", f"=AVERAGE({pnl})"),
+        ("SD (Return/Trade %)", f"=STDEV.S({pnl})"),
+        ("Binomial p (one-sided)", f"=1-BINOM.DIST({wins}-1,{total},0.5,TRUE)"),
+        ("Binomial p (two-sided)", f"=2*{one_sided}"),
+    ]
+    assert [name for name, _ in formulas] == order, (
+        "build_stats_formula_block()'s emitted order drifted from the row order its "
+        "own cell references are derived from.")
+
+    rows = [["Metric", "derived", "published", "abs_diff", "PASS"]]
+    for offset, (name, formula) in enumerate(formulas):
+        r = offset + 2
+        published = results.get(name, "")
+        rows.append([
+            name, formula,
+            _blank_or_value(published),
+            f"=ABS(B{r}-C{r})",
+            f'=IF(D{r}<={_TOL_TRADE_CELL},"PASS","FAIL")',
+        ])
+    return rows, "E"
+
+
+# --- Independent verification: the roll-up summary --------------------------
+
+def build_verification_summary(blocks):
+    """
+    Emit 'Verification Summary': one roll-up PASS/FAIL per check group plus a
+    single grand-total cell.
+
+    This sheet is deliberately the FIRST in the workbook, because
+    `soffice --headless --convert-to csv` exports only the first sheet -- so
+    the whole workbook can be recalculated and graded end to end by reading one
+    small CSV, with no credentials and no spreadsheet application open. That is
+    what makes the .xlsx half of this verifiable in CI rather than by eye.
+
+    `blocks` is a list of (label, sheet_title, pass_column_letter, first_row,
+    last_row) tuples.
+    """
+    rows = [
+        ["Independent spreadsheet verification -- roll-up"],
+        ["Every value on a 'Verify *' sheet is computed by native spreadsheet"],
+        ["formulas from raw OHLCV, then diffed against the Python-published value."],
+        ["tolerance_indicator (abs)", VERIFY_TOLERANCE_INDICATOR],
+        ["tolerance_trade_and_stats (abs)", VERIFY_TOLERANCE_TRADE],
+        [],
+        ["Check group", "Result", "Checks", "FAIL count"],
+    ]
+    first_group_row = len(rows) + 1
+    for label, sheet, pass_letter, first_row, last_row in blocks:
+        rng = f"'{sheet}'!${pass_letter}${first_row}:${pass_letter}${last_row}"
+        r = len(rows) + 1
+        rows.append([
+            label,
+            f'=IF(D{r}=0,"PASS","FAIL")',
+            f'=COUNTIF({rng},"PASS")+COUNTIF({rng},"FAIL")',
+            f'=COUNTIF({rng},"FAIL")',
+        ])
+    last_group_row = len(rows)
+    rows.append([])
+    total_row = len(rows) + 1
+    rows.append([
+        "GRAND TOTAL",
+        f'=IF(D{total_row}=0,"ALL PASS","FAIL")',
+        f"=SUM(C{first_group_row}:C{last_group_row})",
+        f"=SUM(D{first_group_row}:D{last_group_row})",
+    ])
+    return rows
+
+
+# --- Independent verification: the .xlsx writer ------------------------------
+
+def write_formula_workbook_xlsx(path, windows):
+    """
+    Write the self-contained formula workbook to `path`.
+
+    The file carries the published data sheets (identical in layout and column
+    order to the Google Sheets tabs, so one generator serves both targets) plus
+    the 'Verify *' sheets, with 'Verification Summary' first.
+
+    openpyxl writes each formula with NO cached value, which is deliberate: a
+    reader's spreadsheet application is therefore forced to COMPUTE every
+    formula on load rather than display a stored result. A workbook that showed
+    Python's numbers back would defeat the entire point of this section.
+
+    Parameters
+    ----------
+    path : str
+    windows : list of dict
+        One per window, each with keys: suffix, candles_rows (from
+        _format_df_for_export_full().to_dict('records')), candle_columns,
+        trades (list of published trade dicts) and results (the published
+        Results summary dict).
+    """
+    workbook = Workbook()
+    summary_sheet = workbook.active
+    summary_sheet.title = _SUMMARY_SHEET
+    blocks = []
+
+    for window in windows:
+        suffix = window["suffix"]
+        candle_columns = list(window["candle_columns"])
+        candle_letters = _candle_column_letters(candle_columns)
+        candles_title = f"Candles {suffix}"
+        indicators_title = f"Verify Indicators {suffix}"
+        trades_title = f"Verify Trades {suffix}"
+        trade_bars_title = f"Verify Trade Bars {suffix}"
+        ob_title = f"Verify OB Quality {suffix}"
+        stats_title = f"Verify Stats {suffix}"
+        trades = window["trades"]
+        n_bars = len(window["candles_rows"])
+
+        data_sheet = workbook.create_sheet(candles_title)
+        data_sheet.append(candle_columns)
+        for record in window["candles_rows"]:
+            data_sheet.append([record.get(column, "") for column in candle_columns])
+
+        indicator_rows, indicator_pass = build_indicator_formula_block(
+            candles_title, candle_letters, n_bars)
+        _append_rows(workbook.create_sheet(indicators_title), indicator_rows)
+        blocks.append((f"Indicator series {suffix} (per bar)", indicators_title,
+                        indicator_pass, 2, n_bars + 1))
+
+        trade_rows, trade_pass, summary_rows, bar_rows = build_trade_formula_block(
+            trades, candles_title, indicators_title, trades_title, candle_letters, trade_bars_title)
+        _append_rows(workbook.create_sheet(trades_title), trade_rows)
+        blocks.append((f"Trade levels / exits / PnL {suffix}", trades_title,
+                        trade_pass, 2, len(trades) + 1))
+
+        bar_block = build_trade_bar_formula_block(
+            trades, candles_title, indicators_title, trades_title,
+            candle_letters, summary_rows, bar_rows)
+        _append_rows(workbook.create_sheet(trade_bars_title), bar_block)
+
+        ob_rows, ob_pass = build_ob_quality_formula_block(
+            trades, candles_title, indicators_title, candle_letters)
+        _append_rows(workbook.create_sheet(ob_title), ob_rows)
+        blocks.append((f"Order Block quality criteria {suffix}", ob_title,
+                        ob_pass, 2, len(trades) + 1))
+
+        pnl_letter = _col_letter(_TRADE_LOCAL_COLUMNS.index("pnl_pct") + 1)
+        stats_rows, stats_pass = build_stats_formula_block(
+            window["results"], trades_title, pnl_letter, len(trades))
+        _append_rows(workbook.create_sheet(stats_title), stats_rows)
+        blocks.append((f"Headline statistics {suffix}", stats_title, stats_pass, 2, 10))
+
+    _append_rows(summary_sheet, build_verification_summary(blocks))
+    workbook.save(path)
+    return path
+
+
+def _append_rows(worksheet, rows):
+    """Append generator output to an openpyxl sheet, applying the .xlsx-only
+    _xlfn. rewrite at this single point."""
+    for row in rows:
+        worksheet.append([_to_xlsx_dialect(cell) for cell in row])
+
+
+# --- Independent verification: shared window assembly -----------------------
+
+def build_formula_workbook_windows(min_ob_quality=0):
+    """
+    Run the engine for both windows and shape exactly what the formula
+    generators need: the published Candles rows (same shaping the Google Sheets
+    candle tabs use, so column letters agree between the two targets), the
+    published trade records, and the published Results summary.
+
+    Deliberately re-runs the engine in-process rather than reading
+    artifacts/*.json: a stale artifact would be compared against fresh
+    formulas, which is the one way this verification could report a
+    divergence that is really just an out-of-date file. (The committed
+    artifacts/export_trades_and_results.json, for instance, still has
+    kdj_exit_window = null from before that field was added.)
+    """
+    windows = []
+    for loader, suffix in [(load_candles, "2022-2026"),
+                            (load_formulation_period_window, "2018-2022")]:
+        df = compute_indicators(loader())
+        sim = simulate_trades(df.copy(), min_ob_quality=min_ob_quality)
+        trades_table, results = build_trades_and_results_table(df, sim.attrs["trades_df"])
+        shaped = _format_df_for_export_full(sim)
+        windows.append({
+            "suffix": suffix,
+            "candles_rows": shaped.to_dict(orient="records"),
+            "candle_columns": list(shaped.columns),
+            "trades": trades_table.to_dict(orient="records"),
+            "results": results,
+        })
+    return windows
+
+
+def export_formula_workbook(path=os.path.join("artifacts", "verification_formulas.xlsx"),
+                            min_ob_quality=0):
+    """`--export-formula-workbook` entrypoint: build both windows and write the
+    self-contained .xlsx. Offline -- reads artifacts/candles.csv and
+    artifacts/candles_extended.json only, no network, no credentials."""
+    windows = build_formula_workbook_windows(min_ob_quality=min_ob_quality)
+    write_formula_workbook_xlsx(path, windows)
+    print(f"\nCheck XLSX: independent formula workbook written to {path}")
+    print("  Open it (or run `soffice --headless --convert-to csv` on it) and read")
+    print(f"  the '{_SUMMARY_SHEET}' sheet's GRAND TOTAL cell.")
+    return path
+
+
+# --- Independent verification: the Google Sheets writer ----------------------
+
+def push_verification_formulas_to_gsheet(windows=None, min_ob_quality=0):
+    """
+    Push the same 'Verify *' sheets to the live Google Sheets workbook.
+
+    Two things make this different from every other push_*_to_gsheet() above
+    and both are load-bearing:
+
+    1. It writes with value_input_option=USER_ENTERED. gspread 6.2.1 defaults
+       Worksheet.update() to RAW (`raw=True`), under which an '='-prefixed
+       string is stored as literal TEXT -- the sheet would show the formula
+       instead of computing it, and the whole verification would silently
+       become decoration. This is the one hard requirement on the Sheets half.
+       The data tabs keep their RAW write path untouched.
+
+    2. It writes only the verify tabs, never the data tabs. The formulas
+       cross-reference the existing 'Candles <window>' tabs that
+       push_candles_to_gsheet() maintains, so that push must have run at least
+       once (push_all_gsheet_exports() orders them that way). Keeping the
+       verify layer on separate tabs means the published data tabs stay
+       byte-identical to what they are today, and it keeps
+       _apply_pnl_formatting()'s single-letter chr(64 + pnl_col) construction
+       -- which breaks past column Z and currently sits exactly at Z -- no
+       closer to its limit.
+    """
+    if windows is None:
+        windows = build_formula_workbook_windows(min_ob_quality=min_ob_quality)
+    workbook = _authorize_gsheet_workbook()
+    blocks = []
+
+    for window in windows:
+        suffix = window["suffix"]
+        candle_letters = _candle_column_letters(window["candle_columns"])
+        candles_title = f"Candles {suffix}"
+        indicators_title = f"Verify Indicators {suffix}"
+        trades_title = f"Verify Trades {suffix}"
+        trade_bars_title = f"Verify Trade Bars {suffix}"
+        ob_title = f"Verify OB Quality {suffix}"
+        stats_title = f"Verify Stats {suffix}"
+        trades = window["trades"]
+        n_bars = len(window["candles_rows"])
+
+        indicator_rows, indicator_pass = build_indicator_formula_block(
+            candles_title, candle_letters, n_bars)
+        _write_formula_sheet(workbook, indicators_title, indicator_rows)
+        blocks.append((f"Indicator series {suffix} (per bar)", indicators_title,
+                        indicator_pass, 2, n_bars + 1))
+
+        trade_rows, trade_pass, summary_rows, bar_rows = build_trade_formula_block(
+            trades, candles_title, indicators_title, trades_title, candle_letters, trade_bars_title)
+        _write_formula_sheet(workbook, trades_title, trade_rows)
+        blocks.append((f"Trade levels / exits / PnL {suffix}", trades_title,
+                        trade_pass, 2, len(trades) + 1))
+
+        _write_formula_sheet(workbook, trade_bars_title, build_trade_bar_formula_block(
+            trades, candles_title, indicators_title, trades_title,
+            candle_letters, summary_rows, bar_rows))
+
+        ob_rows, ob_pass = build_ob_quality_formula_block(
+            trades, candles_title, indicators_title, candle_letters)
+        _write_formula_sheet(workbook, ob_title, ob_rows)
+        blocks.append((f"Order Block quality criteria {suffix}", ob_title,
+                        ob_pass, 2, len(trades) + 1))
+
+        pnl_letter = _col_letter(_TRADE_LOCAL_COLUMNS.index("pnl_pct") + 1)
+        stats_rows, stats_pass = build_stats_formula_block(
+            window["results"], trades_title, pnl_letter, len(trades))
+        _write_formula_sheet(workbook, stats_title, stats_rows)
+        blocks.append((f"Headline statistics {suffix}", stats_title, stats_pass, 2, 10))
+
+    _write_formula_sheet(workbook, _SUMMARY_SHEET, build_verification_summary(blocks))
+    print("\nCheck GSHEET: independent verification formula sheets exported successfully.")
+    print(f"  Read '{_SUMMARY_SHEET}''s GRAND TOTAL cell. If any verify tab shows")
+    print("  literal '=' text instead of computed values, the USER_ENTERED write")
+    print("  option was lost -- that is the RAW failure mode, not a real divergence.")
+
+
+def _write_formula_sheet(workbook, title, rows):
+    """Write one verify tab with USER_ENTERED so the '='-prefixed strings land
+    as live formulas rather than as text. Emits the bare STDEV.S/BINOM.DIST
+    names (no _xlfn. prefix) -- that rewrite is .xlsx-only."""
+    n_cols = max(len(row) for row in rows)
+    worksheet = _get_or_create_sheet(workbook, title, rows=len(rows) + 5, cols=n_cols + 2)
+    worksheet.clear()
+    print(f"  Writing {len(rows) - 1} formula rows x {n_cols} cols to '{title}'...")
+    worksheet.update(rows, value_input_option=gspread.utils.ValueInputOption.user_entered)
 
 
 # ============================================================================
@@ -4202,8 +5360,9 @@ def export_dashboard_artifacts(symbol="BTCUSDT", timeframe="4h", start="2022-01-
 
 def push_all_gsheet_exports(output_dir="artifacts"):
     """
-    Compute and push all three Google Sheets exports (candles, trades+
-    results, benchmark-vs-passive) in-process, using this file's own
+    Compute and push all four Google Sheets exports (candles, trades+
+    results, benchmark-vs-passive, and Section 3C's independent
+    verification-formula tabs) in-process, using this file's own
     Section 3B push_*_to_gsheet() writers and Section 4/5B analysis
     functions directly -- no subprocess, no intermediate JSON file, unlike
     the export_gui_data.py pipeline this replaces (which shelled out to
@@ -4253,6 +5412,13 @@ def push_all_gsheet_exports(output_dir="artifacts"):
         push_benchmark_vs_passive_to_gsheet(benchmark_result)
     except Exception as e:
         print(f"\n[WARNING] Skipping benchmark-vs-passive gsheet push: {e}")
+
+    # Must run AFTER push_candles_to_gsheet(): the verify tabs' formulas
+    # cross-reference the 'Candles <window>' tabs it maintains (see Section 3C).
+    try:
+        push_verification_formulas_to_gsheet()
+    except Exception as e:
+        print(f"\n[WARNING] Skipping independent verification-formula gsheet push: {e}")
 
 
 def write_statistical_artifacts(df, baseline_trades, output_dir="artifacts"):
@@ -4817,6 +5983,13 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=42, help="RNG seed for all bootstrap resampling (default: 42).")
     parser.add_argument("--json-out", type=str, default=None,
                          help="Optional path to write every section's results as one JSON file.")
+    parser.add_argument("--export-formula-workbook", nargs="?", const=os.path.join("artifacts", "verification_formulas.xlsx"),
+                         default=None, metavar="PATH",
+                         help="Write the independent verification workbook (Section 3C) to PATH "
+                              "(default: artifacts/verification_formulas.xlsx) and exit. Every number on "
+                              "its 'Verify *' sheets is re-derived from raw OHLCV by native spreadsheet "
+                              "formulas and graded PASS/FAIL against the Python-published value; read the "
+                              "'Verification Summary' sheet's GRAND TOTAL cell. Offline, no credentials.")
     # --- --serve-mode flags (mirror export_gui_data.py's former CLI) --------
     parser.add_argument("--symbol", default="BTCUSDT")
     parser.add_argument("--timeframe", default="4h")
@@ -4836,7 +6009,9 @@ if __name__ == "__main__":
     if cli_args.default_view_quality not in cli_args.levels:
         cli_args.default_view_quality = cli_args.levels[0]
 
-    if cli_args.serve:
+    if cli_args.export_formula_workbook:
+        export_formula_workbook(cli_args.export_formula_workbook)
+    elif cli_args.serve:
         run_serve_mode(cli_args)
     else:
         run_full_analysis_pipeline(

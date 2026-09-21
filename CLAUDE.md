@@ -92,6 +92,26 @@ per-bar "Quality 0".."Quality 3" sheets) is left defined in
 its sheets are actively deleted from the live workbook on every push. Do not
 re-wire it back in without asking; it was deliberately superseded, not
 deprecated by accident.
+Section 3C adds an INDEPENDENT verification layer on top of this pipeline:
+`Verify Indicators/Trades/Trade Bars/OB Quality/Stats <window>` tabs plus a
+`Verification Summary` tab, whose cells are native spreadsheet FORMULAS
+re-deriving the indicators, OB quality criteria, per-trade levels/exits/PnL
+and the 9 headline statistics from raw OHLCV, each graded PASS/FAIL against
+the Python value. Two rules hold there: the verify tabs are written with
+`value_input_option=USER_ENTERED` (gspread 6.2.1 defaults to RAW, under which
+every formula lands as literal text and the whole layer becomes decoration),
+while the data tabs keep their RAW write path; and the verify tabs are
+separate tabs, never new columns on the data tabs, so the data push stays
+byte-identical and `_apply_pnl_formatting`'s single-letter `chr(64 + pnl_col)`
+(which breaks past column Z and currently sits exactly at Z) is not pushed
+closer to its limit. The same generator also writes a standalone
+`artifacts/verification_formulas.xlsx` via
+`python research_analysis.py --export-formula-workbook` (offline, no
+credentials; gitignored because it is an 8MB regenerable binary).
+Order Block DETECTION and trade SELECTION are deliberately NOT ported into
+formulas - see `docs/SCRATCH_RESULTS_METHODS.md`, "Independent verification
+surfaces", for why, and do not add them without asking.
+
 `SERVICE KEY/`'s key-file auto-discovery now picks the most-recently-modified
 non-"disabled" key file (not a hardcoded "new-strat" filename match) - if a
 gsheet push starts failing with an auth error, check whether a stale key

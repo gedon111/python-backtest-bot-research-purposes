@@ -11,3 +11,8 @@ env/
 .env
 .env.*
 !.env.example
+
+# Generated on demand by `--export-formula-workbook` (Section 3C): an 8MB
+# binary that is fully regenerable from the committed candle artifacts in ~30s.
+artifacts/verification_formulas.xlsx
+
