@@ -149,7 +149,7 @@ ATR_MULT_EXIT = 1.8                    # ATR-multiple forced-exit distance
 ATR_MULT_BREAKEVEN = 2.0               # ATR-multiple breakeven-stop ratchet
 MIN_RISK_REWARD_RATIO = 1.5
 
-# --- Locked baseline figures (from CLAUDE.md's "Locked results" section) --
+# --- Locked baseline figures (docs/SCRATCH_RESULTS_METHODS.md) ------------
 # These are the paper's published, audited numbers. Every analysis section
 # below cross-checks its own fresh recomputation against these and reports
 # MATCH/DIVERGE explicitly -- never silently reconciled.
@@ -1404,7 +1404,7 @@ def simulate_trades(df, min_ob_quality=None, iteration_parameters=None):
         Minimum composite quality score (0-5) an Order Block must have to
         gate an entry. None defaults to DEFAULT_MIN_OB_QUALITY (1). The
         paper's locked 27-trade baseline uses min_ob_quality=0 (no
-        filtering) -- see CLAUDE.md's "Locked results".
+        filtering) -- see docs/SCRATCH_RESULTS_METHODS.md's locked results.
     iteration_parameters : dict or None
         Optional override dict; currently only supports overriding
         'min_ob_quality'. Exists for callers that sweep min_ob_quality
@@ -3750,7 +3750,8 @@ def run_paper_sync_check(df):
     """
     Recompute every checkable headline figure fresh from data+code, then
     cross-check each against this file's own LOCKED_* constants (Section 1
-    -- sourced from CLAUDE.md's "Locked results" section).
+    -- sourced from docs/SCRATCH_RESULTS_METHODS.md's "Locked headline
+    results" section).
 
     Statistical/analytical question answered: none directly -- this is a
     correctness/reproducibility check, not a hypothesis test. It answers
@@ -3814,13 +3815,23 @@ def run_paper_sync_check(df):
 # script called routinely by the export/--serve pipeline (Section 7), not an
 # occasional manual audit tool. Writes artifacts/paper_sync_report.md.
 
-CLAUDE_MD_PATH = os.path.join(BASE_DIR, "CLAUDE.md")
+# The locked figures live HERE, not in CLAUDE.md. CLAUDE.md's "Results,
+# corrections, and disclosed design decisions" section names this file as the
+# canonical reference for them and says to update this file rather than itself.
+# CORRECTION (2026-09-21): this parser read CLAUDE.md until now, and once the
+# locked figures moved out of it every row of the report read NO-PARSE -- i.e.
+# the one automated guard against a paper figure drifting from the code was
+# silently checking nothing, while still printing a reassuring table. Repointed
+# here, and _assert_locked_results_parsed() below now makes a total parse
+# failure raise instead of degrading quietly.
+LOCKED_RESULTS_PATH = os.path.join(BASE_DIR, "docs", "SCRATCH_RESULTS_METHODS.md")
 PAPER_SYNC_REPORT_DEFAULT_OUT_PATH = os.path.join(BASE_DIR, "artifacts", "paper_sync_report.md")
 
-def _parse_claude_md_locked_results():
-    """Regex-parse CLAUDE.md's "Locked results" prose into a dict of live-
-    comparable values. Returns (locked_dict, raw_text)."""
-    with open(CLAUDE_MD_PATH, "r", encoding="utf-8") as f:
+def _parse_locked_results():
+    """Regex-parse docs/SCRATCH_RESULTS_METHODS.md's "Locked headline results"
+    prose into a dict of live-comparable values. Returns (locked_dict,
+    raw_text)."""
+    with open(LOCKED_RESULTS_PATH, "r", encoding="utf-8") as f:
         raw_text = f.read()
 
     locked = {}
@@ -3832,7 +3843,7 @@ def _parse_claude_md_locked_results():
         ("baseline_sd", r"SD\s*(\d+\.\d+)%", float),
         ("baseline_p_one_sided", r"One-sided binomial p\s*=\s*(\d+\.\d+)", float),
         ("baseline_p_two_sided", r"two-sided\s*(\d+\.\d+)\)\s*for the q>=0 baseline", float),
-        ("bar_count", r"(\d[\d,]*)\s*bars \(1,461 days", lambda s: int(s.replace(",", ""))),
+        ("bar_count", r"(\d[\d,]*)\s*bars covering 1,461 days", lambda s: int(s.replace(",", ""))),
     ]
     for key, pattern, cast in checks:
         m = re.search(pattern, raw_text)
@@ -3850,7 +3861,29 @@ def _parse_claude_md_locked_results():
         {"n": int(ablation_b_m.group(1)), "win_rate": float(ablation_b_m.group(2)),
          "total_return": float(ablation_b_m.group(3))} if ablation_b_m else None
     )
+    _assert_locked_results_parsed(locked)
     return locked, raw_text
+
+
+def _assert_locked_results_parsed(locked):
+    """Raise if NOTHING parsed.
+
+    A regex that stops matching is the failure mode this whole report is least
+    able to survive: every row degrades to NO-PARSE and the table still renders,
+    so it reads like a clean run while comparing nothing at all. That is exactly
+    what happened once the locked figures moved out of CLAUDE.md. An individual
+    NO-PARSE row is still tolerated and warned about (one reworded line should
+    not block the other checks), but a CLEAN SWEEP means the parser is pointed
+    at the wrong file or the section was restructured, and that must fail
+    loudly rather than reassure."""
+    if all(value is None for value in locked.values()):
+        raise ValueError(
+            f"Parsed ZERO locked figures out of {LOCKED_RESULTS_PATH}. Every "
+            "comparison in the paper-sync report would read NO-PARSE, meaning the "
+            "report would verify nothing while appearing to pass. Either the file "
+            "moved or its \"Locked headline results\" section was reworded -- fix "
+            "the patterns in _parse_locked_results(), do not ignore this."
+        )
 
 
 class _PaperSyncCheck:
@@ -3876,7 +3909,8 @@ class _PaperSyncCheck:
         return "MATCH" if ok else "MISMATCH"
 
     def row(self):
-        locked_s = self.fmt(self.locked_val) if self.locked_val is not None else "(not found in CLAUDE.md)"
+        locked_s = (self.fmt(self.locked_val) if self.locked_val is not None
+                    else "(not found in SCRATCH_RESULTS_METHODS.md)")
         live_s = self.fmt(self.live_val) if self.live_val is not None else "(not computed)"
         mark = {"MATCH": "MATCH", "MISMATCH": "MISMATCH -- STOP", "NO-PARSE": "NO-PARSE",
                 "NO-DATA": "NO-DATA"}[self.status]
@@ -3886,17 +3920,17 @@ class _PaperSyncCheck:
 def generate_paper_sync_report(out_path=PAPER_SYNC_REPORT_DEFAULT_OUT_PATH, verbose=True):
     """
     Recompute every checkable headline figure fresh from data+code, cross-
-    check each against a live regex-parse of CLAUDE.md's own "Locked
-    results" prose, write the markdown report to out_path, and return
-    (report_text, mismatches, checks).
+    check each against a live regex-parse of docs/SCRATCH_RESULTS_METHODS.md's
+    own "Locked headline results" prose, write the markdown report to out_path,
+    and return (report_text, mismatches, checks).
 
     Statistical/analytical question answered: none directly -- a
     reproducibility/correctness check, same posture as run_paper_sync_check()
-    but comparing against CLAUDE.md's actual current wording (catches prose
-    drift too) instead of this file's own LOCKED_* constants. Never edits
-    CLAUDE.md or "corrects" a mismatch itself -- a MISMATCH is a correctness
-    finding for a human to review, per CLAUDE.md's own rule on newly found
-    bugs.
+    but comparing against the locked-results document's actual current wording
+    (catches prose drift too) instead of this file's own LOCKED_* constants.
+    Never edits that document or "corrects" a mismatch itself -- a MISMATCH is a
+    correctness finding for a human to review, per CLAUDE.md's own rule on
+    newly found bugs.
 
     Parameters
     ----------
@@ -3928,8 +3962,8 @@ def generate_paper_sync_report(out_path=PAPER_SYNC_REPORT_DEFAULT_OUT_PATH, verb
     q0_binomial = binomial_test(q0_wins, len(q0_trades)) if len(q0_trades) else {"p_one_sided": None}
     q0_sd = float(q0_trades["pnl_pct"].std()) if len(q0_trades) > 1 else float("nan")
 
-    log("[paper_sync_report] Parsing CLAUDE.md locked results...")
-    locked, _ = _parse_claude_md_locked_results()
+    log(f"[paper_sync_report] Parsing locked results from {LOCKED_RESULTS_PATH}...")
+    locked, _ = _parse_locked_results()
 
     checks = [
         _PaperSyncCheck("Bar count", locked.get("bar_count"), bar_count),
@@ -3950,22 +3984,23 @@ def generate_paper_sync_report(out_path=PAPER_SYNC_REPORT_DEFAULT_OUT_PATH, verb
         "# Paper/codebase sync report", "",
         f"Generated: {generated_at}", "",
         "Recomputed live from `artifacts/candles.csv` and this file's own strategy-engine "
-        "functions, then cross-checked against the figures parsed out of `CLAUDE.md`'s "
-        "\"Locked results\" section. A MISMATCH row is a correctness finding, not something "
+        "functions, then cross-checked against the figures parsed out of "
+        "`docs/SCRATCH_RESULTS_METHODS.md`'s "
+        "\"Locked headline results\" section. A MISMATCH row is a correctness finding, not something "
         "this script resolves automatically -- see `CLAUDE.md`'s rule on newly found bugs.",
         "", "## Cross-check summary", "",
-        "| Metric | Locked (CLAUDE.md) | Live (this run) | Status |",
+        "| Metric | Locked (SCRATCH_RESULTS_METHODS.md) | Live (this run) | Status |",
         "|---|---|---|---|",
     ]
     lines.extend(c.row() for c in checks)
     lines.append("")
 
-    lines.append("## Ablation A/B -- passthrough from CLAUDE.md, UNVERIFIED this run")
+    lines.append("## Ablation A/B -- passthrough from the locked results, UNVERIFIED this run")
     lines.append("")
     lines.append(
         "No function in this file reproduces these figures from current code -- the "
         "originating script was never committed. Printed here only as cited from "
-        "`CLAUDE.md`, not independently recomputed."
+        "`docs/SCRATCH_RESULTS_METHODS.md`, not independently recomputed."
     )
     lines.append("")
     a, b = locked.get("ablation_a"), locked.get("ablation_b")
@@ -3988,20 +4023,20 @@ def generate_paper_sync_report(out_path=PAPER_SYNC_REPORT_DEFAULT_OUT_PATH, verb
     no_parse = [c for c in checks if c.status == "NO-PARSE"]
     if no_parse and verbose:
         print("[paper_sync_report] WARNING: could not parse the following figures out of "
-              "CLAUDE.md (regex no longer matches its current wording):")
+              "docs/SCRATCH_RESULTS_METHODS.md (regex no longer matches its current wording):")
         for c in no_parse:
             print(f"  - {c.metric}")
 
     if mismatches and verbose:
         print("\n" + "=" * 70)
         print("[paper_sync_report] STOP: live-recomputed figures disagree with "
-              "CLAUDE.md's locked results.")
+              "docs/SCRATCH_RESULTS_METHODS.md's locked results.")
         print("This is a correctness finding, not something to silently reconcile.")
         print("=" * 70)
         for c in mismatches:
             print(f"  - {c.metric}: locked={c.locked_val!r} live={c.live_val!r}")
     elif verbose:
-        print("[paper_sync_report] All parsed CLAUDE.md figures match live recomputation.")
+        print("[paper_sync_report] All parsed locked figures match live recomputation.")
 
     return report_text, mismatches, checks
 

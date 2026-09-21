@@ -61,6 +61,24 @@ any number from this project, and update it (not this file) when a result,
 correction, or open question changes. Any code change that alters a number
 recorded there is a bug in the change, not an improvement.
 
+CORRECTION (2026-09-21): `generate_paper_sync_report()` -- the automated
+locked-vs-live guard, `artifacts/paper_sync_report.md` -- was regex-parsing
+the locked figures out of THIS file, which has not held them since they moved
+to `docs/SCRATCH_RESULTS_METHODS.md`. Every row of the report therefore read
+NO-PARSE: the one automated check against a paper figure drifting from the
+code was comparing nothing while still rendering a reassuring table. It now
+reads `LOCKED_RESULTS_PATH` (`docs/SCRATCH_RESULTS_METHODS.md`, the "Locked
+headline results" section) and `_assert_locked_results_parsed()` RAISES when
+zero figures parse, so the same silent blindness cannot recur. With the
+parser fixed all seven rows read MATCH. Three stale in-code references to a
+"Locked results" section of this file were repointed at the same time; do not
+add new ones -- the figures live in the results doc, not here.
+
+A note on `AGENTS.md`: it is a POINTER to this file and holds no rules. It
+used to be a hand-maintained copy and had drifted into carrying three
+statements this file had already corrected as false. Do not restore prose
+there or copy this file's contents into it.
+
 ## Regression harness
 
 scratch/regression.py is the golden master; fixtures in scratch/fixtures/.
