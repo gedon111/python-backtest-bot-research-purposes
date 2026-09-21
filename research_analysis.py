@@ -3221,15 +3221,64 @@ def push_verification_formulas_to_gsheet(windows=None, min_ob_quality=0):
     print("  option was lost -- that is the RAW failure mode, not a real divergence.")
 
 
+# Rough ceiling on one values.update request body. The per-bar indicator tabs
+# are ~8,770 rows x 39 formula strings, which serializes to ~10.7MB -- a single
+# request that size is liable to be rejected or to time out, and a push that
+# dies halfway leaves the workbook half-written (the tab has already been
+# cleared by then). So the write is chunked by measured payload size rather
+# than by a guessed row count.
+_GSHEET_UPDATE_PAYLOAD_BUDGET_BYTES = 1_500_000
+
+
 def _write_formula_sheet(workbook, title, rows):
     """Write one verify tab with USER_ENTERED so the '='-prefixed strings land
     as live formulas rather than as text. Emits the bare STDEV.S/BINOM.DIST
-    names (no _xlfn. prefix) -- that rewrite is .xlsx-only."""
+    names (no _xlfn. prefix) -- that rewrite is .xlsx-only.
+
+    Written in payload-sized chunks, each with an explicit A1 range, because
+    the indicator tabs are far too large for one request (see the budget
+    constant above). Every chunk carries the same USER_ENTERED option: a chunk
+    that silently fell back to RAW would leave a band of literal '=' text in
+    the middle of an otherwise live sheet.
+    """
     n_cols = max(len(row) for row in rows)
+    last_column = _col_letter(n_cols)
     worksheet = _get_or_create_sheet(workbook, title, rows=len(rows) + 5, cols=n_cols + 2)
     worksheet.clear()
-    print(f"  Writing {len(rows) - 1} formula rows x {n_cols} cols to '{title}'...")
-    worksheet.update(rows, value_input_option=gspread.utils.ValueInputOption.user_entered)
+
+    chunks = _chunk_rows_by_payload(rows, _GSHEET_UPDATE_PAYLOAD_BUDGET_BYTES)
+    print(f"  Writing {len(rows) - 1} formula rows x {n_cols} cols to '{title}' "
+          f"in {len(chunks)} chunk(s)...")
+    first_row = 1
+    for chunk_index, chunk in enumerate(chunks, start=1):
+        last_row = first_row + len(chunk) - 1
+        range_name = f"A{first_row}:{last_column}{last_row}"
+        if len(chunks) > 1:
+            print(f"    chunk {chunk_index}/{len(chunks)}: {range_name}")
+        worksheet.update(chunk, range_name=range_name,
+                          value_input_option=gspread.utils.ValueInputOption.user_entered)
+        first_row = last_row + 1
+
+
+def _chunk_rows_by_payload(rows, budget_bytes):
+    """Split `rows` into consecutive groups whose serialized size stays under
+    `budget_bytes`. A single row that already exceeds the budget still gets its
+    own chunk -- splitting a row across requests would corrupt it, so an
+    oversized row is sent alone and left to the API to accept or reject."""
+    chunks = []
+    current = []
+    current_bytes = 0
+    for row in rows:
+        row_bytes = len(json.dumps(row))
+        if current and current_bytes + row_bytes > budget_bytes:
+            chunks.append(current)
+            current = []
+            current_bytes = 0
+        current.append(row)
+        current_bytes += row_bytes
+    if current:
+        chunks.append(current)
+    return chunks
 
 
 # ============================================================================
