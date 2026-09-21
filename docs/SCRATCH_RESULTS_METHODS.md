@@ -125,8 +125,10 @@ immediately on the next run rather than requiring a separate audit pass.
    `true_range.rolling(atr_period, min_periods=1).mean()`, a plain rolling
    MEAN of True Range. The CODE is what the paper's numbers come from and it
    is intended: an independent recomputation matches the SMA exactly (diff
-   0.0), the dashboard labels it `ATR(14, SMA-of-TR)`, and the Section 3C
-   formulas reproduce the SMA and pass at 1e-5. Only the comment is wrong.
+   0.0) and the dashboard labels it `ATR(14, SMA-of-TR)`. A now-removed
+   per-bar formula layer (see "Independent verification surfaces") also
+   reproduced the SMA and passed at 1e-5 across all 8,767 bars. Only the
+   comment is wrong.
    Recorded rather than patched, per CLAUDE.md's "Known bugs" rule.
 
 2. **The benchmark row mixes two return conventions.** In
@@ -169,56 +171,81 @@ implementations computing the same statistic from the same trade data.
 criteria, exposing a `matchesRecorded` flag per criterion (verified against
 all 761 Order Blocks: zero mismatches).
 
-### 2. Native spreadsheet formulas - indicators, OB quality, trades, statistics
+### 2. Native spreadsheet formulas - the published statistics
 
-`research_analysis.py`'s Section 3C emits a spreadsheet that *derives* the
-numbers instead of receiving them. Same generator, two targets: a
-self-contained `artifacts/verification_formulas.xlsx`
+`research_analysis.py`'s Section 3C emits a spreadsheet that *re-derives* the
+nine published statistics instead of receiving them. Same generator, two
+targets: a self-contained `artifacts/verification_formulas.xlsx`
 (`python research_analysis.py --export-formula-workbook`) and the live Google
-Sheets workbook's `Verify *` tabs (pushed by `--export-gsheet`, with
-`value_input_option=USER_ENTERED` so they land as live formulas). Each derived
-value sits beside the Python-published one with an absolute diff and a
-PASS/FAIL cell; `Verification Summary` rolls every check group up to one
-GRAND TOTAL cell and is deliberately the first sheet, so
+Sheets workbook's `Verify Stats <window>` tabs (pushed by `--export-gsheet`,
+with `value_input_option=USER_ENTERED` so they land as live formulas). Each
+derived value sits beside the published one with an absolute diff and a
+PASS/FAIL cell; `Verification Summary` rolls every check group up to one GRAND
+TOTAL cell and is deliberately the first sheet, so
 `soffice --headless --convert-to csv` grades the whole workbook in one call.
 
-**What the formulas are allowed to read:** raw OHLCV, plus six integer bar
-indices per trade (`side`, `entry_idx`, `exit_idx`, `entry_ob_bar`,
-`entry_ob_created_at`, `tp_ob_bar`). No price, level, indicator value or
-metric crosses over. The Order Block zone edges are NOT taken from Python -
-the formulas rebuild the LuxAlgo volatility-parsed body inversion themselves,
-so the stop-loss and the structural take-profit are independent derivations.
+**What it independently derives:** all nine metrics on the `Results <window>`
+tab - Total Trades, Wins, Losses, Win Rate (%), Total Net Return (%), Avg
+Return/Trade (%), SD (Return/Trade %), and both binomial p-values - each from
+the published per-trade `pnl_pct` column, using `COUNT`, `COUNTIF`, `SUM`,
+`AVERAGE`, `STDEV.S` and `1-BINOM.DIST(k-1,n,0.5,TRUE)`. Both the derived and
+the published side are CELL REFERENCES into the workbook's own published tabs
+(the published side via `INDEX`/`MATCH` on the metric NAME, so a row-order
+change cannot silently compare two different metrics), which means the check
+grades what a reader actually sees rather than values this generator pasted in.
 
-**What it independently derives:** all 9 published indicator series per bar
-(MACD/MACD_signal/MACD_hist, RSV/K/D/J, ATR, ATR_200); all 5 Order Block
-quality criteria and their composite; per trade the entry fill, zone edges,
-stop-loss, structural-or-2R take-profit, frozen KDJ-reset window `w`, the
-full exit ladder (so the exit *reason* is a derived classification, not a
-copied label), the post-ratchet stop-loss and `pnl_pct`; and all 9 headline
-statistics, computed from the spreadsheet's own derived `pnl_pct` column.
+**What it does NOT verify, stated plainly:** the per-trade `pnl_pct` values,
+the indicator series, Order Block detection, and trade selection. Those are
+inputs here. The check answers "given this trade log, are the published
+statistics the correct statistics?" and nothing more. That is a real and
+independently checkable question, and it should not be cited as more than it is.
 
-**What it deliberately does NOT attempt:** Order Block *detection*
-(`compute_smc()`'s pivot/BOS/CHoCH state machine) and trade *selection*
-(`simulate_trades()`'s per-bar scan). Selection takes the first *in list
-order* of ~760 Order Blocks that passes nine filters; any spreadsheet lookup
-substitute changes that tie-break to first-by-key. Porting either would
-manufacture disagreements that are artifacts of the port rather than
-findings, which in a paper where a disagreement is supposed to mean something
-is worse than not having the check. Hence the six indices above are inputs.
+**Conventions the formulas had to match rather than assume** (each verified,
+not guessed): `Total Net Return (%)` is an arithmetic SUM of per-trade
+`pnl_pct`, not a compounded return (see the mixed-convention note above); SD
+is the SAMPLE standard deviation, so `STDEV.S` and not `STDEV.P`, because
+pandas `.std()` defaults to `ddof=1`; `Wins` counts `pnl_pct > 0` strictly, so
+a hypothetical exactly-flat trade is a loss; `scipy.binomtest(k, n, 0.5,
+alternative='greater')` equals `1 - BINOM.DIST(k-1, n, 0.5, TRUE)` exactly
+(the upper tail INCLUDING k, hence `k-1`), matched to 10 decimal places; and
+at p = 0.5 the distribution is symmetric, so the two-sided p-value is exactly
+twice the one-sided one.
 
-**Tolerances (both visible as constants on `Verification Summary`):**
-indicator series 1e-5 absolute, because `_format_df_for_export_full()` rounds
-every published float to 6 dp, giving the *published* side up to 5e-7 of
-rounding error - the observed worst case across all 8,767 bars is 5.0004e-7,
-i.e. exactly that floor, which is the evidence the formula side is exact.
-Trade-level and statistical checks get 1e-9, since those tabs write raw
-unrounded floats.
+**Tolerance:** 1e-9 absolute, visible as a constant on `Verification Summary`.
+`_write_trades_sheet()`/`_write_results_sheet()` write raw unrounded floats,
+so there is no export rounding to absorb.
 
-**Status as of this writing:** 17,639 checks, 0 failures, across both windows
-(8,767 + 8,750 per-bar indicator checks, 27 + 25 trades, 27 + 25 Order Block
-criteria sets, 9 + 9 statistics). Confirmed to have teeth by a negative
-control: perturbing one published value per check group produces exactly one
-FAIL in each, and leaves the other window clean. The spreadsheet reproduces
-the locked headline figures from raw candles alone - 27 trades, 19 wins,
-70.3703703703704%, +30.3064563560319%, +1.1224613465197%, SD 2.41013571893455%,
-one-sided p 0.0261194929480553, two-sided exactly 2x that.
+**Status:** 18 checks, 0 failures (9 statistics x 2 windows), recalculated
+headlessly in LibreOffice rather than read back from a cached value - openpyxl
+writes every formula with no cached result, so the spreadsheet is forced to
+compute. Negative control: perturbing one published `Results` value produces
+exactly one FAIL in that window and none in the other; corrupting one trade's
+published `pnl_pct` produces 8 of 9 FAILs (Total Trades is a count and is
+correctly unaffected).
+
+**Reading it in Excel:** click "Enable Editing" first. Protected View does not
+calculate formulas, so every derived cell renders blank until you leave it.
+
+**Scope history (2026-09-21).** An earlier version of this layer also
+reproduced, by formula, all nine per-bar indicator series (MACD/signal/hist,
+RSV/K/D/J, ATR, ATR_200), the five Order Block quality criteria, and every
+trade's zone edges, stop-loss, structural-or-2R take-profit, frozen KDJ-reset
+window, full exit ladder and `pnl_pct` - 17,639 checks at 0 failures across
+both windows, with an indicator tolerance of 1e-5 whose observed worst case
+(5.0004e-7) was exactly the floor implied by `_format_df_for_export_full()`'s
+`.round(6)`. It was REMOVED deliberately, not lost: it quadrupled the
+workbook, made Excel recalculation slow enough to discourage the audit it
+existed for, and duplicated what `dashboard-v2`'s TypeScript already covers
+for the OB criteria. Order Block detection and trade selection were never
+ported (selection takes the first *in list order* of ~760 Order Blocks passing
+nine filters, and a spreadsheet lookup substitute changes that tie-break to
+first-by-key, which would manufacture disagreements that are artifacts of the
+port rather than findings). The removal narrowed what the workbook claims; it
+did not change any published number.
+
+The current layer reproduces the locked headline figures for the main window
+by formula, to the digit: 27 trades, 19 wins, 70.3703703703704%,
++30.3064563560319%, +1.1224613465197%, SD 2.41013571893455%, one-sided p
+0.0261194929480553, two-sided exactly 2x that. Formulation-period window:
+25 trades, 15 wins, 60%, +21.8245809325413%, +0.87298323730165%, SD
+3.14941168288314%, one-sided p 0.212178111076355.

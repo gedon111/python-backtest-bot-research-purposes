@@ -254,7 +254,7 @@ the dashboard, database, or `artifacts/*` files.
 | `--bootstrap-n` | `10000` | Number of resamples for the bootstrap confidence interval (`run_bootstrap_ci()`). Lower it (e.g. `--bootstrap-n 500`) for a quick smoke-test run; the locked/reported CI uses the default. |
 | `--seed` | `42` | RNG seed for all bootstrap resampling. Reproducibility only — never change this to "improve" a result. |
 | `--json-out` | none | Path to write every section's results as one JSON file, e.g. `--json-out artifacts/stats_run.json`. |
-| `--export-formula-workbook` | off | Write the independent verification workbook (Section 3C) to `artifacts/verification_formulas.xlsx`, or to an explicit `PATH` if you pass one, then exit. Every number on its `Verify *` sheets is re-derived from raw OHLCV by **native spreadsheet formulas** and graded PASS/FAIL against the Python-published value — open it and read `Verification Summary`'s `GRAND TOTAL` cell. Offline, no credentials. See "Independent verification surfaces" below. |
+| `--export-formula-workbook` | off | Write the independent verification workbook (Section 3C) to `artifacts/verification_formulas.xlsx`, or to an explicit `PATH` if you pass one, then exit. It carries the published Trades/Results sheets plus `Verify Stats` sheets that re-derive each of the 9 published statistics with **native spreadsheet formulas** and grade them PASS/FAIL — open it and read `Verification Summary`'s `GRAND TOTAL` cell. Offline, no credentials. See "Independent verification surfaces" below. |
 
 ```bash
 python research_analysis.py                                # full pipeline, console output only
@@ -285,7 +285,7 @@ defaults) and never runs the live OOS section.
 | `--levels` | `0,1,2,3` | Comma-separated min order-block quality thresholds to sweep |
 | `--default-view-quality` | `1` | Which quality level the dashboard opens to by default |
 | `--output-dir` | `artifacts` | Where JSON/CSV output is written |
-| `--export-gsheet` | off | Attempt a Google Sheets export (needs the env vars above). Pushes four sets of tabs: candles, trades+results, benchmark-vs-passive, and the Section 3C `Verify *` verification-formula tabs (written with `USER_ENTERED` so they land as live formulas, not text). |
+| `--export-gsheet` | off | Attempt a Google Sheets export (needs the env vars above). Pushes four sets of tabs: candles, trades+results, benchmark-vs-passive, and the Section 3C `Verify Stats` verification-formula tabs (written with `USER_ENTERED` so they land as live formulas, not text). |
 | `--db-url` | `sqlite:///backtest_results.db` | Override the SQLAlchemy database URL |
 | `--no-server` | off | Run the export pipeline only; skip starting the dashboard web server (useful if you just want the `artifacts/*.json` result files) |
 | `--no-browser` | off | Start the server but don't auto-open a browser tab |
@@ -478,16 +478,23 @@ binomial test, Pearson/Spearman correlation and a percentile bootstrap CI
 with a per-criterion `matchesRecorded` flag (`obQualityVerification.ts`).
 
 **2. Native spreadsheet formulas (`research_analysis.py` Section 3C).** Emits
-a spreadsheet that *derives* the numbers instead of receiving them:
+a spreadsheet that *re-derives the published statistics* instead of echoing
+them:
 
 ```bash
 python research_analysis.py --export-formula-workbook
 ```
 
-That writes `artifacts/verification_formulas.xlsx` (offline, no credentials).
-The same generator also pushes `Verify *` tabs to the live Google Sheets
-workbook under `--export-gsheet`. Every derived cell sits beside the
-Python-published value with an absolute diff and a PASS/FAIL cell;
+That writes `artifacts/verification_formulas.xlsx` (offline, no credentials):
+the published `Trades <window>` and `Results <window>` sheets, plus a
+`Verify Stats <window>` sheet per window whose cells are live formulas
+(`COUNT`, `COUNTIF`, `SUM`, `AVERAGE`, `STDEV.S`, `BINOM.DIST`) computing each
+of the 9 published statistics from the published per-trade `pnl_pct` column.
+The same generator pushes the same `Verify Stats` tabs to the live Google
+Sheets workbook under `--export-gsheet`. Each derived value sits beside the
+published figure with an absolute diff and a PASS/FAIL cell, at a 1e-9
+tolerance; both sides are cell references into the workbook's own published
+tabs, so editing a published cell flips the PASS cell.
 `Verification Summary` is deliberately the **first** sheet so the whole
 workbook can be recalculated and graded in one command:
 
@@ -496,16 +503,17 @@ soffice --headless --convert-to csv --outdir /tmp/verify   artifacts/verificatio
 # then read the GRAND TOTAL cell — it should say "ALL PASS"
 ```
 
-The formulas may read raw OHLCV plus six integer bar indices per trade
-(`side`, `entry_idx`, `exit_idx`, `entry_ob_bar`, `entry_ob_created_at`,
-`tp_ob_bar`) and nothing else — no price, level, indicator value or metric
-crosses over. From that they independently derive all 9 indicator series per
-bar, all 5 order-block quality criteria, each trade's zone edges, stop-loss,
-take-profit, KDJ-reset window, exit *reason* and PnL, and all 9 headline
-statistics. Order-block **detection** and trade **selection** are
-deliberately not ported; see `docs/SCRATCH_RESULTS_METHODS.md`, "Independent
-verification surfaces", for why, and the tolerances and current status
-(17,639 checks, 0 failures).
+Current status: **18 checks, 0 failures** (9 statistics x 2 windows).
+
+**In Excel, click "Enable Editing" first.** Protected View does not calculate
+formulas, so every derived cell renders blank until you leave it — that is a
+sandboxed download, not an empty workbook.
+
+Scope, stated plainly: this verifies the statistical **aggregation** only. The
+per-trade `pnl_pct` values, the indicator series, order-block detection and
+trade selection are *inputs* here. It answers "given this trade log, are the
+published statistics the correct statistics?" and nothing more. See
+`docs/SCRATCH_RESULTS_METHODS.md`, "Independent verification surfaces".
 
 ---
 

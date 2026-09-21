@@ -107,11 +107,14 @@ codebase entirely (zero matches), and nothing deletes its sheets either
 removed by hand). It was deliberately superseded, not deprecated by accident:
 do not re-add it without asking.
 Section 3C adds an INDEPENDENT verification layer on top of this pipeline:
-`Verify Indicators/Trades/Trade Bars/OB Quality/Stats <window>` tabs plus a
-`Verification Summary` tab, whose cells are native spreadsheet FORMULAS
-re-deriving the indicators, OB quality criteria, per-trade levels/exits/PnL
-and the 9 headline statistics from raw OHLCV, each graded PASS/FAIL against
-the Python value. Two rules hold there: the verify tabs are written with
+a `Verify Stats <window>` tab per window plus a `Verification Summary` tab,
+whose cells are native spreadsheet FORMULAS re-deriving each of the 9
+published statistics (trade counts, win rate, total/mean return, sample SD,
+both binomial p-values) from the published per-trade `pnl_pct` column, each
+graded PASS/FAIL against the published `Results <window>` figure. Both sides
+are CELL REFERENCES into the workbook's own published tabs, so editing a
+published cell flips the corresponding PASS cell (verified by negative
+control). Two rules hold there: the verify tabs are written with
 `value_input_option=USER_ENTERED` (gspread 6.2.1 defaults to RAW, under which
 every formula lands as literal text and the whole layer becomes decoration),
 while the data tabs keep their RAW write path; and the verify tabs are
@@ -121,10 +124,17 @@ byte-identical and `_apply_pnl_formatting`'s single-letter `chr(64 + pnl_col)`
 closer to its limit. The same generator also writes a standalone
 `artifacts/verification_formulas.xlsx` via
 `python research_analysis.py --export-formula-workbook` (offline, no
-credentials; gitignored because it is an 8MB regenerable binary).
-Order Block DETECTION and trade SELECTION are deliberately NOT ported into
-formulas - see `docs/SCRATCH_RESULTS_METHODS.md`, "Independent verification
-surfaces", for why, and do not add them without asking.
+credentials; gitignored because it is a regenerable binary), carrying the
+published Trades/Results sheets so the file is self-contained.
+SCOPE, on purpose (2026-09-21): this layer verifies the statistical
+AGGREGATION only. The per-trade `pnl_pct` values, the indicator series, Order
+Block DETECTION and trade SELECTION are INPUTS here, not derived. Earlier and
+much larger per-bar-indicator and per-trade-level formula layers were built,
+verified at 17,639 checks / 0 failures, and then deliberately REMOVED as out
+of scope: they quadrupled the workbook, made Excel recalculation slow, and
+re-verified what `dashboard-v2`'s TypeScript already covers. Do not re-add
+them, or port detection/selection, without asking - and do not describe this
+layer as verifying more than the aggregation.
 
 `SERVICE KEY/`'s key-file auto-discovery now picks the most-recently-modified
 non-"disabled" key file (not a hardcoded "new-strat" filename match) - if a
