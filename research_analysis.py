@@ -2114,6 +2114,15 @@ def push_candles_to_gsheet(candles_result):
 # independent surface in dashboard-v2. Scope was cut to the statistics on
 # purpose, not by omission.
 #
+# RE-ADDED ON REQUEST (2026-10-15), DELIBERATELY NARROW: a 'Verify Trades
+# <window>' tab, Google Sheets push only, with exactly two checks per
+# published trade -- pnl_pct re-derived from the published entry/exit prices
+# and side, and hold_bars re-derived from exit_idx - entry_idx. It closes the
+# one link between the trade log and the statistics above (the stats take
+# pnl_pct as given; this checks pnl_pct against the prices beside it). Entry
+# and exit PRICES, the indicators, Order Block detection and trade selection
+# are still inputs, not derived. ~60 rows per window; no per-bar layer.
+#
 # FORMULA DIALECT
 # ---------------
 # The same emitted strings have to work in Excel, LibreOffice Calc AND Google
@@ -2305,6 +2314,71 @@ def build_stats_formula_block(results, trades_sheet, results_sheet, n_trades):
             formula.lstrip("="),
         ])
     return rows, "E"
+
+
+# --- Independent verification: per-trade pnl_pct and hold_bars ---------------
+
+# The only side values the engine emits. Load-bearing: the pnl formula's IF
+# branches on side="LONG", so any other value would silently be graded with
+# the SHORT arithmetic. build_trade_formula_block() raises on anything else.
+_TRADE_SIDES = {"LONG", "SHORT"}
+
+
+def build_trade_formula_block(trades, trades_sheet):
+    """
+    Emit the 'Verify Trades <window>' sheet: one row per published trade,
+    re-deriving that trade's pnl_pct and hold_bars with spreadsheet formulas
+    from the other cells of the SAME row on the published 'Trades <window>'
+    tab, each beside the published value with a PASS/FAIL cell.
+
+    Row r here references row r of the trades tab (both have a one-row
+    header), and every column letter is derived from _TRADE_SHEET_COLUMNS, so a
+    schema change moves the references with it.
+
+    Statistical/analytical question answered: none new. Conventions matched
+    from the engine rather than assumed:
+      * Every exit path records exit = that bar's close, and pnl_pct is that
+        close against entry: (exit - entry) / entry * 100 for LONG,
+        (entry - exit) / entry * 100 for SHORT (simulate_trades() and the
+        _check_*_exit_conditions() helpers). No fees -- gross, as published.
+      * hold_bars = exit_idx - entry_idx (_record_closed_trade()).
+    """
+    sides = {t.get("side") for t in trades}
+    if not sides <= _TRADE_SIDES:
+        raise ValueError(
+            f"Published trades carry side values {sorted(map(str, sides - _TRADE_SIDES))} "
+            f"outside {sorted(_TRADE_SIDES)}; the per-trade pnl formula would grade "
+            "them with the wrong branch.")
+
+    def col(name):
+        return _col_letter(_TRADE_SHEET_COLUMNS.index(name) + 1)
+
+    def ref(name, r):
+        return f"'{trades_sheet}'!{col(name)}{r}"
+
+    rows = [["entry_idx", "side", "derived pnl_pct (formula)", "published pnl_pct",
+             "abs_diff", "PASS pnl_pct", "derived hold_bars (formula)",
+             "published hold_bars", "PASS hold_bars", "pnl formula shown as text"]]
+    for offset in range(len(trades)):
+        r = offset + 2
+        side, entry, exit_ = ref("side", r), ref("entry", r), ref("exit", r)
+        pnl_formula = (f'=IF({side}="LONG",({exit_}-{entry})/{entry}*100,'
+                       f'({entry}-{exit_})/{entry}*100)')
+        rows.append([
+            f"={ref('entry_idx', r)}",
+            f"={side}",
+            pnl_formula,
+            f"={ref('pnl_pct', r)}",
+            f"=ABS(C{r}-D{r})",
+            f'=IF(E{r}<={_TOL_STATS_CELL},"PASS","FAIL")',
+            f"={ref('exit_idx', r)}-{ref('entry_idx', r)}",
+            f"={ref('hold_bars', r)}",
+            f'=IF(G{r}=H{r},"PASS","FAIL")',
+            # '=' stripped so the text shows rather than computes; see the same
+            # note in build_stats_formula_block().
+            pnl_formula.lstrip("="),
+        ])
+    return rows, "F", "I"
 
 
 # --- Independent verification: the roll-up summary --------------------------
@@ -2505,7 +2579,9 @@ def _windows_from_export_result(export_result):
 
 def push_verification_formulas_to_gsheet(windows=None, min_ob_quality=0):
     """
-    Push the same 'Verify Stats' tabs to the live Google Sheets workbook.
+    Push the same 'Verify Stats' tabs to the live Google Sheets workbook, plus
+    the Sheets-only 'Verify Trades' tabs (per-trade pnl_pct and hold_bars --
+    see build_trade_formula_block()).
 
     Two things make this different from every other push_*_to_gsheet() above
     and both are load-bearing:
@@ -2543,6 +2619,18 @@ def push_verification_formulas_to_gsheet(windows=None, min_ob_quality=0):
         _write_formula_sheet(workbook, stats_title, stats_rows)
         blocks.append((f"Published statistics {suffix}", stats_title, stats_pass,
                         2, len(_VERIFIED_METRICS) + 1))
+
+        # Sheets-only (see the 2026-10-15 scope note above); the .xlsx writer
+        # deliberately does not emit this tab.
+        trades_verify_title = f"Verify Trades {suffix}"
+        trade_rows, pnl_pass, hold_pass = build_trade_formula_block(
+            window["trades"], trades_title)
+        _write_formula_sheet(workbook, trades_verify_title, trade_rows)
+        last_trade_row = len(window["trades"]) + 1
+        blocks.append((f"Per-trade pnl_pct {suffix}", trades_verify_title, pnl_pass,
+                        2, last_trade_row))
+        blocks.append((f"Per-trade hold_bars {suffix}", trades_verify_title, hold_pass,
+                        2, last_trade_row))
 
     _write_formula_sheet(workbook, _SUMMARY_SHEET, build_verification_summary(blocks))
     print("\nCheck GSHEET: independent verification formula sheets exported successfully.")

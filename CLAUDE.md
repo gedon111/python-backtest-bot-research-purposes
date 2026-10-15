@@ -153,6 +153,14 @@ of scope: they quadrupled the workbook, made Excel recalculation slow, and
 re-verified what `dashboard-v2`'s TypeScript already covers. Do not re-add
 them, or port detection/selection, without asking - and do not describe this
 layer as verifying more than the aggregation.
+ADDENDUM (2026-10-15, user-requested): a deliberately NARROW per-trade layer
+was re-added, Google Sheets push only (the .xlsx writer does not emit it): a
+`Verify Trades <window>` tab per window re-deriving each published trade's
+`pnl_pct` from its published entry/exit/side and `hold_bars` from
+`exit_idx - entry_idx` (`build_trade_formula_block()`), rolled into
+`Verification Summary` as two extra check groups per window. Entry/exit
+prices, indicators, OB detection and selection are still inputs. Do not widen
+it (per-bar indicators, levels, exits) without asking.
 
 `SERVICE KEY/`'s key-file auto-discovery now picks the most-recently-modified
 non-"disabled" key file (not a hardcoded "new-strat" filename match) - if a
