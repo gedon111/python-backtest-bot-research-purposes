@@ -154,7 +154,7 @@ re-verified what `dashboard-v2`'s TypeScript already covers. Do not re-add
 them, or port detection/selection, without asking - and do not describe this
 layer as verifying more than the aggregation.
 ADDENDUM (2026-10-15, user-requested): a deliberately NARROW per-trade layer
-was re-added, Google Sheets push only (the .xlsx writer does not emit it): a
+was re-added to both the Google Sheets push and the .xlsx workbook: a
 `Verify Trades <window>` tab per window re-deriving each published trade's
 `pnl_pct` from its published entry/exit/side and `hold_bars` from
 `exit_idx - entry_idx` (`build_trade_formula_block()`), rolled into

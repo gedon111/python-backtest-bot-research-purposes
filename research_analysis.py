@@ -2115,7 +2115,7 @@ def push_candles_to_gsheet(candles_result):
 # purpose, not by omission.
 #
 # RE-ADDED ON REQUEST (2026-10-15), DELIBERATELY NARROW: a 'Verify Trades
-# <window>' tab, Google Sheets push only, with exactly two checks per
+# <window>' tab (Sheets push and .xlsx workbook), with exactly two checks per
 # published trade -- pnl_pct re-derived from the published entry/exit prices
 # and side, and hold_bars re-derived from exit_idx - entry_idx. It closes the
 # one link between the trade log and the statistics above (the stats take
@@ -2439,7 +2439,7 @@ def write_formula_workbook_xlsx(path, windows):
     sheets -- identical in layout and column order to the Google Sheets tabs
     _write_trades_sheet()/_write_results_sheet() produce, so ONE generator
     serves both targets and the emitted A1 references are valid in each --
-    plus the 'Verify Stats' sheets, with 'Verification Summary' first.
+    plus the 'Verify Stats' and 'Verify Trades' sheets, with 'Verification Summary' first.
 
     openpyxl writes each formula with NO cached value, which is deliberate: a
     reader's spreadsheet application is therefore forced to COMPUTE every
@@ -2476,6 +2476,15 @@ def write_formula_workbook_xlsx(path, windows):
         _append_rows(workbook.create_sheet(stats_title), stats_rows)
         blocks.append((f"Published statistics {suffix}", stats_title, stats_pass,
                         2, len(_VERIFIED_METRICS) + 1))
+
+        trades_verify_title = f"Verify Trades {suffix}"
+        trade_rows, pnl_pass, hold_pass = build_trade_formula_block(trades, trades_title)
+        _append_rows(workbook.create_sheet(trades_verify_title), trade_rows)
+        last_trade_row = len(trades) + 1
+        blocks.append((f"Per-trade pnl_pct {suffix}", trades_verify_title, pnl_pass,
+                        2, last_trade_row))
+        blocks.append((f"Per-trade hold_bars {suffix}", trades_verify_title, hold_pass,
+                        2, last_trade_row))
 
     _append_rows(summary_sheet, build_verification_summary(blocks))
     workbook.save(path)
@@ -2580,7 +2589,7 @@ def _windows_from_export_result(export_result):
 def push_verification_formulas_to_gsheet(windows=None, min_ob_quality=0):
     """
     Push the same 'Verify Stats' tabs to the live Google Sheets workbook, plus
-    the Sheets-only 'Verify Trades' tabs (per-trade pnl_pct and hold_bars --
+    the 'Verify Trades' tabs (per-trade pnl_pct and hold_bars --
     see build_trade_formula_block()).
 
     Two things make this different from every other push_*_to_gsheet() above
@@ -2620,8 +2629,6 @@ def push_verification_formulas_to_gsheet(windows=None, min_ob_quality=0):
         blocks.append((f"Published statistics {suffix}", stats_title, stats_pass,
                         2, len(_VERIFIED_METRICS) + 1))
 
-        # Sheets-only (see the 2026-10-15 scope note above); the .xlsx writer
-        # deliberately does not emit this tab.
         trades_verify_title = f"Verify Trades {suffix}"
         trade_rows, pnl_pass, hold_pass = build_trade_formula_block(
             window["trades"], trades_title)
