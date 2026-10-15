@@ -1982,11 +1982,30 @@ _TRADE_SHEET_COLUMNS = [
     "tp_is_structural", "tp_ob_bar", "tp_ob_created_at", "tp_ob_type", "tp_ob_level", "tp_ob_quality",
 ]
 
+def _gsheet_safe_cell(v):
+    """Coerce one trade-record value into something gspread's strict JSON
+    serialization accepts. Two kinds of value reach here that it rejects
+    outright: pandas Timestamps (entry_time/exit_time, which
+    build_trades_and_results_table() leaves as datetime64) and NaN floats
+    (the tp_ob_* columns on non-structural-TP trades, where the column is
+    float). Both are rendered exactly as the Candles path already renders
+    them in _format_df_for_export_full() -- timestamps with the
+    "%Y-%m-%d %H:%M:%S" format, missing values as an empty cell -- so the
+    two gsheet paths agree on how a date and a blank look."""
+    if v is None or v is pd.NaT:
+        return ""
+    if isinstance(v, pd.Timestamp):
+        return v.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(v, float) and pd.isna(v):
+        return ""
+    return v
+
+
 def _write_trades_sheet(workbook, title, trades):
     header = _TRADE_SHEET_COLUMNS
     rows = [header]
     for r in trades:
-        rows.append([r.get(c, "") if r.get(c) is not None else "" for c in header])
+        rows.append([_gsheet_safe_cell(r.get(c, "")) for c in header])
 
     needed_rows = len(rows) + 5
     needed_cols = len(header) + 2
