@@ -9,7 +9,7 @@
 - **Secondary, time-scaled ×4 arm:** 14 trades, mean net -0.275%, descriptive one-sided p = 0.7220.
 - **Stability over 50 random 12-month windows:** literal net total > 0 in 8%, scaled in 44%. Beating buy & hold: literal 16%, scaled 16%.
 - **Do the gates add value on 1h?** 63.3% of 1,000 random filters at the same take-rate match or beat the rules' mean per trade.
-- **Holdout (2026-08-08 onward):** **not opened**.
+- **Holdout (2026-08-08 onward):** opened. See the holdout section.
 
 ## Gates
 
@@ -90,6 +90,17 @@ Median buy & hold over these windows: +70.4%. The windows overlap heavily, so th
 |---|---|---|---|---|---|---|---|---|---|---|
 | Literal 1h | 4 | 6.7 | 50.0 | -0.767 | -0.967 | -3.07 | -3.87 | -1.11 | -5.6 | 9.0 |
 | Time-scaled ×4 1h | 5 | 8.4 | 60.0 | +0.341 | +0.141 | +1.71 | +0.71 | 0.52 | -1.4 | 9.6 |
+
+## Holdout: 2026-08-08 onward (one shot)
+
+Window 2026-08-08 00:00:00 .. 2026-10-26 05:00:00 UTC, 1902 bars. Buy & hold +23.62%.
+
+| Arm | Trades | Trades/yr | Win % | Mean gross % | Mean net % | Total gross % | Total net % | Sharpe (net) | Max DD % (net) | Mean hold (h) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Literal 1h | 1 | 4.6 | 100.0 | +0.447 | +0.247 | +0.45 | +0.25 | 2.15 | 0.0 | 28.0 |
+| Time-scaled ×4 1h | 0 | n/a | n/a | n/a | n/a | +0.00 | +0.00 | n/a | n/a | n/a |
+
+With at most 1 trade(s) per arm, the holdout cannot support any conclusion, and the per-arm Sharpe and drawdown figures are not meaningful at this size. It is reported because it was pre-registered.
 
 ## Limitations
 

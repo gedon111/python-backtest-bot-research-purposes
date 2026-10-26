@@ -552,7 +552,9 @@ def phase_report():
         w(ARM_HEADER)
         w(_arm_line("Literal 1h", holdout["arms"]["literal"]))
         w(_arm_line("Time-scaled ×4 1h", holdout["arms"]["scaled"]))
-        w("")
+        hn = max(holdout["arms"][a]["n"] for a in ("literal", "scaled"))
+        w(f"\nWith at most {hn} trade(s) per arm, the holdout cannot support any conclusion, and the per-arm Sharpe and drawdown "
+          "figures are not meaningful at this size. It is reported because it was pre-registered.\n")
 
     w("## Limitations\n")
     w("- Trades are assigned to a window by entry bar. A trade still open when a window ends is counted in full in that window's "

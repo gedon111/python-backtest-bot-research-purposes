@@ -1,0 +1,2 @@
+entry_time,side,entry_idx,exit_idx,entry,exit,stop_loss,take_profit,pnl_pct,exit_reason,hold_bars
+2026-08-28 22:00:00,LONG,75764,75792,77758.69,78106.01,76481.31571428571,80314.31,0.4466639034170874,KDJ RESET EXIT,28

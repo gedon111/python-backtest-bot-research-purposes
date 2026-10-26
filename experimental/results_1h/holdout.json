@@ -1,0 +1,45 @@
+{
+  "phase": "holdout",
+  "window": "2026-08-08 00:00:00 .. 2026-10-26 05:00:00 UTC",
+  "bars": 1902,
+  "buy_hold_pct": 23.617039594474033,
+  "arms": {
+    "literal": {
+      "n": 1,
+      "wins": 1,
+      "win_rate_pct": 100.0,
+      "mean_pnl_pct": 0.4466639034170874,
+      "total_pnl_pct": 0.4466639034170874,
+      "sd_pnl_pct": null,
+      "mean_net_pnl_pct": 0.24666390341708738,
+      "total_net_pnl_pct": 0.24666390341708738,
+      "binomial_p_one_sided": 0.5,
+      "longs": 1,
+      "shorts": 0,
+      "dollar_gross": {
+        "final_capital": 10044.666390341708,
+        "sharpe": 2.1473838113004486,
+        "max_drawdown_pct": 0.0,
+        "time_in_market_pct": 1.4721345951629863
+      },
+      "dollar_net": {
+        "final_capital": 10024.666390341708,
+        "sharpe": 2.1473838113004486,
+        "max_drawdown_pct": 0.0,
+        "time_in_market_pct": 1.4721345951629863
+      },
+      "mean_hold_bars_hours": 28.0,
+      "trades_per_year": 4.6234177215189876
+    },
+    "scaled": {
+      "n": 0,
+      "wins": 0,
+      "win_rate_pct": null,
+      "mean_pnl_pct": null,
+      "total_pnl_pct": 0.0,
+      "sd_pnl_pct": null,
+      "mean_net_pnl_pct": null,
+      "total_net_pnl_pct": 0.0
+    }
+  }
+}
