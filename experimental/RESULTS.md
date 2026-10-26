@@ -8,7 +8,7 @@
 - **Trade count:** A2 takes 22 trades in 2022–2025, against 27 for the locked rules on the same stream (the paper's figure is 27 on `candles.csv`).
 - **Out-of-sample discrimination:** AUC 0.544. Log-loss is 0.6995 for the model vs 0.6941 for a constant 2018–21 base rate (lower is better). The OOS base rate is 49.8%.
 - **Does it hold across 50 random 12-month windows (R2)?** A2's total is > 0 in 52% of windows. It beats A1 in 50%, beats A0 in 44%, and beats buy-and-hold in 16%. For comparison, A0's total is > 0 in 42% of windows.
-- **Lockbox (Jan–Aug 2026):** not opened yet.
+- **Lockbox (Jan–Aug 2026, run once):** A2 3 trades, mean +0.028%, total +0.08%. A0 4 trades, total -3.45%. Buy-and-hold -25.51%.
 
 ## Integrity gates
 
@@ -146,6 +146,23 @@ Sanity: all four gates on reproduces A0 trade for trade: **True**.
 
 Sanity: all four gates on reproduces A0 trade for trade: **True**.
 
+### Rule side: lockbox Jan–Aug 2026
+
+| Arm | Gates on | Trades | Win % | Mean % | Total % | Δ mean vs A0 [95% CI] | p (two-sided) | p (Holm) |
+|---|---|---|---|---|---|---|---|---|
+| A0 (reference) | all 4 | 4 | 25.0 | -0.862 | -3.45 | — | — | — |
+| B-LOO minus macd | kdj, kacc, atr | 11 | 36.4 | -0.822 | -9.04 | +0.040 [-2.26, +2.37] | 0.933 | 1.000 |
+| B-LOO minus kdj | macd, kacc, atr | 8 | 25.0 | -1.679 | -13.43 | -0.818 [-3.54, +1.78] | 0.584 | 1.000 |
+| B-LOO minus kacc | macd, kdj, atr | 7 | 28.6 | -1.015 | -7.11 | -0.154 [-2.63, +2.18] | 0.922 | 1.000 |
+| B-LOO minus atr | macd, kdj, kacc | 6 | 33.3 | -1.275 | -7.65 | -0.413 [-3.02, +2.09] | 0.753 | 1.000 |
+| B-ONLY macd | macd | 18 | 33.3 | -1.471 | -26.48 | -0.609 [-2.86, +1.62] | 0.612 | 1.000 |
+| B-ONLY kdj | kdj | 23 | 43.5 | -0.602 | -13.85 | +0.259 [-2.00, +2.32] | 0.832 | 1.000 |
+| B-ONLY kacc | kacc | 25 | 52.0 | -0.184 | -4.61 | +0.678 [-1.39, +2.68] | 0.535 | 1.000 |
+| B-ONLY atr | atr | 45 | 48.9 | -0.122 | -5.49 | +0.740 [-1.27, +2.72] | 0.484 | 1.000 |
+| B+Q quality>=1 | macd, kdj, kacc, atr | 4 | 25.0 | -0.862 | -3.45 | +0.000 [-2.45, +2.76] | 1.000 | 1.000 |
+
+Sanity: all four gates on reproduces A0 trade for trade: **True**.
+
 ### ML side (A6), 2022–2025
 
 Drop-column: the frozen config refit on 2018–21 without the group, with the frozen threshold kept.
@@ -173,6 +190,30 @@ Group permutation importance on OOS candidates (frozen model, the group's column
 | Price_volume_context | -0.00004 | 0.00187 |
 | OB_quality | -0.00054 | 0.00075 |
 | OB_geometry | -0.00503 | 0.00177 |
+
+## Lockbox: Jan–Aug 2026 (one shot)
+
+Window 2026-01-01 12:00:00 .. 2026-08-07 20:00:00 (bars [17517, 18828)). 278 candidates (277 resolved).
+
+| Arm | Trades | Win % | Mean pnl/trade % | Total % (gross) | Total % (net 0.20) | Sharpe (net) | Max DD % (net) |
+|---|---|---|---|---|---|---|---|
+| A0 locked rules | 4 | 25.0 | -0.862 | -3.45 | -4.25 | -1.24 | -5.9 |
+| A1 take every candidate | 57 | 45.6 | -0.179 | -10.22 | -21.62 | -1.42 | -37.8 |
+| **A2 ML filter (primary)** | 3 | 66.7 | +0.028 | +0.08 | -0.52 | -0.17 | -3.1 |
+| A3 ML on rule-passing only | 0 | n/a | n/a | +0.00 | +0.00 | n/a | n/a |
+
+Buy & hold over the lockbox: -25.51%.
+
+R1 stationary block bootstrap (B = 1,000):
+
+| Arm | Mean pnl 95% CI | Total pnl 95% CI | P(total ≤ 0) |
+|---|---|---|---|
+| A0 locked rules | [-2.086, +0.362] | [-8.3, +1.4] | 0.902 |
+| A1 take every candidate | [-0.901, +0.548] | [-51.4, +31.2] | 0.708 |
+| **A2 ML filter (primary)** | [-2.793, +2.836] | [-8.4, +8.5] | 0.368 |
+| A3 ML on rule-passing only | no trades | — | — |
+
+With at most 4 trades per filtered arm, the lockbox cannot separate A0 from A2 or either from zero. It is reported because it was pre-registered, not because it can support a conclusion.
 
 ## Limitations
 

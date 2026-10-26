@@ -1202,6 +1202,17 @@ def phase_report():
         for name in ("A0_rules", "A1_all", "A2_ml", "A3_ml_on_rules"):
             w(_arm_row(ARM_LABELS[name], lockbox["arms"][name]))
         w(f"\nBuy & hold over the lockbox: {_fmt(lockbox['buy_hold_pct'], 2, True)}%.\n")
+        w("R1 stationary block bootstrap (B = 1,000):\n")
+        w("| Arm | Mean pnl 95% CI | Total pnl 95% CI | P(total ≤ 0) |\n|---|---|---|---|")
+        for name, r in lockbox["R1_stationary_block_bootstrap"].items():
+            if r is None:
+                w(f"| {ARM_LABELS[name]} | no trades | — | — |")
+                continue
+            w(f"| {ARM_LABELS[name]} | [{_fmt(r['mean_ci95'][0], 3, True)}, {_fmt(r['mean_ci95'][1], 3, True)}] | "
+              f"[{_fmt(r['total_ci95'][0], 1, True)}, {_fmt(r['total_ci95'][1], 1, True)}] | {_fmt(r['p_total_le_0'], 3)} |")
+        lb_n = max(lockbox["arms"][k]["n"] for k in ("A0_rules", "A2_ml"))
+        w(f"\nWith at most {lb_n} trades per filtered arm, the lockbox cannot separate A0 from A2 or either from zero. "
+          "It is reported because it was pre-registered, not because it can support a conclusion.\n")
 
     w("## Limitations\n")
     w("- 2018–2021 is the period the rule structure itself was formulated on (`docs/SCRATCH_RESULTS_METHODS.md`). "
