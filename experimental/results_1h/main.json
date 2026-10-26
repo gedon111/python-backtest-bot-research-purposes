@@ -1,0 +1,354 @@
+{
+  "phase": "main",
+  "data_csv_sha256_prefix": "ec24028427a9029a",
+  "runtime_s": {
+    "literal": 137.4,
+    "scaled": 78.1
+  },
+  "order_blocks": {
+    "literal": 6910,
+    "scaled": 2126
+  },
+  "sharpe_rescale_1h": 2.0,
+  "primary_endpoint": {
+    "endpoint": "LITERAL arm, 2022-2025, mean pnl/trade net of 0.20% > 0 (one-sided, stationary block bootstrap B=10,000, alpha 0.05)",
+    "n": 31,
+    "mean_net_pnl_pct": -0.17898574847484383,
+    "bootstrap": {
+      "expected_block_length": 3,
+      "resamples": 10000,
+      "mean_ci95": [
+        -0.8335683970147131,
+        0.5661681599846505
+      ],
+      "total_ci95": [
+        -25.840620307456106,
+        17.551212959524168
+      ],
+      "p_total_le_0": 0.6962
+    },
+    "p_one_sided": 0.6962,
+    "significant_at_0_05": false,
+    "underpowered_lt_10_trades": false
+  },
+  "S1_scaled": {
+    "n": 14,
+    "mean_net_pnl_pct": -0.2754140524242184,
+    "bootstrap": {
+      "expected_block_length": 2,
+      "resamples": 10000,
+      "mean_ci95": [
+        -1.174119854380322,
+        0.6468653707453305
+      ],
+      "total_ci95": [
+        -16.437677961324507,
+        9.056115190434626
+      ],
+      "p_total_le_0": 0.722
+    },
+    "p_one_sided": 0.722,
+    "significant_at_0_05": false,
+    "underpowered_lt_10_trades": false
+  },
+  "S2_vs_paper_4h": {
+    "paper_4h": {
+      "n": 27,
+      "trades_per_year": 6.75,
+      "mean_net_pnl_pct": 0.9224613465197012
+    },
+    "literal": {
+      "n": 31,
+      "trades_per_year": 7.75,
+      "net_mean_minus_4h": {
+        "diff": -1.101447094994545,
+        "ci95": [
+          -2.2082327000779216,
+          -0.0019414175578962658
+        ],
+        "p_two_sided": 0.049
+      }
+    },
+    "scaled": {
+      "n": 14,
+      "trades_per_year": 3.5,
+      "net_mean_minus_4h": {
+        "diff": -1.1978753989439197,
+        "ci95": [
+          -2.546568018709953,
+          0.2095027307534712
+        ],
+        "p_two_sided": 0.096
+      }
+    }
+  },
+  "S3_random_filter": {
+    "candidates": 1570,
+    "rule_passing_candidates": 49,
+    "take_rate_q": 0.031210191082802548,
+    "rule_policy_on_window_candidates": {
+      "n": 31,
+      "mean_pnl_pct": 0.02101425152515617
+    },
+    "take_every_candidate": {
+      "n": 500,
+      "mean_pnl_pct": 0.07458445229057736,
+      "total_net_pnl_pct": -62.70777385471136
+    },
+    "random_filter": {
+      "seeds": 1000,
+      "mean_n": 44.133,
+      "median_mean_pnl_pct": 0.1074483564848037,
+      "ci95_mean_pnl_pct": [
+        -0.44614676200459275,
+        0.7126429648088277
+      ],
+      "share_seeds_mean_ge_rules": 0.633
+    }
+  },
+  "S4_random_12m_windows": {
+    "windows": 50,
+    "window_bars": 8760,
+    "median_buy_hold_pct": 70.37935981881297,
+    "literal": {
+      "share_net_total_gt_0": 0.08,
+      "share_beats_buy_hold": 0.16,
+      "median_n": 6.5,
+      "median_net_total": -4.468747140651937
+    },
+    "scaled": {
+      "share_net_total_gt_0": 0.44,
+      "share_beats_buy_hold": 0.16,
+      "median_n": 1.0,
+      "median_net_total": 0.0
+    }
+  },
+  "S5_fee_levels_net_total_pct": {
+    "literal": {
+      "0.10": -2.448558202720159,
+      "0.20": -5.548558202720159,
+      "0.30": -8.648558202720157
+    },
+    "scaled": {
+      "0.10": -2.4557967339390583,
+      "0.20": -3.8557967339390578,
+      "0.30": -5.255796733939057
+    }
+  },
+  "S6_passive": {
+    "buy_and_hold_gross": {
+      "arm": "Lump-sum buy-and-hold",
+      "total_return_pct": 89.64526635585706,
+      "final_capital": 18964.526635585706,
+      "sharpe": 0.5636654770761497,
+      "sortino": 0.397494880328136,
+      "max_drawdown_pct": -67.37711687834668,
+      "time_in_market_pct": 100.0,
+      "starting_capital": 10000.0
+    },
+    "buy_and_hold_fee": {
+      "arm": "Lump-sum buy-and-hold",
+      "total_return_pct": 89.45581054531176,
+      "final_capital": 18945.581054531176,
+      "sharpe": 0.5636654770761536,
+      "sortino": 0.3974948803281387,
+      "max_drawdown_pct": -67.37711687834668,
+      "time_in_market_pct": 100.0,
+      "starting_capital": 10000.0
+    },
+    "dca_gross": {
+      "arm": "Weekly DCA into BTC",
+      "total_return_pct": 125.51541841794449,
+      "final_capital": 22551.541841794482,
+      "sharpe": 0.5671349748301554,
+      "sortino": 0.8666740292742672,
+      "max_drawdown_pct": -28.776084854001432,
+      "time_in_market_pct": 100.0,
+      "starting_capital": 10000.0,
+      "n_contributions": 210,
+      "contribution_per_week": 47.61904761904762
+    },
+    "dca_fee": {
+      "arm": "Weekly DCA into BTC",
+      "total_return_pct": 125.290128289655,
+      "final_capital": 22529.012828965533,
+      "sharpe": 0.5640715135242782,
+      "sortino": 0.861674767484925,
+      "max_drawdown_pct": -28.776084854001393,
+      "time_in_market_pct": 100.0,
+      "starting_capital": 10000.0,
+      "n_contributions": 210,
+      "contribution_per_week": 47.61904761904762
+    }
+  },
+  "S7_per_window": {
+    "2022_2025": {
+      "literal": {
+        "n": 31,
+        "wins": 13,
+        "win_rate_pct": 41.935483870967744,
+        "mean_pnl_pct": 0.02101425152515617,
+        "total_pnl_pct": 0.6514417972798413,
+        "sd_pnl_pct": 1.9782597904313397,
+        "mean_net_pnl_pct": -0.17898574847484383,
+        "total_net_pnl_pct": -5.548558202720159,
+        "binomial_p_one_sided": 0.8594792424701154,
+        "longs": 23,
+        "shorts": 8,
+        "dollar_gross": {
+          "final_capital": 10007.190903093171,
+          "sharpe": 0.030059556612297908,
+          "max_drawdown_pct": -14.066570800109126,
+          "time_in_market_pct": 0.7871545503807432
+        },
+        "dollar_net": {
+          "final_capital": 9404.908999675687,
+          "sharpe": -0.2549675520374623,
+          "max_drawdown_pct": -17.78494941521368,
+          "time_in_market_pct": 0.7871545503807432
+        },
+        "mean_hold_bars_hours": 8.903225806451612,
+        "trades_per_year": 7.755308219178082
+      },
+      "scaled": {
+        "n": 14,
+        "wins": 8,
+        "win_rate_pct": 57.14285714285714,
+        "mean_pnl_pct": -0.07541405242421843,
+        "total_pnl_pct": -1.0557967339390582,
+        "sd_pnl_pct": 2.153239754483448,
+        "mean_net_pnl_pct": -0.27541405242421846,
+        "total_net_pnl_pct": -3.8557967339390578,
+        "binomial_p_one_sided": 0.395263671875,
+        "longs": 8,
+        "shorts": 6,
+        "dollar_gross": {
+          "final_capital": 9864.908493155377,
+          "sharpe": -0.0679525715987452,
+          "max_drawdown_pct": -5.349139564511474,
+          "time_in_market_pct": 0.5019536263297493
+        },
+        "dollar_net": {
+          "final_capital": 9591.932716846863,
+          "sharpe": -0.24617006458646687,
+          "max_drawdown_pct": -6.563753662543932,
+          "time_in_market_pct": 0.5019536263297493
+        },
+        "mean_hold_bars_hours": 12.571428571428571,
+        "trades_per_year": 3.5023972602739724
+      }
+    },
+    "2018_2021": {
+      "literal": {
+        "n": 58,
+        "wins": 23,
+        "win_rate_pct": 39.6551724137931,
+        "mean_pnl_pct": -0.3802034002372504,
+        "total_pnl_pct": -22.051797213760523,
+        "sd_pnl_pct": 1.872449928927334,
+        "mean_net_pnl_pct": -0.5802034002372505,
+        "total_net_pnl_pct": -33.65179721376053,
+        "binomial_p_one_sided": 0.9565255501350445,
+        "longs": 35,
+        "shorts": 23,
+        "dollar_gross": {
+          "final_capital": 7937.399267596845,
+          "sharpe": -0.7654333891115848,
+          "max_drawdown_pct": -20.990941401326456,
+          "time_in_market_pct": 1.3507712560455598
+        },
+        "dollar_net": {
+          "final_capital": 7063.81585192523,
+          "sharpe": -1.138076800880869,
+          "max_drawdown_pct": -29.546351770129924,
+          "time_in_market_pct": 1.3507712560455598
+        },
+        "mean_hold_bars_hours": 8.137931034482758,
+        "trades_per_year": 14.509931506849314
+      },
+      "scaled": {
+        "n": 29,
+        "wins": 16,
+        "win_rate_pct": 55.172413793103445,
+        "mean_pnl_pct": -0.10238789131740664,
+        "total_pnl_pct": -2.9692488482047925,
+        "sd_pnl_pct": 2.156546614068024,
+        "mean_net_pnl_pct": -0.3023878913174066,
+        "total_net_pnl_pct": -8.769248848204795,
+        "binomial_p_one_sided": 0.355535551905632,
+        "longs": 23,
+        "shorts": 6,
+        "dollar_gross": {
+          "final_capital": 9643.06069899857,
+          "sharpe": -0.13017375133735276,
+          "max_drawdown_pct": -12.098944309786877,
+          "time_in_market_pct": 0.7469307157370575
+        },
+        "dollar_net": {
+          "final_capital": 9098.358450496373,
+          "sharpe": -0.38104065985699287,
+          "max_drawdown_pct": -12.64850003958076,
+          "time_in_market_pct": 0.7469307157370575
+        },
+        "mean_hold_bars_hours": 9.0,
+        "trades_per_year": 7.254965753424657
+      }
+    },
+    "2026_01_to_2026_08_07": {
+      "literal": {
+        "n": 4,
+        "wins": 2,
+        "win_rate_pct": 50.0,
+        "mean_pnl_pct": -0.7666912256580722,
+        "total_pnl_pct": -3.066764902632289,
+        "sd_pnl_pct": 2.336882619345685,
+        "mean_net_pnl_pct": -0.9666912256580722,
+        "total_net_pnl_pct": -3.8667649026322892,
+        "binomial_p_one_sided": 0.6875,
+        "longs": 3,
+        "shorts": 1,
+        "dollar_gross": {
+          "final_capital": 9688.728551588873,
+          "sharpe": -0.9150720208322017,
+          "max_drawdown_pct": -5.22029892181564,
+          "time_in_market_pct": 0.684931506849315
+        },
+        "dollar_net": {
+          "final_capital": 9610.823114908068,
+          "sharpe": -1.1133364599744138,
+          "max_drawdown_pct": -5.609341056794494,
+          "time_in_market_pct": 0.684931506849315
+        },
+        "mean_hold_bars_hours": 9.0,
+        "trades_per_year": 6.70183486238532
+      },
+      "scaled": {
+        "n": 5,
+        "wins": 3,
+        "win_rate_pct": 60.0,
+        "mean_pnl_pct": 0.341036342754744,
+        "total_pnl_pct": 1.70518171377372,
+        "sd_pnl_pct": 0.8541155842039048,
+        "mean_net_pnl_pct": 0.14103634275474397,
+        "total_net_pnl_pct": 0.70518171377372,
+        "binomial_p_one_sided": 0.5,
+        "longs": 5,
+        "shorts": 0,
+        "dollar_gross": {
+          "final_capital": 10170.205517726139,
+          "sharpe": 1.1772533121729125,
+          "max_drawdown_pct": -1.016259766919148,
+          "time_in_market_pct": 0.91324200913242
+        },
+        "dollar_net": {
+          "final_capital": 10069.246498945227,
+          "sharpe": 0.5242718526525643,
+          "max_drawdown_pct": -1.413826540900833,
+          "time_in_market_pct": 0.91324200913242
+        },
+        "mean_hold_bars_hours": 9.6,
+        "trades_per_year": 8.37729357798165
+      }
+    }
+  }
+}

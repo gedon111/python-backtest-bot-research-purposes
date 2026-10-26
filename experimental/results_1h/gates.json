@@ -1,0 +1,35 @@
+{
+  "G1_csv_hash_matches_manifest": true,
+  "G2_scaled_indicators_factor1_bit_identical": true,
+  "literal_full_series_runtime_s": 128.1,
+  "literal_order_blocks": 6910,
+  "literal_trades_full_series": 93,
+  "G3_candidate_builder_reproduces_literal_trades": true,
+  "G3_detail": {
+    "engine_trades": 93,
+    "rebuilt_trades": 93,
+    "candidates": 5938
+  },
+  "G4_truncation_checks": [
+    {
+      "cut_bar": 9382,
+      "cut_time": "2019-01-29 12:00:00",
+      "candidates_before_cut": 1075,
+      "identical": true
+    },
+    {
+      "cut_bar": 11791,
+      "cut_time": "2019-05-10 03:00:00",
+      "candidates_before_cut": 1128,
+      "identical": true
+    },
+    {
+      "cut_bar": 32358,
+      "cut_time": "2021-09-15 05:00:00",
+      "candidates_before_cut": 3894,
+      "identical": true
+    }
+  ],
+  "G4_truncation_invariant": true,
+  "all_gates_G1_to_G4_pass": true
+}
