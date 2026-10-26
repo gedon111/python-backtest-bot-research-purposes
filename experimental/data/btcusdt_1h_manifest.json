@@ -1,0 +1,175 @@
+{
+  "pulled_at_utc": "2026-10-26 06:15:04.188000",
+  "endpoint": "https://api.binance.com/api/v3/klines",
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "time_convention": "open_time and time are true UTC (artifacts/ 4h files are UTC+8-labelled by design)",
+  "csv_sha256": "ec24028427a9029af960c2b84d8528056da2b4b35671b59550722b6611002d66",
+  "total_bars": 77164,
+  "first_open_time": "2018-01-01 00:00:00",
+  "last_open_time": "2026-10-26 05:00:00",
+  "segment_bar_counts": {
+    "2018_2021": 34943,
+    "2022_2025": 35063,
+    "2026_01_01_to_2026_08_07_seen_at_4h": 5256,
+    "holdout_from_2026_08_08": 1902
+  },
+  "gaps": [
+    {
+      "after": "2018-01-04 03:00:00",
+      "next": "2018-01-04 05:00:00",
+      "missing_hours": 1
+    },
+    {
+      "after": "2018-02-08 00:00:00",
+      "next": "2018-02-09 10:00:00",
+      "missing_hours": 33
+    },
+    {
+      "after": "2018-06-26 01:00:00",
+      "next": "2018-06-26 12:00:00",
+      "missing_hours": 10
+    },
+    {
+      "after": "2018-06-27 12:00:00",
+      "next": "2018-06-27 14:00:00",
+      "missing_hours": 1
+    },
+    {
+      "after": "2018-07-04 00:00:00",
+      "next": "2018-07-04 08:00:00",
+      "missing_hours": 7
+    },
+    {
+      "after": "2018-10-19 05:00:00",
+      "next": "2018-10-19 09:00:00",
+      "missing_hours": 3
+    },
+    {
+      "after": "2018-11-14 01:00:00",
+      "next": "2018-11-14 09:00:00",
+      "missing_hours": 7
+    },
+    {
+      "after": "2019-03-12 01:00:00",
+      "next": "2019-03-12 08:00:00",
+      "missing_hours": 6
+    },
+    {
+      "after": "2019-05-15 02:00:00",
+      "next": "2019-05-15 13:00:00",
+      "missing_hours": 10
+    },
+    {
+      "after": "2019-08-15 01:00:00",
+      "next": "2019-08-15 10:00:00",
+      "missing_hours": 8
+    },
+    {
+      "after": "2019-11-13 01:00:00",
+      "next": "2019-11-13 04:00:00",
+      "missing_hours": 2
+    },
+    {
+      "after": "2019-11-25 01:00:00",
+      "next": "2019-11-25 04:00:00",
+      "missing_hours": 2
+    },
+    {
+      "after": "2020-02-09 01:00:00",
+      "next": "2020-02-09 03:00:00",
+      "missing_hours": 1
+    },
+    {
+      "after": "2020-02-19 11:00:00",
+      "next": "2020-02-19 17:00:00",
+      "missing_hours": 5
+    },
+    {
+      "after": "2020-03-04 09:00:00",
+      "next": "2020-03-04 11:00:00",
+      "missing_hours": 1
+    },
+    {
+      "after": "2020-04-25 01:00:00",
+      "next": "2020-04-25 04:00:00",
+      "missing_hours": 2
+    },
+    {
+      "after": "2020-06-28 01:00:00",
+      "next": "2020-06-28 05:00:00",
+      "missing_hours": 3
+    },
+    {
+      "after": "2020-11-30 05:00:00",
+      "next": "2020-11-30 07:00:00",
+      "missing_hours": 1
+    },
+    {
+      "after": "2020-12-21 13:00:00",
+      "next": "2020-12-21 18:00:00",
+      "missing_hours": 4
+    },
+    {
+      "after": "2020-12-25 01:00:00",
+      "next": "2020-12-25 03:00:00",
+      "missing_hours": 1
+    },
+    {
+      "after": "2021-02-11 03:00:00",
+      "next": "2021-02-11 05:00:00",
+      "missing_hours": 1
+    },
+    {
+      "after": "2021-03-06 01:00:00",
+      "next": "2021-03-06 03:00:00",
+      "missing_hours": 1
+    },
+    {
+      "after": "2021-04-20 01:00:00",
+      "next": "2021-04-20 04:00:00",
+      "missing_hours": 2
+    },
+    {
+      "after": "2021-04-25 04:00:00",
+      "next": "2021-04-25 08:00:00",
+      "missing_hours": 3
+    },
+    {
+      "after": "2021-08-13 01:00:00",
+      "next": "2021-08-13 06:00:00",
+      "missing_hours": 4
+    },
+    {
+      "after": "2021-09-29 06:00:00",
+      "next": "2021-09-29 09:00:00",
+      "missing_hours": 2
+    },
+    {
+      "after": "2023-03-24 12:00:00",
+      "next": "2023-03-24 14:00:00",
+      "missing_hours": 1
+    }
+  ],
+  "gap_count": 27,
+  "missing_hours_total": 122,
+  "cross_check_vs_candles_extended_4h": {
+    "four_hour_bars_compared": 18828,
+    "four_hour_bars_missing_from_1h": 0,
+    "ohlc_exact_and_volume_within_1e-6": 18826,
+    "mismatching_bars": 2,
+    "mismatching_bars_with_incomplete_hours": 1,
+    "first_mismatches": [
+      {
+        "open_time": "2023-03-24 12:00:00",
+        "n_hours": 3,
+        "ohlc_match": false
+      },
+      {
+        "open_time": "2026-08-07 12:00:00",
+        "n_hours": 4,
+        "ohlc_match": false
+      }
+    ]
+  }
+}
