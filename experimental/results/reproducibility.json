@@ -1,0 +1,23 @@
+{
+  "compared": "two full --phase oos runs, same code and seeds",
+  "non_float_fields_identical": true,
+  "float_fields_differing": 14,
+  "max_abs_difference": 2.220446049250313e-16,
+  "differing_paths": [
+    "/ml_side_ablation/drop_column[5]/oos_log_loss",
+    "/ml_side_ablation/drop_column[5]/delta_log_loss_vs_A2",
+    "/ml_side_ablation/group_permutation_importance[0]/sd_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[1]/mean_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[1]/sd_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[2]/mean_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[2]/sd_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[3]/mean_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[3]/sd_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[4]/mean_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[4]/sd_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[5]/mean_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[5]/sd_delta_log_loss",
+    "/ml_side_ablation/group_permutation_importance[6]/sd_delta_log_loss"
+  ],
+  "cause": "RandomForest(n_jobs=-1) sums per-tree probabilities in thread order; only log-loss aggregates move, at ~1e-16. All trades, counts, pnl means and p-values identical."
+}
