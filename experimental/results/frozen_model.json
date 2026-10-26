@@ -1,0 +1,94 @@
+{
+  "family": "random_forest",
+  "params": {
+    "max_depth": null,
+    "min_samples_leaf": 20
+  },
+  "threshold": 0.65,
+  "feature_columns": [
+    "f_macd_hist_atr",
+    "f_macd_d1_atr",
+    "f_macd_d2_atr",
+    "f_g_macd",
+    "f_k",
+    "f_d",
+    "f_j",
+    "f_k_d1",
+    "f_g_kdj",
+    "f_kacc",
+    "f_g_kacc",
+    "f_atr_ratio",
+    "f_atr_pct",
+    "f_g_atr",
+    "f_ob_quality",
+    "f_q_displacement",
+    "f_q_large_bar",
+    "f_q_fvg",
+    "f_q_liquidity_sweep",
+    "f_q_volume_expansion",
+    "f_ob_age",
+    "f_ob_width_atr",
+    "f_ob_penetration_atr",
+    "f_ob_swing_level",
+    "f_sl_pct",
+    "f_rr",
+    "f_tp_structural",
+    "f_ret_6",
+    "f_ret_30",
+    "f_vol_z",
+    "f_side_long"
+  ],
+  "feature_groups": {
+    "MACD_hist_gate": [
+      "f_macd_hist_atr",
+      "f_macd_d1_atr",
+      "f_macd_d2_atr",
+      "f_g_macd"
+    ],
+    "KDJ_gate": [
+      "f_k",
+      "f_d",
+      "f_j",
+      "f_k_d1",
+      "f_g_kdj"
+    ],
+    "K_acceleration": [
+      "f_kacc",
+      "f_g_kacc"
+    ],
+    "ATR_regime": [
+      "f_atr_ratio",
+      "f_atr_pct",
+      "f_g_atr"
+    ],
+    "OB_quality": [
+      "f_ob_quality",
+      "f_q_displacement",
+      "f_q_large_bar",
+      "f_q_fvg",
+      "f_q_liquidity_sweep",
+      "f_q_volume_expansion"
+    ],
+    "OB_geometry": [
+      "f_ob_age",
+      "f_ob_width_atr",
+      "f_ob_penetration_atr",
+      "f_ob_swing_level",
+      "f_sl_pct",
+      "f_rr",
+      "f_tp_structural"
+    ],
+    "Price_volume_context": [
+      "f_ret_6",
+      "f_ret_30",
+      "f_vol_z",
+      "f_side_long"
+    ]
+  },
+  "n_train": 2192,
+  "train_base_rate": 0.4767335766423358,
+  "train_take_rate_at_threshold": 0.1491788321167883,
+  "model_sha256": "725ed18599eae21c8f7b647f57391a37aada81e741d0c8ff77f4d4a435a354d7",
+  "sklearn_version": "1.9.0",
+  "seed": 20260101
+}
