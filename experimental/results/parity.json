@@ -1,0 +1,27 @@
+{
+  "locked_trades": 27,
+  "reproduced_trades": 27,
+  "mismatches": [],
+  "parity_exact": true,
+  "candidates_on_locked_window": 1869,
+  "rule_passing_candidates_on_locked_window": 47,
+  "truncation_checks": [
+    {
+      "cut_bar": 3451,
+      "candidates_before_cut": 899,
+      "identical": true
+    },
+    {
+      "cut_bar": 4827,
+      "candidates_before_cut": 1206,
+      "identical": true
+    },
+    {
+      "cut_bar": 6072,
+      "candidates_before_cut": 1396,
+      "identical": true
+    }
+  ],
+  "truncation_invariant": true,
+  "date_guard_raises": true
+}
