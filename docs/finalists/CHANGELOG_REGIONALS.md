@@ -1,3 +1,20 @@
+# Changelog: bitcoin (7) → bitcoin (8), concise rewording
+
+Branch `dev/paper-3rq-2h`, 2026-10-28. Source: `bitcoin (7).docx` (unchanged). Output: `bitcoin (8).docx` and `.pdf`,
+78 pages (was 82). Wording only: no number, table, figure, formula, reference or appendix table changed, and no
+claim was strengthened or weakened.
+
+- Cover and abstract title page: title changed to "A Rule-Based Bitcoin Trading Strategy Tested Against
+  Dollar-Cost Averaging, 2022 to 2026"; the subtitle line was removed (per the students' reverted first page).
+- Abstract reworded in plainer sentences, 249 words, same numbers.
+- 131 body paragraphs (Introduction through Summary and Conclusion) reworded: 11,559 → 10,172 words. Old
+  Conclusions paragraphs 6 and 7 (both on the 1-hour test) merged into one.
+- Check: for every rewritten paragraph, the set of numbers in the new text equals the old one (differences
+  were trailing commas only; "formulation window" now reads "2018 to 2022"). TOC page numbers taken from two
+  Word renders that agreed. Regression harness: PASS (27 trades).
+
+---
+
 # Changelog: bitcoin (6) → bitcoin (7), fixes from REVIEW_REGIONALS.md
 
 Branch `dev/paper-3rq-2h`, 2026-10-28. Source: `docs/finalists/bitcoin (6).docx`
