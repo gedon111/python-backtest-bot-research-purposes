@@ -4,7 +4,7 @@
 
 We wrote one fixed set of trading rules that combines four chart tools: MACD,
 KDJ, ATR and Order Blocks. We set every rule using 2018–2021 charts and then
-froze them. We then tested the rules on four years of Bitcoin prices they had
+fixed them. We then tested the rules on four years of Bitcoin prices they had
 never been tuned on, January 2022 to January 2026. We asked three things:
 
 1. Does it win more often than a coin flip?
@@ -16,9 +16,9 @@ never been tuned on, January 2022 to January 2026. We asked three things:
 | | |
 |---|---|
 | **27 trades, 70.37% won** | Before trading costs: +30.31% in total, p = 0.0261. |
-| **p = 0.1239 after costs** | With a realistic 0.20% cost per trade, two small winners become losers, and the win rate is no longer statistically significant. |
+| **p = 0.1239 after costs** | With a realistic 0.20% cost per trade, two small winners become losers, and the win rate is no longer statistically significant. If stops are checked against each candle's high and low instead of its close, p is 0.061 even before costs. After costs the total return's 95% interval, allowing for runs of related trades, is −1.29% to +49.96%, which includes zero. |
 | **$13,418 vs $22,313** | Final value of $10,000 placed in the strategy, compared with $10,000 bought weekly. Weekly buying won by a wide margin. |
-| **Sharpe 0.558 → 0.632** | Moving 30% of a weekly buying plan into the strategy made the plan smoother. Maximum drawdown improved from −27.85% to −23.18%. |
+| **Sharpe 0.555 → 0.621** | After costs, moving 30% of a weekly buying plan into the strategy made the plan smoother. The worst drop improved from −36.02% to −26.43%. Holding that 30% as plain cash instead gives 0.585 and −27.34%, so the strategy beat cash, but only slightly. |
 
 ## Trading more often vs. earning per trade
 
@@ -35,7 +35,8 @@ trading often and earning per trade, but they do not prove one.
 ## Honest takeaway
 
 This strategy did not beat simply buying Bitcoin every week. Its win rate
-looked significant only before trading costs, and the four trades it made in
+looked significant only before trading costs and with stops checked at the
+candle close, and the four trades it made in
 the forward test (January to July 2026) lost 3.45%. Its value, if any, is as a
 small part of a weekly buying plan, not a replacement for one.
 

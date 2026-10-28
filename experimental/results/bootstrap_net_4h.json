@@ -1,0 +1,107 @@
+{
+  "n": 27,
+  "cost_pct": 0.2,
+  "seed": 42,
+  "resamples": 10000,
+  "observed": {
+    "gross_total": 30.306456356031937,
+    "gross_mean": 1.1224613465197013,
+    "net_total": 24.906456356031935,
+    "net_mean": 0.9224613465197012
+  },
+  "percentile_bootstrap": {
+    "gross": {
+      "n": 27,
+      "b": 10000,
+      "seed": 42,
+      "total_return_point_pct": 30.306456356031937,
+      "total_return_ci_pct": [
+        5.9866116295368155,
+        54.98658996206774
+      ],
+      "avg_return_point_pct": 1.1224613465197013,
+      "avg_return_ci_pct": [
+        0.2217263566495117,
+        2.036540368965472
+      ],
+      "pct_resamples_total_le_zero": 0.75,
+      "pct_resamples_avg_le_zero": 0.75
+    },
+    "net": {
+      "n": 27,
+      "b": 10000,
+      "seed": 42,
+      "total_return_point_pct": 24.906456356031935,
+      "total_return_ci_pct": [
+        0.5866116295368131,
+        49.58658996206773
+      ],
+      "avg_return_point_pct": 0.9224613465197012,
+      "avg_return_ci_pct": [
+        0.021726356649511596,
+        1.8365403689654716
+      ],
+      "pct_resamples_total_le_zero": 2.27,
+      "pct_resamples_avg_le_zero": 2.27
+    }
+  },
+  "stationary_block_bootstrap": {
+    "gross": {
+      "expected_block_length": 3,
+      "resamples": 10000,
+      "mean_ci95": [
+        0.15236509814301502,
+        2.05028746771439
+      ],
+      "total_ci95": [
+        4.113857649861406,
+        55.35776162828852
+      ],
+      "p_total_le_0": 0.0111
+    },
+    "net": {
+      "expected_block_length": 3,
+      "resamples": 10000,
+      "mean_ci95": [
+        -0.04763490185698507,
+        1.8502874677143895
+      ],
+      "total_ci95": [
+        -1.2861423501385967,
+        49.957761628288516
+      ],
+      "p_total_le_0": 0.032
+    }
+  },
+  "binomial_power": {
+    "alpha": 0.05,
+    "critical_wins": 19,
+    "p_at_critical": 0.026119492948055267,
+    "p_at_one_fewer": 0.06103906035423279,
+    "power_by_true_win_rate": {
+      "0.60": 0.18394659598772206,
+      "0.65": 0.35773876918399294,
+      "0.70": 0.5773301111535145
+    }
+  },
+  "forward_test_tail": {
+    "trades": 4,
+    "wins": 1,
+    "assumed_win_rate": 0.7037037037037037,
+    "p_le_1_win": 0.08092713960721885
+  },
+  "cost_threshold": {
+    "smallest_winners_gross_pct": [
+      0.11959502895478961,
+      0.12641496644751074,
+      0.25068272937506064
+    ],
+    "smallest_winner_entry_idx": [
+      7938,
+      8188,
+      2859
+    ],
+    "h1_significant_while_cost_below_pct": 0.11959502895478961,
+    "note": "With cost c, wins = #(pnl_pct > c). 19 wins (p = 0.0261) needs c below the smallest winner; at 18 wins p exceeds 0.05."
+  }
+}

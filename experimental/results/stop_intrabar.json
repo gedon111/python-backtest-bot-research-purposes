@@ -1,0 +1,410 @@
+{
+  "n": 27,
+  "cost_pct": 0.2,
+  "trades_changed": 6,
+  "winners_turned_losers_gross": 1,
+  "losers_cut_smaller_gross": 3,
+  "close_only_baseline": {
+    "gross": {
+      "wins": 19,
+      "win_rate_pct": 70.37037037037037,
+      "total_pct": 30.30645635603194,
+      "mean_pct": 1.1224613465197015,
+      "p_one_sided": 0.026119492948055267,
+      "p_two_sided": 0.052238985896110535
+    },
+    "net": {
+      "wins": 17,
+      "win_rate_pct": 62.96296296296296,
+      "total_pct": 24.90645635603194,
+      "mean_pct": 0.9224613465197015,
+      "p_one_sided": 0.12389428168535233,
+      "p_two_sided": 0.24778856337070465
+    }
+  },
+  "intrabar_stop": {
+    "gross": {
+      "wins": 18,
+      "win_rate_pct": 66.66666666666666,
+      "total_pct": 24.853694435082318,
+      "mean_pct": 0.920507201299345,
+      "p_one_sided": 0.06103906035423279,
+      "p_two_sided": 0.12207812070846558
+    },
+    "net": {
+      "wins": 16,
+      "win_rate_pct": 59.25925925925925,
+      "total_pct": 19.453694435082316,
+      "mean_pct": 0.720507201299345,
+      "p_one_sided": 0.22103416919708252,
+      "p_two_sided": 0.44206833839416504
+    }
+  },
+  "changed_trades": [
+    {
+      "entry_idx": 335,
+      "side": "SHORT",
+      "stop_distance_pct": 2.3112813380366193,
+      "baseline_exit_reason": "TRAILING EXIT (50% RETRACE)",
+      "baseline_pnl_pct": -0.6645474649259653,
+      "intrabar_exit_idx": 336,
+      "intrabar_pnl_pct": -2.3112813380366193,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 902,
+      "side": "SHORT",
+      "stop_distance_pct": 1.6127472804212895,
+      "baseline_exit_reason": "ATR MOVE EXIT",
+      "baseline_pnl_pct": 3.2247615449995273,
+      "intrabar_exit_idx": 904,
+      "intrabar_pnl_pct": -1.6127472804212895,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 2624,
+      "side": "SHORT",
+      "stop_distance_pct": 2.6814726773381814,
+      "baseline_exit_reason": "HIT STOP LOSS",
+      "baseline_pnl_pct": -4.654359367321062,
+      "intrabar_exit_idx": 2625,
+      "intrabar_pnl_pct": -2.6814726773381814,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 3196,
+      "side": "SHORT",
+      "stop_distance_pct": 1.816740509078274,
+      "baseline_exit_reason": "KDJ RESET EXIT",
+      "baseline_pnl_pct": -0.7817852866634167,
+      "intrabar_exit_idx": 3208,
+      "intrabar_pnl_pct": -1.816740509078274,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 3947,
+      "side": "SHORT",
+      "stop_distance_pct": 1.592990538285033,
+      "baseline_exit_reason": "HIT STOP LOSS",
+      "baseline_pnl_pct": -1.6043660327398526,
+      "intrabar_exit_idx": 3952,
+      "intrabar_pnl_pct": -1.592990538285033,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 6109,
+      "side": "SHORT",
+      "stop_distance_pct": 1.9462624402252882,
+      "baseline_exit_reason": "KDJ RESET EXIT",
+      "baseline_pnl_pct": -2.028436255784294,
+      "intrabar_exit_idx": 6111,
+      "intrabar_pnl_pct": -1.9462624402252882,
+      "changed": true,
+      "gap_fill": false
+    }
+  ],
+  "trades": [
+    {
+      "entry_idx": 335,
+      "side": "SHORT",
+      "stop_distance_pct": 2.3112813380366193,
+      "baseline_exit_reason": "TRAILING EXIT (50% RETRACE)",
+      "baseline_pnl_pct": -0.6645474649259653,
+      "intrabar_exit_idx": 336,
+      "intrabar_pnl_pct": -2.3112813380366193,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 359,
+      "side": "SHORT",
+      "stop_distance_pct": 4.637628783425152,
+      "baseline_exit_reason": "ATR MOVE EXIT",
+      "baseline_pnl_pct": 6.688833259794862,
+      "intrabar_exit_idx": 372,
+      "intrabar_pnl_pct": 6.688833259794862,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 673,
+      "side": "LONG",
+      "stop_distance_pct": 3.604873811564402,
+      "baseline_exit_reason": "KDJ RESET EXIT",
+      "baseline_pnl_pct": -0.3809249165046062,
+      "intrabar_exit_idx": 683,
+      "intrabar_pnl_pct": -0.3809249165046062,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 902,
+      "side": "SHORT",
+      "stop_distance_pct": 1.6127472804212895,
+      "baseline_exit_reason": "ATR MOVE EXIT",
+      "baseline_pnl_pct": 3.2247615449995273,
+      "intrabar_exit_idx": 904,
+      "intrabar_pnl_pct": -1.6127472804212895,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 1050,
+      "side": "SHORT",
+      "stop_distance_pct": 3.175392144856426,
+      "baseline_exit_reason": "TRAILING EXIT (50% RETRACE)",
+      "baseline_pnl_pct": 0.4432734821803227,
+      "intrabar_exit_idx": 1054,
+      "intrabar_pnl_pct": 0.4432734821803227,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 1158,
+      "side": "LONG",
+      "stop_distance_pct": 4.562320967142752,
+      "baseline_exit_reason": "TRAILING EXIT (50% RETRACE)",
+      "baseline_pnl_pct": -0.08976218157019918,
+      "intrabar_exit_idx": 1161,
+      "intrabar_pnl_pct": -0.08976218157019918,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 1913,
+      "side": "SHORT",
+      "stop_distance_pct": 1.884718765613913,
+      "baseline_exit_reason": "TRAILING EXIT (50% RETRACE)",
+      "baseline_pnl_pct": 1.230786890619656,
+      "intrabar_exit_idx": 1925,
+      "intrabar_pnl_pct": 1.230786890619656,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 2624,
+      "side": "SHORT",
+      "stop_distance_pct": 2.6814726773381814,
+      "baseline_exit_reason": "HIT STOP LOSS",
+      "baseline_pnl_pct": -4.654359367321062,
+      "intrabar_exit_idx": 2625,
+      "intrabar_pnl_pct": -2.6814726773381814,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 2859,
+      "side": "LONG",
+      "stop_distance_pct": 1.7712376790012696,
+      "baseline_exit_reason": "KDJ RESET EXIT",
+      "baseline_pnl_pct": 0.25068272937506064,
+      "intrabar_exit_idx": 2862,
+      "intrabar_pnl_pct": 0.25068272937506064,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 3100,
+      "side": "LONG",
+      "stop_distance_pct": 1.8022520995139457,
+      "baseline_exit_reason": "TRAILING EXIT (50% RETRACE)",
+      "baseline_pnl_pct": 0.7688733961019558,
+      "intrabar_exit_idx": 3113,
+      "intrabar_pnl_pct": 0.7688733961019558,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 3196,
+      "side": "SHORT",
+      "stop_distance_pct": 1.816740509078274,
+      "baseline_exit_reason": "KDJ RESET EXIT",
+      "baseline_pnl_pct": -0.7817852866634167,
+      "intrabar_exit_idx": 3208,
+      "intrabar_pnl_pct": -1.816740509078274,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 3859,
+      "side": "LONG",
+      "stop_distance_pct": 2.2076306132579826,
+      "baseline_exit_reason": "TRAILING EXIT (50% RETRACE)",
+      "baseline_pnl_pct": 0.6263359977307055,
+      "intrabar_exit_idx": 3872,
+      "intrabar_pnl_pct": 0.6263359977307055,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 3947,
+      "side": "SHORT",
+      "stop_distance_pct": 1.592990538285033,
+      "baseline_exit_reason": "HIT STOP LOSS",
+      "baseline_pnl_pct": -1.6043660327398526,
+      "intrabar_exit_idx": 3952,
+      "intrabar_pnl_pct": -1.592990538285033,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 4455,
+      "side": "LONG",
+      "stop_distance_pct": 4.466815661846879,
+      "baseline_exit_reason": "KDJ RESET EXIT",
+      "baseline_pnl_pct": -1.1458370023228253,
+      "intrabar_exit_idx": 4462,
+      "intrabar_pnl_pct": -1.1458370023228253,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 5800,
+      "side": "SHORT",
+      "stop_distance_pct": 2.8470883312101014,
+      "baseline_exit_reason": "ATR MOVE EXIT",
+      "baseline_pnl_pct": 2.7933082699741143,
+      "intrabar_exit_idx": 5816,
+      "intrabar_pnl_pct": 2.7933082699741143,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 5825,
+      "side": "LONG",
+      "stop_distance_pct": 3.1599625209591475,
+      "baseline_exit_reason": "TRAILING EXIT (50% RETRACE)",
+      "baseline_pnl_pct": 0.3779120486356351,
+      "intrabar_exit_idx": 5830,
+      "intrabar_pnl_pct": 0.3779120486356351,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 6040,
+      "side": "LONG",
+      "stop_distance_pct": 3.851537851197895,
+      "baseline_exit_reason": "KDJ RESET EXIT",
+      "baseline_pnl_pct": 1.380595058653915,
+      "intrabar_exit_idx": 6054,
+      "intrabar_pnl_pct": 1.380595058653915,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 6109,
+      "side": "SHORT",
+      "stop_distance_pct": 1.9462624402252882,
+      "baseline_exit_reason": "KDJ RESET EXIT",
+      "baseline_pnl_pct": -2.028436255784294,
+      "intrabar_exit_idx": 6111,
+      "intrabar_pnl_pct": -1.9462624402252882,
+      "changed": true,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 6366,
+      "side": "LONG",
+      "stop_distance_pct": 3.6173948799288924,
+      "baseline_exit_reason": "ATR MOVE EXIT",
+      "baseline_pnl_pct": 4.363405624919001,
+      "intrabar_exit_idx": 6370,
+      "intrabar_pnl_pct": 4.363405624919001,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 6537,
+      "side": "SHORT",
+      "stop_distance_pct": 1.9415195200579216,
+      "baseline_exit_reason": "ATR MOVE EXIT",
+      "baseline_pnl_pct": 3.4665252672605105,
+      "intrabar_exit_idx": 6547,
+      "intrabar_pnl_pct": 3.4665252672605105,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 6991,
+      "side": "LONG",
+      "stop_distance_pct": 4.011399980443164,
+      "baseline_exit_reason": "TRAILING EXIT (50% RETRACE)",
+      "baseline_pnl_pct": 1.6338462131465472,
+      "intrabar_exit_idx": 6999,
+      "intrabar_pnl_pct": 1.6338462131465472,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 7109,
+      "side": "LONG",
+      "stop_distance_pct": 2.0478493287143906,
+      "baseline_exit_reason": "ATR MOVE EXIT",
+      "baseline_pnl_pct": 3.508775762686693,
+      "intrabar_exit_idx": 7119,
+      "intrabar_pnl_pct": 3.508775762686693,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 7938,
+      "side": "LONG",
+      "stop_distance_pct": 1.9078973387843257,
+      "baseline_exit_reason": "KDJ RESET EXIT",
+      "baseline_pnl_pct": 0.11959502895478961,
+      "intrabar_exit_idx": 7948,
+      "intrabar_pnl_pct": 0.11959502895478961,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 7964,
+      "side": "LONG",
+      "stop_distance_pct": 2.0252197037865405,
+      "baseline_exit_reason": "ATR MOVE EXIT",
+      "baseline_pnl_pct": 2.3789469350208936,
+      "intrabar_exit_idx": 7977,
+      "intrabar_pnl_pct": 2.3789469350208936,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 8188,
+      "side": "LONG",
+      "stop_distance_pct": 2.2745046685092696,
+      "baseline_exit_reason": "KDJ RESET EXIT",
+      "baseline_pnl_pct": 0.12641496644751074,
+      "intrabar_exit_idx": 8192,
+      "intrabar_pnl_pct": 0.12641496644751074,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 8280,
+      "side": "LONG",
+      "stop_distance_pct": 3.13552751144911,
+      "baseline_exit_reason": "ATR MOVE EXIT",
+      "baseline_pnl_pct": 4.623260688857563,
+      "intrabar_exit_idx": 8290,
+      "intrabar_pnl_pct": 4.623260688857563,
+      "changed": false,
+      "gap_fill": false
+    },
+    {
+      "entry_idx": 8596,
+      "side": "SHORT",
+      "stop_distance_pct": 1.8170148227297345,
+      "baseline_exit_reason": "ATR MOVE EXIT",
+      "baseline_pnl_pct": 3.650341698504897,
+      "intrabar_exit_idx": 8608,
+      "intrabar_pnl_pct": 3.650341698504897,
+      "changed": false,
+      "gap_fill": false
+    }
+  ]
+}

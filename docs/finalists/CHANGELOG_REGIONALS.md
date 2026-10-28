@@ -1,3 +1,157 @@
+# Changelog: bitcoin (6) → bitcoin (7), fixes from REVIEW_REGIONALS.md
+
+Branch `dev/paper-3rq-2h`, 2026-10-28. Source: `docs/finalists/bitcoin (6).docx`
+(unchanged). Output: `docs/finalists/bitcoin (7).docx` and `.pdf`, 82 pages.
+Built by a python-docx script (every edit asserted by exact occurrence count and
+logged before/after); TOC page numbers taken from two Word renders that agreed.
+
+No strategy parameter, rule or threshold changed. The 2.0×ATR breakeven rule is
+kept as frozen and only disclosed. The golden-master regression harness
+(`scratch/regression.py`) passed before and after the code change: all 27
+baseline trades match exactly. No AI text was added to the manuscript (AI use
+and the ISEF forms are separate bound forms). Appendices E (ISEF Forms) and F
+(Curricula Vitae) were deleted with their four TOC lines, on the user's decision.
+
+## Code added
+
+- `research_analysis.py`, Section 5B (new functions only; existing functions
+  unchanged): `_trade_side_sign()`, `_mtm_strategy_equity()`,
+  `_mtm_head_to_head()`, `_mtm_blend_split()`, `_mtm_blend()`,
+  `_blend_mid_trade_effect()`, `run_benchmark_mark_to_market()`; called from
+  `run_full_analysis_pipeline()`, which writes `artifacts/benchmark_mtm.json`.
+  `_mtm_head_to_head()` asserts that the marked curve equals the realized curve
+  outside trades and at every exit, and that each arm's final capital equals the
+  published one.
+- `experimental/bootstrap_net_4h.py` → `experimental/results/bootstrap_net_4h.json`
+  (after-cost percentile and stationary block bootstrap, binomial power,
+  forward-test tail, H₁ cost threshold).
+- `experimental/stop_intrabar.py` → `experimental/results/stop_intrabar.json`
+  (stop checked against candle high/low).
+- `experimental/plot_benchmark_figures.py` → `src-images/fig07_equity_mtm.png`,
+  `src-images/fig08_blend_cash.png`, `experimental/results/fig07_fig08_points.json`.
+
+## Changed numbers and the functions that produced them
+
+Table numbers below are the NEW (7) numbers. Old (6) Tables 5–16 are now 6–17;
+the new Table 5 is the stop check.
+
+### Mark-to-market, daily clock for Sharpe and drawdown (M8)
+Producing function: `run_benchmark_mark_to_market()` → `_mtm_head_to_head()`.
+Final capitals and total returns are unchanged (`run_benchmark_vs_passive()`).
+
+| Table | Arm | Old Sharpe | New Sharpe | Old MDD | New MDD (daily) |
+|---|---|---|---|---|---|
+| 10 (2022–26 gross) | Strategy | 1.1151 | 1.1440 | −6.46% | −6.64% |
+| 10 | Weekly DCA | 0.5581 | 0.5581 | −27.85% | −36.02% |
+| 10 | Lump sum | 0.5534 | 0.5534 | −67.21% | −66.93% |
+| 11 (2022–26 net) | Strategy | 0.9446 | 0.9456 | −7.78% | −8.13% |
+| 11 | Weekly DCA | 0.5552 | 0.5552 | −27.85% | −36.02% |
+| 11 | Lump sum | 0.5534 | 0.5534 | −67.21% | −66.93% |
+| 12 (2018–22 gross) | Strategy | 0.681 | 0.607 | −6.00% | −8.24% |
+| 12 | Weekly DCA | 0.802 | 0.802 | −46.16% | −52.37% |
+| 12 | Lump sum | 0.796 | 0.796 | −81.42% | −81.18% |
+
+The DCA daily drawdown of −36.02% runs from a 2022-06-07 peak to a 2022-06-19
+trough, after 25 contributions; the weekly sampling used before found −27.85%
+(late 2025). Responsible-use paragraph: lump-sum worst drop −67.21% → −66.93%
+"at a daily close". SOP 2 text: strategy gross Sharpe 1.1151 → 1.1440.
+
+### Blended plan with a cash-sleeve control, net (M9, H₂)
+Producing function: `_mtm_blend()` / `_mtm_blend_split()` via
+`run_benchmark_mark_to_market()`; net = 0.20% per strategy trade and 0.10% per
+BTC purchase. Table 13 (old 12) rebuilt with 5 columns, net rows and gross rows.
+
+| Split | Old Sharpe (6) | Net Sharpe strat / cash | Old MDD (6) | Net MDD strat / cash |
+|---|---|---|---|---|
+| 100/0 | 0.558 | 0.555 / 0.555 | −27.85% | −36.02% / −36.02% |
+| 90/10 | 0.581 | 0.576 / 0.566 | −26.51% | −31.03% / −31.22% |
+| 80/20 | 0.606 | 0.598 / 0.576 | −24.97% | −28.30% / −28.87% |
+| 70/30 | 0.632 | 0.621 / 0.585 | −23.18% | −26.43% / −27.34% |
+
+Gross sensitivity rows: 100/0 0.558 / −36.02%; strategy sleeve 0.581 / −31.02%,
+0.606 / −28.22%, 0.632 / −26.31%; cash sleeve 0.569 / −31.22%, 0.579 / −28.87%,
+0.587 / −27.34%. `h2_strategy_beats_cash_on_both_at_every_share` = true, net and
+gross. Margins over cash (net): Sharpe 0.010 / 0.022 / 0.036; drawdown
+0.18 / 0.57 / 0.90 points. Figure 8 redrawn from these values (old figure still
+showed the superseded 0.556/0.581/0.607/0.637).
+
+### Mid-trade contributions now wait as cash (construction change)
+Producing function: `_blend_mid_trade_effect()` (compares the old
+`_daily_sharpe_blend` construction with the new one). 4 of 210 weekly
+contributions arrive while a trade is open. Gross final values:
+
+| Share | Old | New | Difference |
+|---|---|---|---|
+| 10% | 448.9899 | 448.9845 | −0.0055 |
+| 20% | 427.6667 | 427.6558 | −0.0110 |
+| 30% | 406.3435 | 406.3271 | −0.0165 |
+
+Disclosed as new Limitation 10; old Limitations 10–13 renumbered 11–14.
+
+### After-cost bootstrap (M4)
+Producing function: `main()` in `experimental/bootstrap_net_4h.py`, calling
+`run_bootstrap_ci()` and `stationary_block_bootstrap()`; seed 42, B = 10,000, L = 3.
+- Percentile, net: total [+0.59%, +49.59%], mean [+0.022, +1.837]; 2.27% ≤ 0.
+- Stationary block, net: total [−1.29%, +49.96%], mean [−0.048, +1.850]; 3.20% ≤ 0.
+- Stationary block, gross: total [+4.11%, +55.36%].
+- Body CIs rounded to 2 dp: [+5.9866%, +54.9866%] → [+5.99%, +54.99%];
+  [+0.2217%, +2.0365%] → [+0.22%, +2.04%] (Appendix A keeps 4 dp).
+- Table 16 (old 15) note adds the block interval [−0.048, +1.850].
+
+### Stop checked against candle high/low (M11), new Table 5
+Producing function: `main()` in `experimental/stop_intrabar.py`. Six trades
+change: 335 −0.66 → −2.31; 902 +3.22 → −1.61; 2624 −4.65 → −2.68; 3196
+−0.78 → −1.82; 3947 −1.604 → −1.593; 6109 −2.03 → −1.95. Gross: 18 wins,
+66.67%, +24.85%, p 0.0610. Net 0.20%: 16 wins, 59.26%, +19.45%, p 0.2210.
+
+### Power, forward tail, cost threshold (M15, m13)
+Producing function: `main()` in `experimental/bootstrap_net_4h.py`. Critical
+value 19 wins; power 0.18 / 0.36 / 0.58 at true 60 / 65 / 70%; P(≤1 win in 4 |
+70.37%) = 0.081; H₁ significant only while cost < 0.1196% (trade 7938).
+
+### Rounding and precision only (no recompute; values from existing files)
+- Funding 0.17 / 0.29 / 0.11 → 0.175 / 0.287 / 0.112
+  (`experimental/results_funding/funding.json`).
+- 1h literal-vs-4h interval upper bound "−0.00" → "−0.002"
+  (`experimental/results_1h/main.json`, −0.00194).
+- Statement-of-problem page reference 13 → 14 (re-render).
+
+## Text changes without new numbers
+Abstract rewritten (250 words, result first, reviewer's closing line); cover
+subtitle; Nakamoto "most traded" claim dropped; Díaz & Escribano and Brolley &
+Cimon removed (text and references); LuxAlgo wording; Fang et al. (2014) cited as
+counter-evidence; ATR described as stop distance only, full notional at 1x;
+pre-registration files, dates and EXPLORATORY status disclosed; SDG 11 replaced
+with financial literacy; SEC sentence and "is this gambling?" line (Significance
+and Summary; the SEC sentence is uncited); SOP defined; "gate" defined; H₁ cost
+basis and its timing stated; H₂ decision rule (net, beats cash on both at every
+share) with Ledoit & Wolf (2008) added; Holm independence; 1h H₀; spot-as-proxy
+and UTC exception; Table 1 breakeven "never fires" note; entry fill at signal
+close; close-based stop described; p-value definition; Spearman 5%-only;
+slippage "may be optimistic"; Figures 6–10 and Table 2 called out; forward /
+lockbox dates (Jan 1 to Aug 7, 2026); SOP 3 answer and 4h random-filter
+qualification; "closest among gate removals by average"; K-acceleration
+drawdown basis; Conclusions, Limitations 1/2/4, Delimitation 5, Summary
+rewritten; "directionally robust" removed everywhere; Appendix A rows for the
+new functions and the 27-trade CSV; Appendix B seed note; Appendix D items;
+TOC line for Hypotheses.
+
+## Consistency check
+Number tokens (6) vs (7): every token present only in (7) is in one of the
+tables above. Windows OCR (Windows.Media.Ocr) read every decimal in all 11
+figure images; each matches the (7) text. Figure 8's 14 values and Figure 7's
+three end labels were read exactly. In Figure 6 two labels were misread (a
+dashed line crosses them); visual check confirms 0.0261 / 0.1239.
+
+## Not done (left for the students)
+- Figure 5 is not annotated for the inactive breakeven rule (Table 1 note only).
+- When the 40% / 12% regime thresholds were chosen (m12) is not stated: no
+  record was found.
+- The judge's "runs came minutes after the commits" (M7) is not stated: not verified.
+- Board edits (m6) are outside the manuscript.
+
+---
+
 # Changelog: bitcoin (5) → bitcoin (6), regional revision
 
 Branch `dev/paper-3rq-2h`, 2026-10-28. Source: `docs/finalists/bitcoin (5).docx`

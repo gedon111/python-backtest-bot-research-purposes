@@ -1,0 +1,271 @@
+{
+  "periods_per_year": 365,
+  "day_boundary": "00:00 UTC (last 4h bar of each UTC day)",
+  "main_window": {
+    "gross": {
+      "n_daily_closes": 1462,
+      "arms": [
+        {
+          "arm": "OB-gated strategy",
+          "sharpe_daily_mtm": 1.1439565590621685,
+          "max_drawdown_daily_pct": -6.63823424040001,
+          "max_drawdown_native_pct": -6.461921868617983,
+          "final_capital": 13417.773473513555
+        },
+        {
+          "arm": "Weekly DCA into BTC",
+          "sharpe_daily_mtm": 0.5581477759244604,
+          "max_drawdown_daily_pct": -36.01604924643295,
+          "max_drawdown_native_pct": -27.849260681789044,
+          "final_capital": 22312.9384000892
+        },
+        {
+          "arm": "Lump-sum buy-and-hold",
+          "sharpe_daily_mtm": 0.5533908519532209,
+          "max_drawdown_daily_pct": -66.93123705410325,
+          "max_drawdown_native_pct": -67.21392902034937,
+          "final_capital": 19007.324805001113
+        }
+      ]
+    },
+    "fee_adjusted": {
+      "n_daily_closes": 1462,
+      "arms": [
+        {
+          "arm": "OB-gated strategy",
+          "sharpe_daily_mtm": 0.9456058138732215,
+          "max_drawdown_daily_pct": -8.131933109458112,
+          "max_drawdown_native_pct": -7.776236594923948,
+          "final_capital": 12719.006384388367
+        },
+        {
+          "arm": "Weekly DCA into BTC",
+          "sharpe_daily_mtm": 0.5551688309087209,
+          "max_drawdown_daily_pct": -36.01604924643294,
+          "max_drawdown_native_pct": -27.84926068178905,
+          "final_capital": 22290.647752336834
+        },
+        {
+          "arm": "Lump-sum buy-and-hold",
+          "sharpe_daily_mtm": 0.553390851953221,
+          "max_drawdown_daily_pct": -66.93123705410325,
+          "max_drawdown_native_pct": -67.21392902034935,
+          "final_capital": 18988.336468532583
+        }
+      ]
+    },
+    "blend_net": {
+      "strategy_drag_pct": 0.2,
+      "passive_drag_pct": 0.1,
+      "baseline_100_0": {
+        "sharpe_daily_mtm": 0.5551688309087227,
+        "max_drawdown_daily_pct": -36.01604924643295,
+        "final_value": 469.8433051997329,
+        "total_contributed": 210.0,
+        "mid_trade_contributions": 0
+      },
+      "splits": [
+        {
+          "split_label": "90/10",
+          "strategy_sleeve_fraction": 0.1,
+          "strategy_sleeve": {
+            "sharpe_daily_mtm": 0.5764256132918204,
+            "max_drawdown_daily_pct": -31.034635676491085,
+            "final_value": 447.8457845142695,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 4
+          },
+          "cash_sleeve": {
+            "sharpe_daily_mtm": 0.5664707582434427,
+            "max_drawdown_daily_pct": -31.215939829962135,
+            "final_value": 443.8589746797595,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 0
+          },
+          "strategy_beats_cash_sharpe": true,
+          "strategy_beats_cash_drawdown": true,
+          "strategy_beats_baseline_sharpe": true,
+          "strategy_beats_baseline_drawdown": true
+        },
+        {
+          "split_label": "80/20",
+          "strategy_sleeve_fraction": 0.2,
+          "strategy_sleeve": {
+            "sharpe_daily_mtm": 0.5982944213560646,
+            "max_drawdown_daily_pct": -28.302177251203815,
+            "final_value": 425.84826382880635,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 4
+          },
+          "cash_sleeve": {
+            "sharpe_daily_mtm": 0.5764916151104836,
+            "max_drawdown_daily_pct": -28.870670872224547,
+            "final_value": 417.8746441597863,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 0
+          },
+          "strategy_beats_cash_sharpe": true,
+          "strategy_beats_cash_drawdown": true,
+          "strategy_beats_baseline_sharpe": true,
+          "strategy_beats_baseline_drawdown": true
+        },
+        {
+          "split_label": "70/30",
+          "strategy_sleeve_fraction": 0.3,
+          "strategy_sleeve": {
+            "sharpe_daily_mtm": 0.6210584081093486,
+            "max_drawdown_daily_pct": -26.434740738945926,
+            "final_value": 403.8507431433426,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 4
+          },
+          "cash_sleeve": {
+            "sharpe_daily_mtm": 0.5847407884418694,
+            "max_drawdown_daily_pct": -27.338649405956772,
+            "final_value": 391.8903136398126,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 0
+          },
+          "strategy_beats_cash_sharpe": true,
+          "strategy_beats_cash_drawdown": true,
+          "strategy_beats_baseline_sharpe": true,
+          "strategy_beats_baseline_drawdown": true
+        }
+      ],
+      "h2_strategy_beats_cash_on_both_at_every_share": true,
+      "h2_strategy_beats_baseline_on_both_at_every_share": true
+    },
+    "blend_gross": {
+      "strategy_drag_pct": 0.0,
+      "passive_drag_pct": 0.0,
+      "baseline_100_0": {
+        "sharpe_daily_mtm": 0.5581477759244626,
+        "max_drawdown_daily_pct": -36.01604924643295,
+        "final_value": 470.31314850493226,
+        "total_contributed": 210.0,
+        "mid_trade_contributions": 0
+      },
+      "splits": [
+        {
+          "split_label": "90/10",
+          "strategy_sleeve_fraction": 0.1,
+          "strategy_sleeve": {
+            "sharpe_daily_mtm": 0.5813919567272414,
+            "max_drawdown_daily_pct": -31.020075302140356,
+            "final_value": 448.9844547132526,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 4
+          },
+          "cash_sleeve": {
+            "sharpe_daily_mtm": 0.5693583081178196,
+            "max_drawdown_daily_pct": -31.22016281386431,
+            "final_value": 444.2818336544391,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 0
+          },
+          "strategy_beats_cash_sharpe": true,
+          "strategy_beats_cash_drawdown": true,
+          "strategy_beats_baseline_sharpe": true,
+          "strategy_beats_baseline_drawdown": true
+        },
+        {
+          "split_label": "80/20",
+          "strategy_sleeve_fraction": 0.2,
+          "strategy_sleeve": {
+            "sharpe_daily_mtm": 0.6057472554931543,
+            "max_drawdown_daily_pct": -28.2226900615603,
+            "final_value": 427.6557609215736,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 4
+          },
+          "cash_sleeve": {
+            "sharpe_daily_mtm": 0.5792814261667413,
+            "max_drawdown_daily_pct": -28.872921810478868,
+            "final_value": 418.2505188039464,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 0
+          },
+          "strategy_beats_cash_sharpe": true,
+          "strategy_beats_cash_drawdown": true,
+          "strategy_beats_baseline_sharpe": true,
+          "strategy_beats_baseline_drawdown": true
+        },
+        {
+          "split_label": "70/30",
+          "strategy_sleeve_fraction": 0.3,
+          "strategy_sleeve": {
+            "sharpe_daily_mtm": 0.6317057718547068,
+            "max_drawdown_daily_pct": -26.311713711549583,
+            "final_value": 406.3270671298929,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 4
+          },
+          "cash_sleeve": {
+            "sharpe_daily_mtm": 0.5874267611623293,
+            "max_drawdown_daily_pct": -27.342146585209754,
+            "final_value": 392.2192039534523,
+            "total_contributed": 210.0,
+            "mid_trade_contributions": 0
+          },
+          "strategy_beats_cash_sharpe": true,
+          "strategy_beats_cash_drawdown": true,
+          "strategy_beats_baseline_sharpe": true,
+          "strategy_beats_baseline_drawdown": true
+        }
+      ],
+      "h2_strategy_beats_cash_on_both_at_every_share": true,
+      "h2_strategy_beats_baseline_on_both_at_every_share": true
+    },
+    "blend_mid_trade_effect": [
+      {
+        "strategy_sleeve_fraction": 0.1,
+        "mid_trade_contributions": 4,
+        "final_value_old_construction": 448.98994036871727,
+        "final_value_new_construction": 448.9844547132526,
+        "difference": -0.005485655464667616
+      },
+      {
+        "strategy_sleeve_fraction": 0.2,
+        "mid_trade_contributions": 4,
+        "final_value_old_construction": 427.66673223250285,
+        "final_value_new_construction": 427.6557609215736,
+        "difference": -0.010971310929278388
+      },
+      {
+        "strategy_sleeve_fraction": 0.3,
+        "mid_trade_contributions": 4,
+        "final_value_old_construction": 406.34352409628684,
+        "final_value_new_construction": 406.3270671298929,
+        "difference": -0.016456966393946004
+      }
+    ]
+  },
+  "formulation_period_window": {
+    "gross": {
+      "n_daily_closes": 1461,
+      "arms": [
+        {
+          "arm": "OB-gated strategy",
+          "sharpe_daily_mtm": 0.6070634719931135,
+          "max_drawdown_daily_pct": -8.238240173194978,
+          "max_drawdown_native_pct": -6.004971711657454,
+          "final_capital": 12282.529180900943
+        },
+        {
+          "arm": "Weekly DCA into BTC",
+          "sharpe_daily_mtm": 0.802442314226115,
+          "max_drawdown_daily_pct": -52.36987388408084,
+          "max_drawdown_native_pct": -46.15759207830486,
+          "final_capital": 53987.54958980332
+        },
+        {
+          "arm": "Lump-sum buy-and-hold",
+          "sharpe_daily_mtm": 0.7963104084015601,
+          "max_drawdown_daily_pct": -81.18477145881701,
+          "max_drawdown_native_pct": -81.41717033425718,
+          "final_capital": 33696.492692654014
+        }
+      ]
+    }
+  }
+}

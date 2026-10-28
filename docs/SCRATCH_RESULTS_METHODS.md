@@ -75,6 +75,42 @@ bar. At the last bar the 2022-2026 DCA value is $22,395.86, not $22,312.94.
 The paper's ordering is unaffected; the figure is left as published until
 reviewed.
 
+**Mark-to-market and cash-sleeve control (2026-10-28, paper bitcoin (7)).**
+`run_benchmark_mark_to_market()` (research_analysis.py, Section 5B; artifact
+`artifacts/benchmark_mtm.json`) values every arm at the UTC daily close with
+the strategy's open trades marked to market, and takes maximum drawdown on
+the same daily values. Final capitals are unchanged (asserted). From bitcoin
+(7) on, the paper's Sharpe and drawdown come from here:
+- 2022-2026 gross: strategy 1.1440 / -6.64%, DCA 0.5581 / -36.02%, lump sum
+  0.5534 / -66.93%.
+- 2022-2026 net: strategy 0.9456 / -8.13%, DCA 0.5552 / -36.02%, lump sum
+  0.5534 / -66.93%.
+- 2018-2022 gross: strategy 0.607 / -8.24%, DCA 0.802 / -52.37%, lump sum
+  0.796 / -81.18%.
+The DCA daily drawdown (-36.02%, 2022-06-07 to 2022-06-19, 25 contributions in)
+is deeper than the weekly-sampled -27.85%.
+Blend, NET (0.20% per strategy trade, 0.10% per BTC buy), strategy sleeve vs
+cash sleeve (same share held as cash at 0%): 100/0 0.555 / -36.02%; 90/10
+0.576 / -31.03% vs 0.566 / -31.22%; 80/20 0.598 / -28.30% vs 0.576 / -28.87%;
+70/30 0.621 / -26.43% vs 0.585 / -27.34%. H2 (decision rule set in bitcoin
+(7): strategy sleeve beats cash sleeve on both measures at every share, net)
+HOLDS, gross too; the drawdown margin over cash is small (0.18 / 0.57 / 0.90
+points). Blend construction CHANGED in the same function: a contribution that
+arrives while a trade is open now waits as cash until the exit (4 of 210
+contributions; 70/30 gross final value 406.3435 -> 406.3271, via
+`_blend_mid_trade_effect()`). `run_dca_blend_analysis()` and
+`run_benchmark_daily_sharpe()` are unchanged and still produce the older figures.
+
+**After-cost uncertainty and stop realism (2026-10-28, bitcoin (7)).**
+`experimental/bootstrap_net_4h.py`: net 0.20% percentile CI on total
+[+0.59%, +49.59%]; stationary block bootstrap (seed 42, L = 3) [-1.29%,
++49.96%], mean [-0.048, +1.850] -- includes zero. Binomial power at true 60/65/70%:
+0.18 / 0.36 / 0.58; H1 significant only while cost < 0.1196%.
+`experimental/stop_intrabar.py`: with the stop checked against candle high/low
+(baseline is close-only), 6 trades change; gross 18/27 wins, +24.85%,
+p = 0.0610; net 16/27, +19.45%, p = 0.2210. Funding at full precision: longs
+paid 0.175 pp, shorts received 0.287 pp, net credit 0.112 pp.
+
 ## Corrected errors (disclosed)
 
 ### Backtest-engine bug
@@ -170,6 +206,17 @@ immediately on the next run rather than requiring a separate audit pass.
    (+30.31%), which is what Section 3C's formula layer independently
    reproduces. Any statement pairing "+30.31%" with "$13,417.77" needs to say
    which convention each number uses.
+
+3. **The 2.0×ATR breakeven rule can never fire (found 2026-10-28, mock judging).**
+   In `_check_long/short_exit_conditions` the 1.8×ATR move exit is checked and
+   returns before the 2.0×ATR breakeven ratchet, so any close past 2.0×ATR has
+   already exited. It changes no reported number. Left as frozen per CLAUDE.md;
+   disclosed in the paper's Table 1 note from bitcoin (7) on.
+
+4. **Stops are checked and filled at the candle close only.** Wicks through a
+   stop that close back inside never trigger it, and gaps book more than the
+   stop (trade 2624: -4.65% on a 2.68% stop). Kept as the baseline; the
+   high/low sensitivity is reported separately (see Benchmark section).
 
 ## Regression baseline
 

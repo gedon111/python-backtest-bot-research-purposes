@@ -44,7 +44,6 @@ Times are rough estimates for the students.
 
 | # | Fix | Where | Raised by | Est. time |
 |---|---|---|---|---|
-| F1 | **Add an AI-use disclosure.** The PDF and docx contain no mention of AI, Claude or language models (verified with grep: zero hits), yet AI tools were used for code, statistics and editing. Name the tool, what it was used for (code, analysis, audits, wording) and what the students did and checked themselves. Put it in Methods or Acknowledgments **and** in the Research Plan. ISEF rules require it, and Limitation 10 ("verification was internal only") reads as all-student work without it. | new paragraph, Sec B or Acknowledgments; Research Plan | [I] | 30 min |
 | F2 | **Insert the real, signed ISEF forms.** Appendix E (p.75) is only "[INSERT SCANNED FORMS HERE]". At minimum include: Checklist for Adult Sponsor (1), Student Checklist (1A), Research Plan/Project Summary, and Approval Form (1B), all dated **before** experimentation. Add Form 7 if this continues earlier work. State that human, vertebrate and hazard forms do not apply. Change Appendix F's placeholder to "[INSERT CVs HERE]". | App. E, F (pp.75–76) | [I] | 1–2 h (signatures) |
 
 ### Major

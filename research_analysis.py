@@ -4572,6 +4572,245 @@ def run_benchmark_daily_sharpe(df_main, trades_main, df_formulation, trades_form
     }
 
 
+BENCHMARK_MTM_JSON = "artifacts/benchmark_mtm.json"
+
+
+def _trade_side_sign(side):
+    side = str(side).upper()
+    assert side in ("LONG", "SHORT"), side
+    return 1.0 if side == "LONG" else -1.0
+
+
+def _mtm_strategy_equity(df, trades_df, starting_capital, drag_pct=0.0):
+    """
+    Strategy equity marked to market at every bar: while a trade is open the
+    whole equity is valued at 1x notional, E_before * (1 + side * (close /
+    entry - 1)); between trades it is idle cash. The trade's cost drag is
+    charged at its exit bar, as in _run_strategy_dollar_arm(), so the curve
+    equals that function's realized curve on every bar outside a trade and at
+    every exit bar (asserted by the caller).
+    """
+    close = df["close"].values
+    equity = np.full(len(df), float(starting_capital))
+    running_equity = float(starting_capital)
+    last_exit = 0
+    for t in trades_df.sort_values("entry_idx").itertuples():
+        entry_idx, exit_idx = int(t.entry_idx), int(t.exit_idx)
+        assert entry_idx >= last_exit, "overlapping trades"
+        equity[last_exit:entry_idx + 1] = running_equity
+        sign = _trade_side_sign(t.side)
+        equity[entry_idx + 1:exit_idx] = running_equity * (1 + sign * (close[entry_idx + 1:exit_idx] / t.entry - 1))
+        running_equity *= 1 + (t.pnl_pct - drag_pct) / 100
+        equity[exit_idx] = running_equity
+        last_exit = exit_idx
+    equity[last_exit:] = running_equity
+    return equity
+
+
+def _mtm_head_to_head(df, trades_df, starting_capital, strategy_drag_pct, passive_drag_pct):
+    """
+    Tables 9-11 on ONE clock: every arm valued at the UTC daily close, Sharpe
+    annualized with m = 365 and maximum drawdown taken on the same daily
+    values. The strategy is marked to market (_mtm_strategy_equity()); weekly
+    DCA and lump sum are built exactly as in _run_dca_dollar_arm() and
+    _run_lump_sum_dollar_arm(). DCA drawdown stays principal-inclusive (the
+    value includes each week's new contribution), as before. Final capital is
+    re-derived and asserted equal to run_benchmark_vs_passive()'s, so only the
+    sampling of risk changes, not any arm's value.
+    """
+    close = df["close"].values
+    day_bars = _daily_close_bars(df)
+
+    realized = _run_strategy_dollar_arm(df, trades_df, starting_capital, drag_pct=strategy_drag_pct)
+    strategy_equity = _mtm_strategy_equity(df, trades_df, starting_capital, strategy_drag_pct)
+    realized_curve = np.full(len(df), float(starting_capital))
+    running_equity = float(starting_capital)
+    exit_pnl_by_bar = dict(zip(trades_df["exit_idx"].astype(int), trades_df["pnl_pct"] - strategy_drag_pct))
+    for i in range(1, len(df)):
+        if i in exit_pnl_by_bar:
+            running_equity *= 1 + exit_pnl_by_bar[i] / 100
+        realized_curve[i] = running_equity
+    in_trade = np.zeros(len(df), dtype=bool)
+    for t in trades_df.itertuples():
+        in_trade[int(t.entry_idx) + 1:int(t.exit_idx)] = True
+    assert np.allclose(strategy_equity[~in_trade], realized_curve[~in_trade], rtol=0, atol=1e-6), \
+        "mark-to-market curve departs from the realized curve outside an open trade"
+    assert abs(strategy_equity[-1] - realized["final_capital"]) < 1e-6
+
+    contribution_bars = _iso_week_first_bars(df)
+    contribution = starting_capital / len(contribution_bars)
+    contribution_bar_set = set(contribution_bars.tolist())
+    units = 0.0
+    dca_value = np.empty(len(df))
+    contribution_by_bar = np.zeros(len(df))
+    for i in range(len(df)):
+        if i in contribution_bar_set:
+            units += contribution / (close[i] * (1 + passive_drag_pct / 100))
+            contribution_by_bar[i] = contribution
+        dca_value[i] = units * close[i]
+    dca_contribution_per_day = np.diff(np.concatenate([[0.0], np.cumsum(contribution_by_bar)[day_bars]]))
+    native_dca = _run_dca_dollar_arm(df, starting_capital, drag_pct=passive_drag_pct)
+    assert abs(dca_value[contribution_bars[-1]] - native_dca["final_capital"]) < 1e-6
+
+    lump_equity = starting_capital / (df["open"].iloc[0] * (1 + passive_drag_pct / 100)) * close
+    native_lump = _run_lump_sum_dollar_arm(df, starting_capital, drag_pct=passive_drag_pct)
+    assert abs(lump_equity[-1] - native_lump["final_capital"]) < 1e-6
+
+    strategy_daily, dca_daily, lump_daily = strategy_equity[day_bars], dca_value[day_bars], lump_equity[day_bars]
+    arms = [
+        ("OB-gated strategy", np.diff(strategy_daily) / strategy_daily[:-1], strategy_daily, realized),
+        ("Weekly DCA into BTC", _contribution_net_period_returns(dca_daily, dca_contribution_per_day), dca_daily,
+         native_dca),
+        ("Lump-sum buy-and-hold", np.diff(lump_daily) / lump_daily[:-1], lump_daily, native_lump),
+    ]
+    rows = []
+    for arm, daily_returns, daily_values, native in arms:
+        sharpe, _ = sharpe_sortino_ratios(daily_returns, PERIODS_PER_YEAR_DAILY)
+        rows.append({
+            "arm": arm, "sharpe_daily_mtm": sharpe, "max_drawdown_daily_pct": max_drawdown_pct(daily_values),
+            "max_drawdown_native_pct": native["max_drawdown_pct"], "final_capital": native["final_capital"],
+        })
+    return {"n_daily_closes": int(len(day_bars)), "arms": rows}
+
+
+def _mtm_blend_split(df, trades_df, fraction, sleeve, strategy_drag_pct, passive_drag_pct, contribution_amount=1.0):
+    """
+    One Table 12 split, valued at the UTC daily close. Each ISO week
+    `contribution_amount` arrives: (1 - fraction) buys BTC at that bar's close
+    (marked up by passive_drag_pct), `fraction` goes to the sleeve.
+
+    sleeve = "strategy": the sleeve's cash enters each trade at its entry bar
+    and is marked to market while the trade is open; a contribution that
+    arrives DURING an open trade is held as cash and joins only after that
+    trade exits. (run_dca_blend_analysis() instead lets such a contribution
+    earn the whole trade's return, as if it had joined at the entry price --
+    changed here by decision of 2026-10-28; see the changelog.)
+    sleeve = "cash": the control. The sleeve's share is held as cash at 0%.
+    """
+    assert sleeve in ("strategy", "cash")
+    close = df["close"].values
+    n_bars = len(df)
+    contribution_bars = _iso_week_first_bars(df)
+    contribution_bar_set = set(contribution_bars.tolist())
+    day_bars = _daily_close_bars(df)
+    trades = {int(t.entry_idx): t for t in trades_df.itertuples()} if sleeve == "strategy" else {}
+
+    btc_units = 0.0
+    sleeve_cash = 0.0
+    invested = 0.0
+    open_trade = None
+    mid_trade_contributions = 0
+    value = np.empty(n_bars)
+    contribution_by_bar = np.zeros(n_bars)
+    for i in range(n_bars):
+        price = close[i]
+        if open_trade is not None and i == int(open_trade.exit_idx):
+            sleeve_cash += invested * (1 + (open_trade.pnl_pct - strategy_drag_pct) / 100)
+            invested = 0.0
+            open_trade = None
+        if i in contribution_bar_set:
+            btc_units += contribution_amount * (1.0 - fraction) / (price * (1 + passive_drag_pct / 100))
+            sleeve_cash += contribution_amount * fraction
+            contribution_by_bar[i] = contribution_amount
+            if open_trade is not None:
+                mid_trade_contributions += 1
+        if open_trade is None and i in trades:
+            open_trade = trades[i]
+            invested, sleeve_cash = sleeve_cash, 0.0
+        sleeve_value = sleeve_cash
+        if open_trade is not None:
+            sign = _trade_side_sign(open_trade.side)
+            sleeve_value += invested * (1 + sign * (price / open_trade.entry - 1))
+        value[i] = btc_units * price + sleeve_value
+
+    contribution_per_day = np.diff(np.concatenate([[0.0], np.cumsum(contribution_by_bar)[day_bars]]))
+    daily_values = value[day_bars]
+    sharpe, _ = sharpe_sortino_ratios(_contribution_net_period_returns(daily_values, contribution_per_day),
+                                      PERIODS_PER_YEAR_DAILY)
+    return {
+        "sharpe_daily_mtm": sharpe, "max_drawdown_daily_pct": max_drawdown_pct(daily_values),
+        "final_value": float(value[-1]), "total_contributed": float(contribution_by_bar.sum()),
+        "mid_trade_contributions": mid_trade_contributions if fraction > 0 else 0,
+    }
+
+
+def _mtm_blend(df, trades_df, strategy_drag_pct, passive_drag_pct, fractions=(0.10, 0.20, 0.30)):
+    """Table 12 with its cash-sleeve control, plus the H2 comparison."""
+    baseline = _mtm_blend_split(df, trades_df, 0.0, "cash", strategy_drag_pct, passive_drag_pct)
+    rows = []
+    for fraction in fractions:
+        strategy = _mtm_blend_split(df, trades_df, fraction, "strategy", strategy_drag_pct, passive_drag_pct)
+        cash = _mtm_blend_split(df, trades_df, fraction, "cash", strategy_drag_pct, passive_drag_pct)
+        rows.append({
+            "split_label": f"{int(round((1 - fraction) * 100))}/{int(round(fraction * 100))}",
+            "strategy_sleeve_fraction": fraction, "strategy_sleeve": strategy, "cash_sleeve": cash,
+            "strategy_beats_cash_sharpe": bool(strategy["sharpe_daily_mtm"] > cash["sharpe_daily_mtm"]),
+            "strategy_beats_cash_drawdown": bool(strategy["max_drawdown_daily_pct"] > cash["max_drawdown_daily_pct"]),
+            "strategy_beats_baseline_sharpe": bool(strategy["sharpe_daily_mtm"] > baseline["sharpe_daily_mtm"]),
+            "strategy_beats_baseline_drawdown": bool(strategy["max_drawdown_daily_pct"] > baseline["max_drawdown_daily_pct"]),
+        })
+    return {
+        "strategy_drag_pct": strategy_drag_pct, "passive_drag_pct": passive_drag_pct,
+        "baseline_100_0": baseline, "splits": rows,
+        "h2_strategy_beats_cash_on_both_at_every_share": all(
+            r["strategy_beats_cash_sharpe"] and r["strategy_beats_cash_drawdown"] for r in rows),
+        "h2_strategy_beats_baseline_on_both_at_every_share": all(
+            r["strategy_beats_baseline_sharpe"] and r["strategy_beats_baseline_drawdown"] for r in rows),
+    }
+
+
+def _blend_mid_trade_effect(df, trades_df, fractions=(0.10, 0.20, 0.30)):
+    """
+    Effect of the mid-trade-contribution change on each blend's final value
+    (gross, last bar): the old construction (_daily_sharpe_blend(), where a
+    contribution arriving during an open trade earns that trade's whole
+    return) against the new one (_mtm_blend_split(), where it waits as cash).
+    """
+    old = {r["strategy_sleeve_fraction"]: r["final_value"] for r in _daily_sharpe_blend(df, trades_df)}
+    rows = []
+    for fraction in fractions:
+        new = _mtm_blend_split(df, trades_df, fraction, "strategy", 0.0, 0.0)
+        rows.append({
+            "strategy_sleeve_fraction": fraction, "mid_trade_contributions": new["mid_trade_contributions"],
+            "final_value_old_construction": old[fraction], "final_value_new_construction": new["final_value"],
+            "difference": new["final_value"] - old[fraction],
+        })
+    return rows
+
+
+def run_benchmark_mark_to_market(df_main, trades_main, df_formulation, trades_formulation, starting_capital=10000.0):
+    """
+    Tables 9-12 with the strategy (and the blend's strategy sleeve) MARKED TO
+    MARKET at each UTC daily close, and every arm's Sharpe AND maximum
+    drawdown taken on that one daily clock. Adds Table 12's cash-sleeve
+    control and the H2 decision (decided NET of costs: 0.20% round trip per
+    strategy trade, 0.10% markup on each passive purchase; gross reported as
+    a sensitivity).
+
+    Statistical/analytical question answered: "with open trades valued at
+    every daily close, does the strategy still have the higher Sharpe and the
+    shallower drawdown, and does a strategy sleeve beat simply holding the
+    same share of each contribution as cash?" Descriptive, no p-value. Added
+    2026-10-28 for bitcoin (7). run_benchmark_vs_passive(),
+    run_dca_blend_analysis() and run_benchmark_daily_sharpe() are unchanged.
+    """
+    return {
+        "periods_per_year": PERIODS_PER_YEAR_DAILY,
+        "day_boundary": "00:00 UTC (last 4h bar of each UTC day)",
+        "main_window": {
+            "gross": _mtm_head_to_head(df_main, trades_main, starting_capital, 0.0, 0.0),
+            "fee_adjusted": _mtm_head_to_head(df_main, trades_main, starting_capital,
+                                              BENCHMARK_ROUND_TRIP_DRAG_PCT, BENCHMARK_ONE_SIDE_DRAG_PCT),
+            "blend_net": _mtm_blend(df_main, trades_main, BENCHMARK_ROUND_TRIP_DRAG_PCT, BENCHMARK_ONE_SIDE_DRAG_PCT),
+            "blend_gross": _mtm_blend(df_main, trades_main, 0.0, 0.0),
+            "blend_mid_trade_effect": _blend_mid_trade_effect(df_main, trades_main),
+        },
+        "formulation_period_window": {
+            "gross": _mtm_head_to_head(df_formulation, trades_formulation, starting_capital, 0.0, 0.0),
+        },
+    }
+
+
 def build_trades_and_results_table(df, trades_df):
     """
     Assemble the full per-trade table (sorted by entry_idx, with resolved
@@ -5534,6 +5773,19 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
     results["benchmark_daily_sharpe"] = benchmark_daily_sharpe
     with open(BENCHMARK_DAILY_SHARPE_JSON, "w", encoding="utf-8") as f:
         json.dump(benchmark_daily_sharpe, f, indent=2, default=json_safe)
+    benchmark_mtm = run_benchmark_mark_to_market(df, baseline_trades, formulation_df, formulation_trades)
+    for window_key, block_key in (("main_window", "gross"), ("main_window", "fee_adjusted"),
+                                  ("formulation_period_window", "gross")):
+        for arm in benchmark_mtm[window_key][block_key]["arms"]:
+            report_stat(
+                f"Mark-to-market daily Sharpe/MDD, {block_key.upper()}, {window_key}: {arm['arm']}",
+                inputs={"n_daily_closes": benchmark_mtm[window_key][block_key]["n_daily_closes"]},
+                outputs={"sharpe_daily_mtm": arm["sharpe_daily_mtm"],
+                         "max_drawdown_daily_pct": arm["max_drawdown_daily_pct"]},
+            )
+    results["benchmark_mtm"] = benchmark_mtm
+    with open(BENCHMARK_MTM_JSON, "w", encoding="utf-8") as f:
+        json.dump(benchmark_mtm, f, indent=2, default=json_safe)
 
     main_trades_table, main_results_summary = build_trades_and_results_table(df, baseline_trades)
     formulation_trades_table, formulation_results_summary = build_trades_and_results_table(formulation_df, formulation_trades)
