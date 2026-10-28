@@ -46,6 +46,35 @@ Fee-adjusted variant: strategy +24.91% -> $12,719.01.
 +21.82% -> $12,282.53; DCA +439.88% -> $53,987.55; lump-sum +236.96% ->
 $33,696.49.
 
+**Sharpe at one common frequency (2026-10-28, paper bitcoin (6)).** The
+Sharpe figures above are each arm's NATIVE frequency (strategy and lump sum
+per 4h bar, m = 2,191.5; DCA weekly, m = 52), so they are not comparable
+across arms. From bitcoin (6) on, the paper reports every arm at the UTC daily
+close, m = 365, from `run_benchmark_daily_sharpe()` (research_analysis.py,
+Section 5B; artifact `artifacts/benchmark_daily_sharpe.json`). The native
+figures above are unchanged in code and still produced by
+`run_benchmark_vs_passive()`. Daily-close values:
+- 2022-2026 gross: strategy 1.1151, DCA 0.5581, lump sum 0.5534.
+- 2022-2026 net of costs: strategy 0.9446, DCA 0.5552, lump sum 0.5534.
+- 2018-2022 gross: strategy 0.681, DCA 0.802, lump sum 0.796.
+- Blend (Table 12): 100/0 0.558, 90/10 0.581, 80/20 0.606, 70/30 0.632.
+No ordering changed: the strategy is highest in 2022-2026 and lowest in
+2018-2022, and the blend still rises at every step.
+
+**Funding (2026-10-28).** `experimental/funding_cost.py` on Binance's monthly
+BTCUSDT funding archives (`experimental/data/btcusdt_funding.csv`): the 27
+trades crossed 114 settlements; longs paid 0.17 pp, shorts received 0.29 pp,
+net credit 0.11 pp. Total after 0.20% cost and funding +25.02% (vs +24.91%),
+17/27 wins, p = 0.1239 unchanged.
+
+**OPEN (found 2026-10-28, not fixed - needs review):** `_run_dca_dollar_arm()`
+reports DCA final capital and total return at the LAST CONTRIBUTION bar (first
+bar of the window's last ISO week, 2025-12-29), not the window's last bar
+(2026-01-01), while the strategy and lump-sum arms are measured at the last
+bar. At the last bar the 2022-2026 DCA value is $22,395.86, not $22,312.94.
+The paper's ordering is unaffected; the figure is left as published until
+reviewed.
+
 ## Corrected errors (disclosed)
 
 ### Backtest-engine bug

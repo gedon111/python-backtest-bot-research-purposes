@@ -4400,6 +4400,178 @@ def run_benchmark_vs_passive(df_main, trades_main, df_formulation, trades_formul
     }
 
 
+PERIODS_PER_YEAR_DAILY = 365
+BENCHMARK_DAILY_SHARPE_JSON = "artifacts/benchmark_daily_sharpe.json"
+
+
+def _daily_close_bars(df):
+    """
+    Bar index of the last 4h bar of every UTC calendar day in `df`. open_time
+    is stored as UTC+8 (see get_candles()), so the UTC day of a bar is
+    (open_time - 8h).date(); the last bar of a UTC day opens at 20:00 UTC and
+    closes at 00:00 UTC, the same boundary as Binance's own 1d candle.
+    """
+    utc_day = (df["open_time"] - pd.Timedelta(hours=8)).dt.date
+    return df.groupby(utc_day).apply(lambda g: g.index.max()).sort_values().values.astype(int)
+
+
+def _contribution_net_period_returns(value_at_points, contribution_at_points):
+    """r_k = (V_k - C_k) / V_{k-1} - 1, the same contribution-netting rule as
+    _run_dca_dollar_arm() and run_dca_blend_analysis(), at any sampling."""
+    returns = np.empty(len(value_at_points) - 1)
+    for k in range(1, len(value_at_points)):
+        returns[k - 1] = (value_at_points[k] - contribution_at_points[k]) / value_at_points[k - 1] - 1.0
+    return returns
+
+
+def _daily_sharpe_one_window(df, trades_df, starting_capital, strategy_drag_pct, passive_drag_pct):
+    """
+    Rebuild the three head-to-head equity curves of run_benchmark_vs_passive()
+    bar by bar, under the SAME construction rules, then sample every arm at
+    the UTC daily close and annualize its Sharpe with m = 365.
+
+    Statistical/analytical question answered: none new -- this re-expresses
+    the Sharpe ratio of Tables 9-11 at one common frequency. The native-
+    frequency Sharpe mixes 4h-bar returns (strategy, lump sum; the strategy's
+    are ~97% exact zeros from idle cash bars) with weekly returns (DCA), so
+    the three were not comparable. Final capital is re-derived here and
+    asserted equal to the existing arm functions' value, so the curves being
+    sampled are provably the same curves.
+    """
+    n_bars = len(df)
+    close = df["close"].values
+    day_bars = _daily_close_bars(df)
+
+    trades = trades_df.copy()
+    trades["pnl_pct"] = trades["pnl_pct"] - strategy_drag_pct
+    exit_pnl_by_bar = dict(zip(trades["exit_idx"].astype(int), trades["pnl_pct"]))
+    strategy_equity = np.empty(n_bars)
+    running_equity = starting_capital
+    for i in range(n_bars):
+        if i in exit_pnl_by_bar:
+            running_equity *= (1 + exit_pnl_by_bar[i] / 100)
+        strategy_equity[i] = running_equity
+
+    contribution_bars = _iso_week_first_bars(df)
+    contribution = starting_capital / len(contribution_bars)
+    contribution_bar_set = set(contribution_bars.tolist())
+    units = 0.0
+    dca_value = np.empty(n_bars)
+    contribution_by_bar = np.zeros(n_bars)
+    for i in range(n_bars):
+        if i in contribution_bar_set:
+            units += contribution / (close[i] * (1 + passive_drag_pct / 100))
+            contribution_by_bar[i] = contribution
+        dca_value[i] = units * close[i]
+    # Contribution landing in each daily period (between the previous daily
+    # close bar, exclusive, and this one, inclusive).
+    cumulative_contribution = np.cumsum(contribution_by_bar)
+    dca_contribution_per_day = np.diff(np.concatenate([[0.0], cumulative_contribution[day_bars]]))
+
+    lump_units = starting_capital / (df["open"].iloc[0] * (1 + passive_drag_pct / 100))
+    lump_equity = lump_units * close
+
+    strategy_daily = strategy_equity[day_bars]
+    dca_daily = dca_value[day_bars]
+    lump_daily = lump_equity[day_bars]
+    arms = {
+        "OB-gated strategy": np.diff(strategy_daily) / strategy_daily[:-1],
+        "Weekly DCA into BTC": _contribution_net_period_returns(dca_daily, dca_contribution_per_day),
+        "Lump-sum buy-and-hold": np.diff(lump_daily) / lump_daily[:-1],
+    }
+    native = {
+        "OB-gated strategy": _run_strategy_dollar_arm(df, trades_df, starting_capital, drag_pct=strategy_drag_pct),
+        "Weekly DCA into BTC": _run_dca_dollar_arm(df, starting_capital, drag_pct=passive_drag_pct),
+        "Lump-sum buy-and-hold": _run_lump_sum_dollar_arm(df, starting_capital, drag_pct=passive_drag_pct),
+    }
+    # _run_dca_dollar_arm() reports final_capital at the LAST CONTRIBUTION bar
+    # (first bar of the window's last ISO week), not the window's last bar --
+    # so the rebuild is checked at that same bar. The daily Sharpe itself
+    # samples every arm through the window's last bar, so all three arms
+    # share one clock. (Found 2026-10-28; reported, not changed.)
+    final_by_arm = {
+        "OB-gated strategy": strategy_equity[-1], "Weekly DCA into BTC": dca_value[contribution_bars[-1]],
+        "Lump-sum buy-and-hold": lump_equity[-1],
+    }
+    rows = []
+    for arm, daily_returns in arms.items():
+        assert abs(final_by_arm[arm] - native[arm]["final_capital"]) < 1e-6, (
+            f"{arm}: daily-sharpe rebuild final {final_by_arm[arm]} != run_benchmark_vs_passive() "
+            f"final {native[arm]['final_capital']} -- the rebuilt curve is not the published curve."
+        )
+        sharpe, _ = sharpe_sortino_ratios(daily_returns, PERIODS_PER_YEAR_DAILY)
+        rows.append({
+            "arm": arm, "sharpe_daily": sharpe, "sharpe_native": native[arm]["sharpe"],
+            "n_daily_returns": int(len(daily_returns)), "final_capital": float(final_by_arm[arm]),
+        })
+    return {"n_daily_closes": int(len(day_bars)), "arms": rows}
+
+
+def _daily_sharpe_blend(df, trades_df, contribution_amount=1.0, strategy_sleeve_fractions=(0.0, 0.10, 0.20, 0.30)):
+    """
+    Table 12's blended-sleeve Sharpe at the UTC daily close (m = 365), under
+    run_dca_blend_analysis()'s exact construction (1 unit per ISO week, the
+    sleeve compounds at each exit and is never moved back into BTC). Max
+    drawdown is NOT re-sampled here; Table 12 keeps its weekly figures.
+    """
+    n_bars = len(df)
+    close = df["close"].values
+    exit_pnl_by_bar = dict(zip(trades_df["exit_idx"].astype(int), trades_df["pnl_pct"].astype(float)))
+    contribution_bars = _iso_week_first_bars(df)
+    contribution_bar_set = set(contribution_bars.tolist())
+    day_bars = _daily_close_bars(df)
+    rows = []
+    for fraction in strategy_sleeve_fractions:
+        btc_units = 0.0
+        sleeve_cash = 0.0
+        value = np.empty(n_bars)
+        contribution_by_bar = np.zeros(n_bars)
+        for i in range(n_bars):
+            if i in contribution_bar_set:
+                btc_units += contribution_amount * (1.0 - fraction) / close[i]
+                sleeve_cash += contribution_amount * fraction
+                contribution_by_bar[i] = contribution_amount
+            if i in exit_pnl_by_bar:
+                sleeve_cash *= (1.0 + exit_pnl_by_bar[i] / 100.0)
+            value[i] = btc_units * close[i] + sleeve_cash
+        contribution_per_day = np.diff(np.concatenate([[0.0], np.cumsum(contribution_by_bar)[day_bars]]))
+        daily_returns = _contribution_net_period_returns(value[day_bars], contribution_per_day)
+        sharpe, _ = sharpe_sortino_ratios(daily_returns, PERIODS_PER_YEAR_DAILY)
+        rows.append({
+            "split_label": f"{int(round((1 - fraction) * 100))}/{int(round(fraction * 100))}",
+            "strategy_sleeve_fraction": fraction, "sharpe_daily": sharpe, "final_value": float(value[-1]),
+        })
+    return rows
+
+
+def run_benchmark_daily_sharpe(df_main, trades_main, df_formulation, trades_formulation, starting_capital=10000.0):
+    """
+    Sharpe ratio of every head-to-head arm (Tables 9, 10, 11) and every blend
+    split (Table 12) at ONE common frequency: the UTC daily close, annualized
+    with m = PERIODS_PER_YEAR_DAILY (365, crypto trades every day).
+
+    Statistical/analytical question answered: "which arm earned more return
+    per unit of volatility, when every arm's volatility is measured on the
+    same clock?" Descriptive, no p-value. Added 2026-10-28 for the regional
+    paper revision; run_benchmark_vs_passive() and run_dca_blend_analysis()
+    are left untouched so their native-frequency figures (and every artifact
+    built from them) do not move.
+    """
+    return {
+        "periods_per_year": PERIODS_PER_YEAR_DAILY,
+        "day_boundary": "00:00 UTC (last 4h bar of each UTC day)",
+        "main_window": {
+            "gross": _daily_sharpe_one_window(df_main, trades_main, starting_capital, 0.0, 0.0),
+            "fee_adjusted": _daily_sharpe_one_window(
+                df_main, trades_main, starting_capital, BENCHMARK_ROUND_TRIP_DRAG_PCT, BENCHMARK_ONE_SIDE_DRAG_PCT),
+            "blend": _daily_sharpe_blend(df_main, trades_main),
+        },
+        "formulation_period_window": {
+            "gross": _daily_sharpe_one_window(df_formulation, trades_formulation, starting_capital, 0.0, 0.0),
+        },
+    }
+
+
 def build_trades_and_results_table(df, trades_df):
     """
     Assemble the full per-trade table (sorted by entry_idx, with resolved
@@ -5350,6 +5522,18 @@ def run_full_analysis_pipeline(include_oos_live=False, bootstrap_resamples=10000
             )
     results["benchmark_vs_passive"] = benchmark_vs_passive
     results["formulation_window_reconciliation"] = reconciliation
+    benchmark_daily_sharpe = run_benchmark_daily_sharpe(df, baseline_trades, formulation_df, formulation_trades)
+    for window_key, block_key in (("main_window", "gross"), ("main_window", "fee_adjusted"),
+                                  ("formulation_period_window", "gross")):
+        for arm in benchmark_daily_sharpe[window_key][block_key]["arms"]:
+            report_stat(
+                f"Daily-close Sharpe (m=365), {block_key.upper()}, {window_key}: {arm['arm']}",
+                inputs={"n_daily_returns": arm["n_daily_returns"]},
+                outputs={"sharpe_daily": arm["sharpe_daily"], "sharpe_native": arm["sharpe_native"]},
+            )
+    results["benchmark_daily_sharpe"] = benchmark_daily_sharpe
+    with open(BENCHMARK_DAILY_SHARPE_JSON, "w", encoding="utf-8") as f:
+        json.dump(benchmark_daily_sharpe, f, indent=2, default=json_safe)
 
     main_trades_table, main_results_summary = build_trades_and_results_table(df, baseline_trades)
     formulation_trades_table, formulation_results_summary = build_trades_and_results_table(formulation_df, formulation_trades)

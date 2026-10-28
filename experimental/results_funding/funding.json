@@ -1,0 +1,236 @@
+{
+  "funding_csv_sha256": "ad21493a85eb456011044792df024fdfcf903353a8ccacf210391a261bf9aafa",
+  "convention": "charged when entry_close < settlement <= exit_close; cost = side_sign*rate*close_s/entry*100",
+  "n_trades": 27,
+  "total_settlements": 114,
+  "trades_with_no_settlement": 0,
+  "total_funding_cost_pct": -0.11227853195170297,
+  "mean_funding_cost_pct_per_trade": -0.004158464146359369,
+  "max_abs_funding_cost_pct_one_trade": 0.05863663746139231,
+  "long_funding_cost_pct": 0.17489968830864522,
+  "short_funding_cost_pct": -0.28717822026034817,
+  "total_return_gross_pct": 30.30645635603194,
+  "total_return_net_0_20_pct": 24.90645635603194,
+  "total_return_net_0_20_and_funding_pct": 25.01873488798364,
+  "wins_net_0_20_and_funding": 17,
+  "binomial_p_one_sided_net_0_20_and_funding": 0.12389428168535233,
+  "check_inclusive_entry_total_funding_cost_pct": -0.11541153195170296,
+  "per_trade": [
+    {
+      "entry_idx": 335,
+      "side": "SHORT",
+      "settlements": 4,
+      "funding_cost_pct": -0.024951182784082378,
+      "pnl_pct_gross": -0.6645474649259653,
+      "pnl_pct_net_cost_and_funding": -0.8395962821418829
+    },
+    {
+      "entry_idx": 359,
+      "side": "SHORT",
+      "settlements": 6,
+      "funding_cost_pct": -0.05863663746139231,
+      "pnl_pct_gross": 6.688833259794862,
+      "pnl_pct_net_cost_and_funding": 6.547469897256254
+    },
+    {
+      "entry_idx": 673,
+      "side": "LONG",
+      "settlements": 5,
+      "funding_cost_pct": -0.05800717735091403,
+      "pnl_pct_gross": -0.3809249165046062,
+      "pnl_pct_net_cost_and_funding": -0.5229177391536922
+    },
+    {
+      "entry_idx": 902,
+      "side": "SHORT",
+      "settlements": 4,
+      "funding_cost_pct": -0.03969043032077313,
+      "pnl_pct_gross": 3.2247615449995273,
+      "pnl_pct_net_cost_and_funding": 3.0644519753203
+    },
+    {
+      "entry_idx": 1050,
+      "side": "SHORT",
+      "settlements": 2,
+      "funding_cost_pct": -0.019938396159360623,
+      "pnl_pct_gross": 0.4432734821803227,
+      "pnl_pct_net_cost_and_funding": 0.2632118783396833
+    },
+    {
+      "entry_idx": 1158,
+      "side": "LONG",
+      "settlements": 2,
+      "funding_cost_pct": -0.0005925696812312827,
+      "pnl_pct_gross": -0.08976218157019918,
+      "pnl_pct_net_cost_and_funding": -0.2891696118889679
+    },
+    {
+      "entry_idx": 1913,
+      "side": "SHORT",
+      "settlements": 6,
+      "funding_cost_pct": 0.020289731849280825,
+      "pnl_pct_gross": 1.230786890619656,
+      "pnl_pct_net_cost_and_funding": 1.0104971587703753
+    },
+    {
+      "entry_idx": 2624,
+      "side": "SHORT",
+      "settlements": 1,
+      "funding_cost_pct": -0.031198511070992082,
+      "pnl_pct_gross": -4.654359367321062,
+      "pnl_pct_net_cost_and_funding": -4.82316085625007
+    },
+    {
+      "entry_idx": 2859,
+      "side": "LONG",
+      "settlements": 1,
+      "funding_cost_pct": 0.003812949096236193,
+      "pnl_pct_gross": 0.25068272937506064,
+      "pnl_pct_net_cost_and_funding": 0.046869780278824436
+    },
+    {
+      "entry_idx": 3100,
+      "side": "LONG",
+      "settlements": 7,
+      "funding_cost_pct": 0.05231088689885,
+      "pnl_pct_gross": 0.7688733961019558,
+      "pnl_pct_net_cost_and_funding": 0.5165625092031059
+    },
+    {
+      "entry_idx": 3196,
+      "side": "SHORT",
+      "settlements": 6,
+      "funding_cost_pct": -0.035781148749966955,
+      "pnl_pct_gross": -0.7817852866634167,
+      "pnl_pct_net_cost_and_funding": -0.9460041379134497
+    },
+    {
+      "entry_idx": 3859,
+      "side": "LONG",
+      "settlements": 6,
+      "funding_cost_pct": 0.005244745355395296,
+      "pnl_pct_gross": 0.6263359977307055,
+      "pnl_pct_net_cost_and_funding": 0.42109125237531014
+    },
+    {
+      "entry_idx": 3947,
+      "side": "SHORT",
+      "settlements": 2,
+      "funding_cost_pct": -0.010257643183601492,
+      "pnl_pct_gross": -1.6043660327398526,
+      "pnl_pct_net_cost_and_funding": -1.794108389556251
+    },
+    {
+      "entry_idx": 4455,
+      "side": "LONG",
+      "settlements": 3,
+      "funding_cost_pct": 0.029837877782329898,
+      "pnl_pct_gross": -1.1458370023228253,
+      "pnl_pct_net_cost_and_funding": -1.375674880105155
+    },
+    {
+      "entry_idx": 5800,
+      "side": "SHORT",
+      "settlements": 8,
+      "funding_cost_pct": -0.01083478582383594,
+      "pnl_pct_gross": 2.7933082699741143,
+      "pnl_pct_net_cost_and_funding": 2.60414305579795
+    },
+    {
+      "entry_idx": 5825,
+      "side": "LONG",
+      "settlements": 2,
+      "funding_cost_pct": -0.001083763745005073,
+      "pnl_pct_gross": 0.3779120486356351,
+      "pnl_pct_net_cost_and_funding": 0.17899581238064016
+    },
+    {
+      "entry_idx": 6040,
+      "side": "LONG",
+      "settlements": 7,
+      "funding_cost_pct": 0.010385172270954845,
+      "pnl_pct_gross": 1.380595058653915,
+      "pnl_pct_net_cost_and_funding": 1.1702098863829602
+    },
+    {
+      "entry_idx": 6109,
+      "side": "SHORT",
+      "settlements": 1,
+      "funding_cost_pct": -0.01005838929875863,
+      "pnl_pct_gross": -2.028436255784294,
+      "pnl_pct_net_cost_and_funding": -2.2183778664855356
+    },
+    {
+      "entry_idx": 6366,
+      "side": "LONG",
+      "settlements": 2,
+      "funding_cost_pct": 0.027298617555190738,
+      "pnl_pct_gross": 4.363405624919001,
+      "pnl_pct_net_cost_and_funding": 4.13610700736381
+    },
+    {
+      "entry_idx": 6537,
+      "side": "SHORT",
+      "settlements": 5,
+      "funding_cost_pct": -0.04505576929136608,
+      "pnl_pct_gross": 3.4665252672605105,
+      "pnl_pct_net_cost_and_funding": 3.3115810365518765
+    },
+    {
+      "entry_idx": 6991,
+      "side": "LONG",
+      "settlements": 4,
+      "funding_cost_pct": 0.019467577645245662,
+      "pnl_pct_gross": 1.6338462131465472,
+      "pnl_pct_net_cost_and_funding": 1.4143786355013015
+    },
+    {
+      "entry_idx": 7109,
+      "side": "LONG",
+      "settlements": 5,
+      "funding_cost_pct": 0.018447757633178494,
+      "pnl_pct_gross": 3.508775762686693,
+      "pnl_pct_net_cost_and_funding": 3.290328005053514
+    },
+    {
+      "entry_idx": 7938,
+      "side": "LONG",
+      "settlements": 5,
+      "funding_cost_pct": 0.03210219774293761,
+      "pnl_pct_gross": 0.11959502895478961,
+      "pnl_pct_net_cost_and_funding": -0.11250716878814801
+    },
+    {
+      "entry_idx": 7964,
+      "side": "LONG",
+      "settlements": 7,
+      "funding_cost_pct": 0.04437848058234833,
+      "pnl_pct_gross": 2.3789469350208936,
+      "pnl_pct_net_cost_and_funding": 2.1345684544385453
+    },
+    {
+      "entry_idx": 8188,
+      "side": "LONG",
+      "settlements": 2,
+      "funding_cost_pct": 0.003422454850227439,
+      "pnl_pct_gross": 0.12641496644751074,
+      "pnl_pct_net_cost_and_funding": -0.0770074884027167
+    },
+    {
+      "entry_idx": 8280,
+      "side": "LONG",
+      "settlements": 5,
+      "funding_cost_pct": -0.012125518327098916,
+      "pnl_pct_gross": 4.623260688857563,
+      "pnl_pct_net_cost_and_funding": 4.435386207184662
+    },
+    {
+      "entry_idx": 8596,
+      "side": "SHORT",
+      "settlements": 6,
+      "funding_cost_pct": -0.021065057965499377,
+      "pnl_pct_gross": 3.650341698504897,
+      "pnl_pct_net_cost_and_funding": 3.471406756470396
+    }
+  ]
+}

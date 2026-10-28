@@ -1,0 +1,112 @@
+{
+  "periods_per_year": 365,
+  "day_boundary": "00:00 UTC (last 4h bar of each UTC day)",
+  "main_window": {
+    "gross": {
+      "n_daily_closes": 1462,
+      "arms": [
+        {
+          "arm": "OB-gated strategy",
+          "sharpe_daily": 1.1150840378149165,
+          "sharpe_native": 1.1142026628047457,
+          "n_daily_returns": 1461,
+          "final_capital": 13417.773473513555
+        },
+        {
+          "arm": "Weekly DCA into BTC",
+          "sharpe_daily": 0.5581477759244604,
+          "sharpe_native": 0.5559171811376198,
+          "n_daily_returns": 1461,
+          "final_capital": 22312.9384000892
+        },
+        {
+          "arm": "Lump-sum buy-and-hold",
+          "sharpe_daily": 0.5533908519532209,
+          "sharpe_native": 0.56418619936742,
+          "n_daily_returns": 1461,
+          "final_capital": 19007.324805001113
+        }
+      ]
+    },
+    "fee_adjusted": {
+      "n_daily_closes": 1462,
+      "arms": [
+        {
+          "arm": "OB-gated strategy",
+          "sharpe_daily": 0.9445760342034168,
+          "sharpe_native": 0.9442072252889269,
+          "n_daily_returns": 1461,
+          "final_capital": 12719.006384388367
+        },
+        {
+          "arm": "Weekly DCA into BTC",
+          "sharpe_daily": 0.5551688309087209,
+          "sharpe_native": 0.5529212550582089,
+          "n_daily_returns": 1461,
+          "final_capital": 22290.647752336834
+        },
+        {
+          "arm": "Lump-sum buy-and-hold",
+          "sharpe_daily": 0.553390851953221,
+          "sharpe_native": 0.5641861993674222,
+          "n_daily_returns": 1461,
+          "final_capital": 18988.336468532583
+        }
+      ]
+    },
+    "blend": [
+      {
+        "split_label": "100/0",
+        "strategy_sleeve_fraction": 0.0,
+        "sharpe_daily": 0.5581477759244626,
+        "final_value": 470.31314850493226
+      },
+      {
+        "split_label": "90/10",
+        "strategy_sleeve_fraction": 0.1,
+        "sharpe_daily": 0.5814149585879025,
+        "final_value": 448.98994036871727
+      },
+      {
+        "split_label": "80/20",
+        "strategy_sleeve_fraction": 0.2,
+        "sharpe_daily": 0.6058721034843148,
+        "final_value": 427.66673223250285
+      },
+      {
+        "split_label": "70/30",
+        "strategy_sleeve_fraction": 0.3,
+        "sharpe_daily": 0.632040911262385,
+        "final_value": 406.34352409628684
+      }
+    ]
+  },
+  "formulation_period_window": {
+    "gross": {
+      "n_daily_closes": 1461,
+      "arms": [
+        {
+          "arm": "OB-gated strategy",
+          "sharpe_daily": 0.6807518276683608,
+          "sharpe_native": 0.6812469523789468,
+          "n_daily_returns": 1460,
+          "final_capital": 12282.529180900943
+        },
+        {
+          "arm": "Weekly DCA into BTC",
+          "sharpe_daily": 0.802442314226115,
+          "sharpe_native": 0.8243706610865622,
+          "n_daily_returns": 1460,
+          "final_capital": 53987.54958980332
+        },
+        {
+          "arm": "Lump-sum buy-and-hold",
+          "sharpe_daily": 0.7963104084015601,
+          "sharpe_native": 0.7889162148505117,
+          "n_daily_returns": 1460,
+          "final_capital": 33696.492692654014
+        }
+      ]
+    }
+  }
+}
