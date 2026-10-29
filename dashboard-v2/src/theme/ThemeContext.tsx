@@ -32,7 +32,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [pageTheme, setPageTheme] = useState<'light' | 'dark'>('dark');
+  const [pageTheme, setPageTheme] = useState<'light' | 'dark'>('light');
   const [dataColors, setDataColors] = useState<DashboardTheme['dataColors']>(DEFAULT_DATA_COLORS);
   const [loaded, setLoaded] = useState(false);
 

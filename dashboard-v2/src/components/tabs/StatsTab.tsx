@@ -269,8 +269,8 @@ function AblationSection({
                       <tr>
                         <td>{arm.label} (locked)</td>
                         <td>{arm.locked.n}</td>
-                        <td>{pct(arm.locked.win_rate)}</td>
-                        <td className={pnlClass(arm.locked.total_return)}>{spct(arm.locked.total_return)}</td>
+                        <td>{pct(arm.locked.win_rate_pct)}</td>
+                        <td className={pnlClass(arm.locked.total_return_pct)}>{spct(arm.locked.total_return_pct)}</td>
                       </tr>
                       <tr className="row-muted">
                         <td>{arm.label} (this session's reconstruction)</td>

@@ -1,108 +1,102 @@
 /*
- * Design tokens -- rebuilt from nothing (see git history for the prior,
- * deleted version). Direction: a data-dense trading-terminal instrument, not
- * a SaaS dashboard. Dark is the native/default mode, not an afterthought --
- * true near-black surfaces, amber as the primary accent (the color most
- * associated with professional terminal UIs), cyan as a secondary/interactive
- * accent, monospace for everything (data AND labels/headers -- one typeface,
- * not three). Light mode is supported through the same custom-property
- * mechanism for accessibility, but every design decision below is made for
- * dark first.
+ * Design tokens -- Grit Press (claude.ai design system "Grit Press"):
+ * risograph / screen-print brutalism. Paper ground, ink text, hard 3px ink
+ * borders, a 6px offset shadow with no blur, square corners, paper grain.
+ * Anton for headlines, Archivo Narrow for body, Space Mono for every number
+ * and spec (tabular data must stay monospace for column alignment).
  *
- * No filled colored badges/pills anywhere in this system -- status and
- * severity are conveyed by the .tag (bracket-text) and .rail-* (left-border
- * stripe on an otherwise neutral panel) utilities defined at the bottom of
- * this file. Every component built on top of these tokens must use those,
- * not introduce a new colored-background pattern.
+ * "print" (paper) is the native mode; "dark" swaps the ground to soot.
+ * Component CSS only ever reads the semantic variables below, so the token
+ * names are unchanged from the previous terminal theme.
+ *
+ * Grit Press rules carried here: no gradients, no blur, no rounded cards,
+ * at most two inks on the ground, never small signal-orange text on paper.
  */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Layered near-black surfaces -- texture without shadows or gradients. */
-  --surface-0: #060606; /* page background */
-  --surface-1: #0e0f12; /* panel background */
-  --surface-2: #16181d; /* nested/raised panel, table header row */
-  --surface-3: #1e2129; /* hover / active row */
+  /* Grit Press palette (exact token values). */
+  --gp-paper: #efe4cf;
+  --gp-ink: #141210;
+  --gp-oxblood: #7a1f14;
+  --gp-signal-red: #d6301f;
+  --gp-signal-orange: #e8761c;
+  --gp-mustard: #e0a82e;
+  --gp-cobalt: #1f3fbf;
+  --gp-soot: #2b2622;
+  --gp-faded: #5c5248;
 
-  --border: #26282f;
-  --border-strong: #383b45;
+  --surface-0: var(--gp-paper);
+  --surface-1: #f6eedd; /* panel: a lighter sheet laid on the paper */
+  --surface-2: #e4d6bb; /* table header / nested block */
+  --surface-3: #d9c8a6; /* hover row */
 
-  --text-primary: #e8e6de;
-  --text-secondary: #a3a6b0;
-  --text-muted: #62656f;
+  --border: var(--gp-ink);
+  --border-strong: var(--gp-ink);
 
-  /* Amber: the primary accent -- the color terminal UIs are built around. */
-  --accent: #ff9f0a;
-  --accent-strong: #ffb84d;
-  /* Cyan: secondary/interactive accent -- links, live-state, selection. */
-  --accent-2: #2dd9d9;
+  --text-primary: var(--gp-ink);
+  --text-secondary: #3a332c;
+  --text-muted: var(--gp-faded);
 
-  --good: #2ecc71;
-  --critical: #ff4d4f;
-  --warning: #ffcc33;
+  --accent: var(--gp-oxblood);
+  --accent-strong: var(--gp-signal-red);
+  --accent-2: var(--gp-cobalt);
+  --accent-fill: var(--gp-mustard); /* highlight bars; ink text on it */
 
-  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  /* PnL: always shown with a +/- sign, so color is never the only cue. */
+  --good: var(--gp-cobalt);
+  --critical: var(--gp-oxblood);
+  --warning: #8a5a00;
+
+  --shadow-offset: 6px 6px 0 var(--gp-ink);
+  --shadow-offset-sm: 3px 3px 0 var(--gp-ink);
+  --border-hard: 3px;
+
+  --font-display: 'Anton', 'Impact', sans-serif;
+  --font-body: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+  --font-hand: 'Caveat Brush', cursive;
 
   --space-1: 4px;
   --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 64px;
 
-  --radius: 2px;
-  --topbar-height: 44px;
+  --radius: 0px;
+  --topbar-height: 64px;
+  --grain-opacity: 0.12;
 }
 
-:root[data-theme='light'] {
-  color-scheme: light;
+:root[data-theme='dark'] {
+  color-scheme: dark;
 
-  --surface-0: #f4f4f0;
-  --surface-1: #ffffff;
-  --surface-2: #eae9e3;
-  --surface-3: #dedcd3;
+  --surface-0: var(--gp-soot);
+  --surface-1: #352f2a;
+  --surface-2: #1f1b18;
+  --surface-3: #463e37;
 
-  --border: #d3d1c7;
-  --border-strong: #b6b3a5;
+  --border: var(--gp-paper);
+  --border-strong: var(--gp-paper);
 
-  --text-primary: #14140f;
-  --text-secondary: #4c4b43;
-  --text-muted: #83816f;
+  --text-primary: var(--gp-paper);
+  --text-secondary: #d8ccb4;
+  --text-muted: #b3a690;
 
-  --accent: #b5650a;
-  --accent-strong: #8a4c06;
-  --accent-2: #067a7a;
+  --accent: var(--gp-signal-orange);
+  --accent-strong: var(--gp-mustard);
+  --accent-2: var(--gp-mustard);
+  --accent-fill: var(--gp-mustard);
 
-  --good: #1a8a44;
-  --critical: #c4302b;
-  --warning: #a6720a;
-}
+  --good: var(--gp-mustard);
+  --critical: #ff7a5c;
+  --warning: var(--gp-mustard);
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) {
-    color-scheme: light;
-
-    --surface-0: #f4f4f0;
-    --surface-1: #ffffff;
-    --surface-2: #eae9e3;
-    --surface-3: #dedcd3;
-
-    --border: #d3d1c7;
-    --border-strong: #b6b3a5;
-
-    --text-primary: #14140f;
-    --text-secondary: #4c4b43;
-    --text-muted: #83816f;
-
-    --accent: #b5650a;
-    --accent-strong: #8a4c06;
-    --accent-2: #067a7a;
-
-    --good: #1a8a44;
-    --critical: #c4302b;
-    --warning: #a6720a;
-  }
+  --shadow-offset: 6px 6px 0 #0c0a09;
+  --shadow-offset-sm: 3px 3px 0 #0c0a09;
+  --grain-opacity: 0.08;
 }
 
 * {
@@ -118,10 +112,26 @@ body {
 body {
   background: var(--surface-0);
   color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  line-height: 1.5;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Paper grain: SVG fractal noise over everything, never intercepting input. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+:root[data-theme='dark'] body::after {
+  mix-blend-mode: screen;
 }
 
 #root {
@@ -130,38 +140,47 @@ body {
 
 table {
   border-collapse: collapse;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   width: 100%;
 }
 
 th {
   text-align: left;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
   background: var(--surface-2);
-  border-bottom: 1px solid var(--border-strong);
+  border-bottom: var(--border-hard) solid var(--border-strong);
   padding: var(--space-2) var(--space-3);
 }
 
 td {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px dashed var(--border);
   padding: var(--space-2) var(--space-3);
+}
+
+tbody tr:hover td {
+  background: var(--surface-3);
 }
 
 code {
   font-family: var(--font-mono);
+  font-size: 0.92em;
 }
 
 h1,
 h2,
 h3,
 h4 {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
   margin: 0;
 }
 
@@ -170,10 +189,32 @@ select,
 input {
   font-family: var(--font-mono);
   font-size: inherit;
+  font-weight: 700;
   color: var(--text-primary);
-  background: var(--surface-2);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
+  background: var(--surface-1);
+  border: 2px solid var(--border-strong);
+  border-radius: 0;
+}
+
+button {
+  cursor: pointer;
+  box-shadow: var(--shadow-offset-sm);
+  transition: transform 60ms linear, box-shadow 60ms linear;
+}
+
+button:hover {
+  background: var(--accent-fill);
+  color: var(--gp-ink);
+}
+
+button:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent-2);
+  outline-offset: 2px;
 }
 
 /* ---------------------------------------------------------------------
@@ -182,35 +223,37 @@ input {
 
 .panel {
   background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: var(--border-hard) solid var(--border-strong);
+  border-radius: 0;
+  box-shadow: var(--shadow-offset);
 }
 
-/* Severity/status rail -- a colored left border on an otherwise neutral
-   panel, replacing filled colored backgrounds entirely. */
+/* Status rail: kept as a component, drawn as a mustard tape strip label
+   inside an ink frame rather than a colored left border. */
 .rail {
-  border-left: 3px solid var(--border-strong);
+  border: 2px solid var(--border-strong);
   padding-left: var(--space-3);
 }
-.rail-accent { border-left-color: var(--accent); }
-.rail-good { border-left-color: var(--good); }
-.rail-critical { border-left-color: var(--critical); }
-.rail-warning { border-left-color: var(--warning); }
+.rail-accent { border-left: 10px solid var(--accent); }
+.rail-good { border-left: 10px solid var(--good); }
+.rail-critical { border-left: 10px solid var(--critical); }
+.rail-warning { border-left: 10px solid var(--gp-mustard); }
 
-/* Bracket-tag: the sole status/provenance indicator across the app.
-   Rendered as inline monospace text, e.g. <span class="tag tag-live">LIVE</span>
-   -> "[LIVE]" -- brackets are added via ::before/::after so callers never
-   have to type them, and can't accidentally add a colored background. */
+/* Stamp tag: ink-framed spec label, e.g. <span class="tag tag-live">LIVE</span>. */
 .tag {
+  display: inline-block;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;
+  padding: 3px 6px;
+  border: 2px solid currentColor;
+  transform: rotate(-2deg);
+  vertical-align: middle;
 }
-.tag::before { content: '['; }
-.tag::after { content: ']'; }
 
 .tag-live { color: var(--accent-2); }
 .tag-ref { color: var(--text-muted); }
@@ -219,8 +262,6 @@ input {
 .tag-warning { color: var(--warning); }
 .tag-accent { color: var(--accent); }
 
-/* Centralized semantic text-color utilities -- replaces one-off
-   style={{color: 'var(--x)'}} overrides scattered through components. */
 .text-good { color: var(--good); }
 .text-critical { color: var(--critical); }
 .text-warning { color: var(--warning); }
@@ -228,7 +269,35 @@ input {
 .text-muted { color: var(--text-muted); }
 .text-secondary { color: var(--text-secondary); }
 
-/* Plain semantic text color for trade PnL, not a "colored rectangle" -- no
-   background, no border, just the number itself in green/red. */
-.pnl-pos { color: var(--good); }
-.pnl-neg { color: var(--critical); }
+.pnl-pos { color: var(--good); font-weight: 700; }
+.pnl-neg { color: var(--critical); font-weight: 700; }
+
+/* Card headlines across tabs: Anton slab. */
+.app-content .stat-card h3,
+.app-content .solutions-tab h2,
+.app-content .solutions-tab h3,
+.app-content .sandbox-tab h3 {
+  font-size: 1.6rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+
+.metric-label,
+.control-field {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+}
+
+.method-block {
+  border: 2px dashed var(--border-strong) !important;
+  background: var(--surface-2) !important;
+}
+
+.settings-scrim {
+  background: rgba(20, 18, 16, 0.55) !important;
+}

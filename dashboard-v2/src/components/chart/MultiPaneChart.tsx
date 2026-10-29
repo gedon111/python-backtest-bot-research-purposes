@@ -128,18 +128,18 @@ export function MultiPaneChart({
     if (!containerRef.current) return;
 
     const isDark = pageTheme === 'dark';
-    const borderColor = isDark ? '#26282f' : '#d3d1c7';
+    const borderColor = isDark ? '#efe4cf' : '#141210';
     const commonOptions = {
       layout: {
-        background: { color: isDark ? '#0e0f12' : '#ffffff' },
-        textColor: isDark ? '#a3a6b0' : '#4c4b43',
-        fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+        background: { color: isDark ? '#352f2a' : '#f6eedd' },
+        textColor: isDark ? '#d8ccb4' : '#141210',
+        fontFamily: "'Space Mono', ui-monospace, monospace",
         fontSize: 11,
         panes: { separatorColor: borderColor },
       },
       grid: {
-        vertLines: { color: isDark ? '#1a1c22' : '#eae9e3' },
-        horzLines: { color: isDark ? '#1a1c22' : '#eae9e3' },
+        vertLines: { color: isDark ? '#463e37' : '#e4d6bb' },
+        horzLines: { color: isDark ? '#463e37' : '#e4d6bb' },
       },
       rightPriceScale: { borderColor, minimumWidth: 90 },
       timeScale: { borderColor, timeVisible: true },
@@ -350,7 +350,7 @@ export function MultiPaneChart({
     bundle.candleSeries.setData(colored);
     redrawOverlays(bundle, hoveredTimeRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [candles, processedObs, processedTrades, showObZones, showTradeZones, dataColors]);
+  }, [candles, processedObs, processedTrades, showObZones, showTradeZones, dataColors, pageTheme]);
 
   // --- Adaptive KDJ pane: always shows every trade's segment, not just the
   // hovered one. Separate from the effect above (keyed on fewer deps) since
@@ -360,7 +360,7 @@ export function MultiPaneChart({
     if (!bundle || candles.length === 0) return;
     rebuildAdaptiveKdjSeries(bundle, processedTrades);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [candles, processedTrades]);
+  }, [candles, processedTrades, pageTheme]);
 
   // --- Series colors ---
   useEffect(() => {
@@ -392,7 +392,7 @@ export function MultiPaneChart({
     bundle.atrLine.applyOptions({ color: hexToRgbaStr(dataColors.atr14) });
     bundle.atr200Line.applyOptions({ color: hexToRgbaStr(dataColors.atr200) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataColors, candles]);
+  }, [dataColors, candles, pageTheme]);
 
   // --- Autofit / autoscale ---
   useEffect(() => {
@@ -401,7 +401,7 @@ export function MultiPaneChart({
     for (const paneIndex of Object.values(PANE)) {
       bundle.chart.priceScale('right', paneIndex).applyOptions({ autoScale: autoFit });
     }
-  }, [autoFit]);
+  }, [autoFit, pageTheme]);
 
   // --- Forced date-range window (Chart tab's date inputs) ---
   // Uses the time scale's own setVisibleRange, not a re-slice of `candles` --
@@ -413,7 +413,7 @@ export function MultiPaneChart({
     const bundle = bundleRef.current;
     if (!bundle || !visibleRange) return;
     bundle.chart.timeScale().setVisibleRange(visibleRange);
-  }, [visibleRange]);
+  }, [visibleRange, pageTheme]);
 
   // --- Locked-window boundary bands (redraw trigger only -- the actual
   // drawing happens in redrawOverlays, sharing its pan/zoom/resize triggers) ---
@@ -422,7 +422,7 @@ export function MultiPaneChart({
     if (!bundle) return;
     redrawOverlays(bundle, hoveredTimeRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lockedWindowStart, lockedWindowEnd]);
+  }, [lockedWindowStart, lockedWindowEnd, pageTheme]);
 
   /**
    * Entry/TP/SL as 2-point LineSeries spanning only trade.startTime->endTime,

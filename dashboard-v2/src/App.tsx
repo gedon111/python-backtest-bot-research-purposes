@@ -25,7 +25,7 @@ export function App() {
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar-left">
-          <span className="topbar-brand">Backtest Terminal</span>
+          <span className="topbar-brand">Hedge</span>
           <span className="topbar-symbol">BTCUSDT · 4H</span>
         </div>
         <nav className="topbar-nav">

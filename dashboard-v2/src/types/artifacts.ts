@@ -224,7 +224,9 @@ export interface AblationArmSummary {
 export interface AblationArm {
   label: string;
   reconstructed: AblationArmSummary;
-  locked: { n: number; win_rate: number; total_return: number };
+  // The artifact stores the locked figures under _pct names (unlike
+  // reconstructed, which uses win_rate/total_return).
+  locked: { n: number; win_rate_pct: number; total_return_pct: number };
   status_vs_locked: 'MATCH' | 'DIVERGE';
   bootstrap_vs_baseline: {
     b: number;
