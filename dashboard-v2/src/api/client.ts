@@ -1,5 +1,7 @@
 import type {
   AblationReconstructionReport,
+  BenchmarkMtmReport,
+  BenchmarkVsPassiveReport,
   Candle,
   DashboardTheme,
   IterationsResponse,
@@ -34,6 +36,10 @@ export const getVerificationReport = () =>
   fetchJson<VerificationReport>('/artifacts/verification_report.json');
 export const getAblationReconstruction = () =>
   fetchJson<AblationReconstructionReport>('/artifacts/ablation_reconstruction.json');
+/** Published head-to-head figures (run_benchmark_vs_passive / run_benchmark_mark_to_market). */
+export const getBenchmarkVsPassive = () =>
+  fetchJson<BenchmarkVsPassiveReport>('/artifacts/benchmark_vs_passive.json');
+export const getBenchmarkMtm = () => fetchJson<BenchmarkMtmReport>('/artifacts/benchmark_mtm.json');
 
 // /api/* routes — export_gui_data.py's SilentHandler (do_GET/do_POST).
 export const getTrades = (minObQuality?: number) => {

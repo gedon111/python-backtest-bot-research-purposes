@@ -11,6 +11,7 @@ import {
 } from '../stats/statsCompute';
 import { binomialTestGreater, runDistributionSelfChecks } from '../stats/statMath';
 import { Latex } from '../common/Latex';
+import { ComparisonGraphic } from '../stats/ComparisonGraphic';
 
 const pct = (v: number, d = 2) => `${v.toFixed(d)}%`;
 const spct = (v: number, d = 2) => `${v > 0 ? '+' : ''}${v.toFixed(d)}%`;
@@ -49,6 +50,7 @@ export function StatsTab() {
 
   return (
     <div className="stats-tab">
+      <ComparisonGraphic baseTrades={base} />
       <p className="stats-legend text-muted">
         <span className="tag tag-live">LIVE</span> sections are computed in your browser from /api/trades, independent
         of the Python backend. <span className="tag tag-ref">REF</span> sections cite a separate offline artifact

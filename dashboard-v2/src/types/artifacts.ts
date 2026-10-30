@@ -246,3 +246,25 @@ export interface AblationReconstructionReport {
     swing_pivot: AblationArm;
   };
 }
+
+/** artifacts/benchmark_vs_passive.json (only the fields the dashboard reads). */
+export interface BenchmarkArm {
+  arm: string;
+  total_return_pct: number;
+  final_capital: number;
+  time_in_market_pct: number;
+}
+export interface BenchmarkVsPassiveReport {
+  starting_capital: number;
+  main_window: { window_start: string; window_end: string; gross: BenchmarkArm[] };
+}
+
+/** artifacts/benchmark_mtm.json (only the fields the dashboard reads). */
+export interface BenchmarkMtmArm {
+  arm: string;
+  sharpe_daily_mtm: number;
+  max_drawdown_daily_pct: number;
+}
+export interface BenchmarkMtmReport {
+  main_window: { gross: { arms: BenchmarkMtmArm[] } };
+}

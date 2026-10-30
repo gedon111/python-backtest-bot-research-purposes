@@ -1,0 +1,294 @@
+/* Stats tab hero comparison, Grit Press poster treatment.
+   Strategy = --accent (oxblood / orange), DCA = --accent-2 (cobalt / mustard),
+   and DCA is also dashed so the two never rely on hue alone. */
+
+.cmp {
+  position: relative;
+  padding: var(--space-4);
+  overflow: hidden;
+}
+
+.cmp-spec {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-bottom: var(--border-hard) solid var(--border-strong);
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.app-content .cmp-headline {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.4rem, 6vw, 5rem);
+  line-height: 0.9;
+  text-transform: uppercase;
+  margin: 0 0 var(--space-3);
+}
+
+.cmp-hl-dca {
+  color: var(--accent-2);
+}
+
+.cmp-hl-strat {
+  color: var(--accent);
+  text-shadow: 2px 2px 0 var(--accent-fill);
+}
+
+.cmp-sub {
+  font-size: 1.05rem;
+  max-width: 62ch;
+  margin: 0 0 var(--space-4);
+}
+
+.cmp-chart-wrap {
+  position: relative;
+  border: var(--border-hard) solid var(--border-strong);
+  background: var(--surface-0);
+}
+
+.cmp-clock {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-3);
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--text-muted);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.cmp-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cmp-grid {
+  stroke: var(--surface-3);
+  stroke-width: 1;
+}
+
+.cmp-start {
+  stroke: var(--text-primary);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 4;
+}
+
+.cmp-axis {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--text-secondary);
+}
+
+.cmp-line {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.cmp-line-strat {
+  stroke: var(--accent);
+  stroke-width: 4;
+}
+
+.cmp-line-dca {
+  stroke: var(--accent-2);
+  stroke-width: 3.5;
+  stroke-dasharray: 10 5;
+}
+
+.cmp-dot-strat {
+  fill: var(--accent);
+  stroke: var(--text-primary);
+  stroke-width: 2;
+}
+
+.cmp-dot-dca {
+  fill: var(--accent-2);
+  stroke: var(--text-primary);
+  stroke-width: 2;
+}
+
+.cmp-val {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.cmp-val-strat {
+  fill: var(--accent);
+}
+
+.cmp-val-dca {
+  fill: var(--accent-2);
+}
+
+.cmp-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin: var(--space-3) 0 var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.cmp-key::before {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 0;
+  margin-right: var(--space-2);
+  vertical-align: middle;
+}
+
+.cmp-key-strat::before {
+  border-top: 4px solid var(--accent);
+}
+
+.cmp-key-dca::before {
+  border-top: 4px dashed var(--accent-2);
+}
+
+.cmp-replay {
+  margin-left: auto;
+  padding: var(--space-1) var(--space-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cmp-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cmp-row {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: var(--space-3);
+  align-items: center;
+  border-top: 1px dashed var(--border);
+  padding-top: var(--space-3);
+}
+
+.cmp-row-label {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.cmp-row-label small {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+.cmp-row-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cmp-bar-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.cmp-bar {
+  height: 22px;
+  min-width: 2px;
+  border: 2px solid var(--border-strong);
+}
+
+.cmp-bar-strat {
+  background: var(--accent);
+}
+
+.cmp-bar-dca {
+  background: repeating-linear-gradient(-45deg, var(--accent-2) 0 6px, var(--surface-1) 6px 9px);
+}
+
+.cmp-bar-val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.cmp-win {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 2px 6px;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  background: var(--accent-fill);
+  color: var(--gp-ink);
+  border: 2px solid var(--gp-ink);
+  transform: rotate(-3deg);
+  animation: cmp-stamp 260ms ease-out;
+}
+
+@keyframes cmp-stamp {
+  from {
+    transform: rotate(-12deg) scale(1.8);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-3deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.cmp-winrate {
+  font-size: 0.95rem;
+}
+
+.cmp-winrate strong {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2rem;
+  color: var(--accent);
+  margin-right: var(--space-2);
+}
+
+.cmp-scrawl {
+  position: absolute;
+  top: var(--space-5);
+  right: var(--space-4);
+  font-family: var(--font-hand);
+  font-size: 1.9rem;
+  color: var(--accent);
+  transform: rotate(-6deg);
+  animation: cmp-stamp 400ms ease-out;
+}
+
+.cmp-foot {
+  font-size: 0.78rem;
+  margin: var(--space-4) 0 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .cmp-row {
+    grid-template-columns: 1fr;
+  }
+  .cmp-scrawl {
+    display: none;
+  }
+}
