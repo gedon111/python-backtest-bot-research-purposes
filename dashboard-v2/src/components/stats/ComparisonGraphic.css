@@ -6,6 +6,9 @@
   position: relative;
   padding: var(--space-4);
   overflow: hidden;
+  /* .stats-tab is a fixed-height flex column; with overflow hidden this
+     card's min-height is 0, so without this it gets squeezed to a sliver. */
+  flex-shrink: 0;
 }
 
 .cmp-spec {
